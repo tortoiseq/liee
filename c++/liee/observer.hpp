@@ -63,11 +63,15 @@ public:
 class Obs_Snapshot_WF : public Observer
 {
 public:
-	int 	step_r;
-	int 	step_t;
+	int 	step_r;		///< number of spatial samples to skip over between those being saved
+	int 	step_t;		///< number of temporal samples to skip over between the saved ones
 	string	format;		///< cache format string for fprintf
 	bool 	do_square;	///< only save the square of the complex wf
-	bool	do_normalize;
+	bool	do_normalize;///< if true, normalise integral to Psi Psi* == 1
+	int		ir0;		///< index of start-pos of recording window
+	int		ir1;		///< index of end-pos of recording window
+	double	t0;			///< start-time of recording window
+	double	t1;			///< end-time of recording window
 
     virtual void observe( Module* state );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
@@ -87,6 +91,10 @@ public:
         ar & step_t;
         ar & do_square;
         ar & do_normalize;
+        ar & ir0;
+        ar & ir1;
+        ar & t0;
+        ar & t1;
     }
 };
 

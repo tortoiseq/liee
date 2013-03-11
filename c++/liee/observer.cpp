@@ -14,20 +14,32 @@ namespace liee {
 void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Obs_Snapshot_WF" );
-	// spatial downsampling
+	// prepare spatial downsampling
 	double r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double dr = config->getParam("dr")->value / CONV_au_nm;
-	int Nr = 1.0 + r_range / dr;
+
+	double r0 = 0.0;
+	double r1 = r_range;
+	if ( not config->getParam("obs_r0")->textual ) { r0 = config->getParam("obs_r0")->value; }
+	if ( not config->getParam("obs_r1")->textual ) { r1 = config->getParam("obs_r1")->value; }
+	ir0 = (int) (r0 / dr);
+	ir1 = (int) (r1 / dr);
+
+	int Nr = 1.0 + ( r1 - r0 ) / dr;
 	step_r = floor( Nr / config->getParam("r_samples")->value );
 	if ( step_r < 1 ) { step_r = 1; }
 	if ( step_r > Nr ) { step_r = Nr; }
 	config->getParam("r_samples")->value = 1 + Nr / step_r;	// save the actual number of samples
 
-	// temporal downsampling
+	// prepare temporal downsampling
 	t_range = config->getParam("t_range")->value / CONV_au_fs;
 	dt = config->getParam("dt")->value / CONV_au_fs;
+	t0 = 0.0;
+	t1 = t_range;
+	if ( not config->getParam("obs_t0")->textual ) { t0 = config->getParam("obs_t0")->value; }
+	if ( not config->getParam("obs_t1")->textual ) { t1 = config->getParam("obs_t1")->value; }
 	counter = 0;
-	int Nt = 1.0 + t_range / dt;
+	int Nt = 1.0 + ( t1 - t0 ) / dt;
 	step_t = floor( Nt / config->getParam("t_samples")->value );
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
@@ -72,8 +84,9 @@ void Obs_Snapshot_WF::estimate_effort( Conf_Module* config, double & flops, doub
 
 void Obs_Snapshot_WF::observe( Module* state )
 {
-	if ( counter++ % step_t != 0 ) return;
 	Solver* s = dynamic_cast<Solver*>( state );
+	if ( s->t < t0  ||  s->t > t1 ) return;		// not in observation window
+	if ( counter++ % step_t != 0 ) return;		// downsample
 
    	double fac = 1.0;
    	if ( do_normalize ) {
@@ -83,7 +96,7 @@ void Obs_Snapshot_WF::observe( Module* state )
     FILE *file;
 	file = boinc_fopen( filename.c_str(), "a" );
 
-   	for ( size_t i = 0; i < s->Nr; i += step_r ) {
+   	for ( size_t i = ir0; i < ir1 && i < s->Nr; i += step_r ) {
 		double re, im;
     	if ( do_square ) {
     		re = fac * real( s->psi[i] * conj( s->psi[i] ) );
