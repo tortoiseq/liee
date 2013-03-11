@@ -18,19 +18,18 @@ namespace liee {
 
 struct Integration_Rec
 {
-												double E;
-												double werror;
-												size_t level;
-	/*! Left classical turning point */			double xa;
-	/*! Right classical turning point */		double xb;
-	/*! Left integration bound */				double a;
-	/*! Right integration bound */				double b;
-												double middle;
-	/*! if true, then keep bounds fixed to assure final convergence */
-												bool fixed_bounds;
-												vector<Point> blend;
-												vector<Point> rightwards, leftwards;
-												int num_trial;
+	double E;
+	double werror;
+	size_t level;
+	double xa;				///< Left classical turning point
+	double xb;				///< Right classical turning point
+	double a;				///< Left integration bound
+	double b;				///< Right integration bound
+	double middle;
+	bool fixed_bounds;		///< if true, then keep bounds fixed to assure final convergence
+	vector<Point> blend;
+	vector<Point> rightwards, leftwards;
+	int num_trial;
 
 	// default constructor
 	Integration_Rec( )

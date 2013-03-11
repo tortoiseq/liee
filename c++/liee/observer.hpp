@@ -28,13 +28,13 @@ namespace liee {
 class Observer : public Module
 {
 public:
-	/*! total number of observations */			int 	N;
-	/*! simulation end-time */					double 	t_range;
-	/*! write the result to file */				string 	filename;
+	int 	N;			///< total number of observations
+	double 	t_range;	///< simulation end-time
+	string 	filename;	///< write the result to file
 
-	/*! time of last measurement */				double 	t_last;
-												int		counter;
-	/*! time resolution of experiment*/			double 	dt;
+	double 	t_last;		///< time of last measurement
+	int		counter;
+	double 	dt;			///< time resolution of experiment
 
 	friend class boost::serialization::access;
     template<class Archive>
@@ -58,16 +58,16 @@ public:
  * to a text file. The file contains the WV-samples as rows, with spatial samples in tab-separated columns.
  * If complex values are stored, real and imaginary part are separated by a comma. //TODO better interlaced: row-a real, row-b imag, ...
  * To reduce the size of the output the user can decrease the spatial resolution by the factor
- * downsample or ignore the complex nature of the WV by setting do_square to true.
+ * downsample (//TODO downsample is obsolete)or ignore the complex nature of the WV by setting do_square to true.
  */
 class Obs_Snapshot_WF : public Observer
 {
 public:
-													int 	step_r;
-													int 	step_t;
-													string	format;
-	/*! only save the square of the complex wf */	bool 	do_square;
-													bool	do_normalize;
+	int 	step_r;
+	int 	step_t;
+	string	format;
+	bool 	do_square;	///< only save the square of the complex wf
+	bool	do_normalize;
 
     virtual void observe( Module* state );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
@@ -99,15 +99,14 @@ public:
 class Obs_Tunnel_Ratio : public Observer
 {
 public:
-	/*! total probability over integration region for each time sample */
-															vector<double>	psi_sqr;
-															int 	step_t;
-															int		t_samples;
-//															bool	written;
-	/*! portion of probability lost during simulation */	double 	tunnel_ratio;
-															double	ra;
-															double	rb;
-															bool 	is_objective;
+	vector<double>	psi_sqr;	///< total probability over integration region for each time sample
+	int 	step_t;
+	int		t_samples;
+	//bool	written;
+	double 	tunnel_ratio;		///< portion of probability lost during simulation
+	double	ra;
+	double	rb;
+	bool 	is_objective;
 
     virtual void observe( Module* state );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
@@ -123,7 +122,7 @@ public:
         ar & psi_sqr;
         ar & step_t;
         ar & t_samples;
-//        ar & written;
+        //ar & written;
         ar & tunnel_ratio;
         ar & ra;
         ar & rb;

@@ -30,38 +30,30 @@ namespace opti {
  */
 class Downhill_Simplex : public Asynch_Optimizer {
 public:
-	/*! The number of points of the simplex. */			int 	mpts;
+	int 	mpts;		///< The number of points of the simplex.
+	double 	alfa;		///< reflection coefficient
+	double 	gamma;		///< expansion coefficient
+	double 	roh;		///< contraction coefficient
+	double 	sigma;		///< shrink coefficient
+	double 	temperature;///< Temperature to tune fluctuations for simulated annealing
 
-	/*! reflection coefficient */						double 	alfa;
-	/*! expansion coefficient */						double 	gamma;
-	/*! contraction coefficient */						double 	roh;
-	/*! shrink coefficient */							double 	sigma;
-	/*! Temperature to tune fluctuations for simulated annealing */
-														double 	temperature;
+	vector<Request> simplex;		///< Current simplex
+	Request trial;		///< to try a single reflection point
+	Ranq1 * random;		///< random number generator
 
-	/*! Current simplex */						vector<Request> simplex;
-	/*! to try a single reflection point */				Request trial;
+	int 	ihi;		///< index of highest (worst) vertex
+	int 	inhi;		///< index of next-highest vertex
+	int 	ilo;		///< index of lowest (best) vertex
 
-	/*! random number generator */						Ranq1 * random;
+	double 	ylo;		///< lowest function value incl. fluctuation)
+	double 	yhi;		///< highest function value incl. fluctuation)
+	double 	ynhi;		///< 2nd-highest function value incl. fluctuation)
+	double 	ysave;		///< to remember a temporary result between calls
 
-	/*! Index of highest (worst) vertex. */				int 	ihi;
-	/*! Index of next-highest vertex. */				int 	inhi;
-	/*! Index of lowest (best) vertex. */				int 	ilo;
+	vector<double>	psum;	///< interim result: psum[d] = sum of x[d] over all vertices, needed for every reflection.
 
-
-	/*! lowest function value incl. fluctuation) */		double 	ylo;
-	/*! highest function value incl. fluctuation) */	double 	yhi;
-	/*! 2nd-highest function value incl. fluctuation)*/	double 	ynhi;
-	/*! to remember a temporary result between calls */	double 	ysave;
-
-	/*! interim result: psum[d] = sum of x[d] over all vertices, needed for every reflection. */
-												 vector<double>	psum; //TODO This saves roughly dim^2 additions per iteration, is it worth the trouble of storing?
-
-	//! This flag is set after reflection-request to ensure possible swapping of high-value after the new point got evaluated.
-														bool 	checkReflection;
-
-	//! Indicates where to continue after return for the next request.
-														int 	returnAddr;
+	bool 	checkReflection;///< This flag is set after reflection-request to ensure possible swapping of high-value after the new point got evaluated.
+	int 	returnAddr;		///< Indicates where to continue after return for the next request.
 
 
 	friend class boost::serialization::access;

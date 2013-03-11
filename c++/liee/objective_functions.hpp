@@ -16,7 +16,7 @@ namespace liee {
 /*!
 * Just the square of x. (for readability)
 */
-inline double sqr( double x ) { return x * x; }
+inline double sqr( double x ) { return x * x; } //TODO why not use a macro?
 
 /*!
 * The generalised Rosenbrock's Function is a test for multivariant optimisation.

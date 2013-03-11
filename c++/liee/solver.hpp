@@ -25,9 +25,9 @@ public:
 	virtual double integrate_psi_sqr();
 	virtual double integrate_psi_sqr( double a, double b);
 
-	Potential* 		potential;
-	/*! WF */												vector<dcmplx> psi;
-	/*! registered observers */								vector<Observer*> obs;
+	Potential* 			potential;
+	vector<dcmplx> 		psi;		///< WF
+	vector<Observer*> 	obs;		///< registered observers
 
 	size_t Nr;
 	int Ntp;

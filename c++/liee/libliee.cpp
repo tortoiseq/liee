@@ -11,7 +11,7 @@ namespace lib_liee {
 /*!
  * Precondition: a valid parameter-file "liee_parameter.xml" must be present in the working directory!
  * The potential will be setup as defined in the parameter-file.
- * @returns a pointer to the complex number (two doubles) in which the results of calc_potential calls will be written.
+ * @returns a pointer to the complex number (two doubles) in which the result of a calc_potential call gets written.
  */
 extern "C" void init_potential()
 {

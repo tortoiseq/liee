@@ -32,12 +32,11 @@ namespace opti {
  */
 class Request {
 public:
-	/*! coordinate in the optimisation domain */	vector<double> 		x;
-	/*! the new position for which an evaluation was
-	    requested but no result has yet arrived */	vector<double> 		x_new;
-	/*! value of objective function at x */			double 				y;
-	/*! unique identifier of the request made */	int 				id;
-	/*! indicates success: 0 or fail: otherwise */	int 				flag;
+	vector<double> x;		///< coordinate in the optimisation domain
+	vector<double> x_new;	///< the new position for which an evaluation was requested but no result has yet arrived
+	double	y;				///< value of objective function at x
+	int		id;				///< unique identifier of the request made
+	int		flag;			///< indicates success: 0 or fail: otherwise
 
 	friend class boost::serialization::access;
     /*! When the class Archive corresponds to an output archive, the
@@ -60,27 +59,24 @@ public:
 class Asynch_Optimizer
 {
 public:
-	/*! number of dimensions */					int 				dim;
-	/*! lower limits indexed by dimension */	vector<double> 		lower_bounds;
-	/*! upper limits indexed by dimension */	vector<double> 		upper_bounds;
-	/*! number of _requested_ evaluations */	int					evaluations;
-	/*! end condition if not converging */		int					max_eval;
+	int 				dim;			///< number of dimensions
+	vector<double> 		lower_bounds;	///< lower limits indexed by dimension
+	vector<double> 		upper_bounds;	///< upper limits indexed by dimension
+	int					evaluations;	///< umber of _requested_ evaluations
+	int					max_eval;		///< end condition if not converging
+	int					next_id;		///< next id (serial to match request and results) to send out
 
-	/*! next id (serial to match request and results) to send out  */
-												int					next_id;
+	double				global_min;		///< the so-far lowest value found
+	double				current_min;	///< lowest value in current set
+	vector<double> 		global_min_pos;	///< domain vector for global_min
+	vector<double> 		current_min_pos;///< domain vector for current_min
+	vector<double>		history;
+	int					history_sz;
+	int					history_i;
 
-	/*! the so-far lowest value found */		double				global_min;
-	/*! lowest value in current set */			double				current_min;
-	/*! domain vector for global_min */			vector<double> 		global_min_pos;
-	/*! domain vector for current_min */		vector<double> 		current_min_pos;
-	/*!	*/										vector<double>		history;
-	/*! */										int					history_sz;
-	/*! */										int					history_i;
-
-	/*! convergence tolerance */				double				tolerance;
-	/*! convergence */							double				histo_var;
-
-	/*! to identify the specific type */		string				type_name;
+	double				tolerance;		///< convergence tolerance
+	double				histo_var;		///< convergence
+	string				type_name;		///< to identify the specific type
 
     friend class boost::serialization::access;
     /*! When the class Archive corresponds to an output archive, the
@@ -170,16 +166,16 @@ protected:
 /*!
  * Example implementation for Asynch_Optimiser.
  * One of the worst optimisation algorithms which is guaranteed to never converge.
- * It simply picks random domain vectors, equally distributed between lower and upper bounds.
- * Delivers the (so far) best lucky hit (lowest value of the objective function),
+ * It simply picks random domain vectors, equally distributed between lower and upper bounds
+ * and keeps the currently best hit (lowest value of the objective function),
  * which slowly approaches the global minimum in the very long run.
  */
 class Shot_Gun_Optimizer : public Asynch_Optimizer
 {
 public:
-	/*! number of simultaneously requested evaluations */	int 				num_bullets_per_shot;
-	/*! evaluations in progress */							vector<Request>		in_flight;
-	/*! random number generator */							Ranq1 * 			random;
+	int 			num_bullets_per_shot;	///< number of simultaneously requested evaluations
+	vector<Request>	in_flight;				///< evaluations in progress
+	Ranq1 * 		random;					///< random number generator
 
 	/*! Default constructor sets number of parallel requests to 10. */
 	Shot_Gun_Optimizer() : num_bullets_per_shot( 20 )
@@ -211,9 +207,9 @@ public:
 
 class Particle : public Request {
 public:
-	/*! velocity of particle */				vector<double> 		v;
-	/*! best position of this particle */	vector<double> 		x_min;
-	/*! lowest y on this trajectory */		double 				min_value;
+	vector<double>	v;			///< velocity of particle
+	vector<double>	x_min;		///< best position of this particle
+	double 			min_value;	///< lowest y on this trajectory
 
 	friend class boost::serialization::access;
     /*! When the class Archive corresponds to an output archive, the
@@ -233,23 +229,22 @@ public:
 
 /*!
  * Implementation of "A Modified Particle Swarm Optimizer" by Yuhui Shi et.al.
- *
  */
 class Particle_Swarm_Optimizer : public Asynch_Optimizer
 {
 public:
-	/*! population size */						int 		swarm_sz;
-	/*! inertia weight (> 1: exploration; < 1: local search) */
-												double 		inertia;
-	/*! cognition weight (particle memory) */	double 		cognition;
-	/*! social weight (follow the leader) */	double 		coherence;
-	/*! index of momentarily best particle */	int			leader;
-	/*! number of hops for which adjacent particles are considered
-	 *  part of the neighbourhood of the centre
-	 *  particle (in a ring topology) */		int			hood_sz;
-	/*! random number generator */				Ranq1 * 	random;
-//private:
-	/*! particle population */			vector<Particle>	swarm;
+	int 	swarm_sz;	///< population size
+	double 	inertia;	///< inertia weight (> 1: exploration; < 1: local search)
+	double 	cognition;	///< cognition weight (particle memory)
+	double 	coherence;	///< social weight (follow the leader)
+	int		leader;		///< index of momentarily best particle
+
+	int		hood_sz;	/*!< number of hops for which adjacent particles are considered part of the
+	 	 	 	 	 	 *   neighbourhood of the centre particle (in a ring topology) */
+
+	Ranq1 * random;		///< random number generator
+
+	vector<Particle> swarm;	///< particle population
 
 
 public:
@@ -313,16 +308,15 @@ public:
  * All work is requested in a single batch, make sure not to ask for more samples than you can handle!
  * Possible improvements reluctantly envisaged:
  * - smaller configurable batches
- * - random (or interlaced) ordering of requests to make early overview-plots over the whole range possible
+ * - random (or interlaced) ordering of requests to make early overview-plots over the whole range possible //TODO this one!
  */
 class Rasterizer : public Asynch_Optimizer
 {
 public:
-	/*! resolution for each dimension */		vector<int> 	num_samples;
-	/*! indicator for each dimensions scaling*/	vector<bool> 	logscale;
-	/*! random number generator */				Ranq1 * 		random;
-	/*! indicates that the one and only job creation was already done */
-												bool			discharged;
+	vector<int>	num_samples;	///< resolution for each dimension
+	vector<bool>logscale;		///< flag for each dimensions scaling to be logarithmic
+	Ranq1*		random;			///< random number generator
+	bool		discharged;		///< indicates that the one and only job creation was already done
 
 	/*! boost serialization seems to need default constructor */
 	Rasterizer()
@@ -385,7 +379,7 @@ private:
 
 /*!
  * Basic minimisation method in one dimension.
- * Given three points a < b < c with f(b) < min( f(a), f(b) ) and a convergence tolerance,
+ * Given three points a < b < c with f(b) < min( f(a), f(b) ) and a tolerance for convergence,
  * the method will keep bisecting the interval with ratio of the golden section ( 3 - sqrt(5) ) / 2
  * by exclusion of the high point until the outer points are less then tolerance apart.
  */

@@ -17,23 +17,20 @@
 using namespace std;
 namespace liee {
 
-/*!
- *
- */
 class Conf_Param
 {
 protected:
 	DECLARE_LOGGER;
 public:
-	/*! */		string 	name;
-	/*! */		double 	value;
-	/*! */		bool 	fixed;
-	/*! */		double 	min;
-	/*! */		double 	max;
-	/*! */		bool 	logscale;
-	/*! */		vector<double> values;
-	/*! */		string 	text;
-	/*!	*/		bool	textual;
+	string 	name;
+	double 	value;
+	bool 	fixed;
+	double 	min;
+	double 	max;
+	bool 	logscale;
+	vector<double> values;
+	string 	text;
+	bool	textual;
 
 	/*! Constructor */
 	Conf_Param( TiXmlElement * pParamNode );
@@ -45,18 +42,15 @@ public:
 	TiXmlElement* minimal_xml_element();
 };
 
-/*!
- *
- */
 class Conf_Module {
 protected:
 	DECLARE_LOGGER;
 public:
-	/*! */		int serial;
-	/*! */		int stage;
-	/*! */		string type;
-	/*! */		string name;
-	/*! */		map<string, Conf_Param*> param;
+	int serial;
+	int stage;
+	string type;
+	string name;
+	map<string, Conf_Param*> param;
 
 	/*! Constructor */
 	Conf_Module( TiXmlElement * pmoduleNode );
@@ -77,24 +71,21 @@ public:
 	void evaluate_expressions();
 };
 
-/*!
- *
- */
 class Config {
 protected:
 	DECLARE_LOGGER;
 public:
-	/*! */		map<string, Conf_Param*> 	globals;
-	/*! */		vector<Conf_Param*>			chain_params_merged;
-	/*! */		vector<Conf_Module*>		chain;
+	map<string, Conf_Param*> 	globals;
+	vector<Conf_Param*>			chain_params_merged;
+	vector<Conf_Module*>		chain;
 
-	/*! */		string 						version;
-	/*! */		string 						project;
-	/*! */		string 						experiment;
-	/*! */		string 						wu;
-	/*! */		string 						exec_chain;
-	/*! */		vector<string>				infiles;
-	/*! */		vector<string>				outfiles;
+	string 						version;
+	string 						project;
+	string 						experiment;
+	string 						wu;
+	string 						exec_chain;
+	vector<string>				infiles;
+	vector<string>				outfiles;
 
 
 	/*!

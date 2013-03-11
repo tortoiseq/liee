@@ -211,10 +211,9 @@ public:
 	virtual void summarize( map<string, string> & results ) {} // no relevant information to summarise
 
 private:
-	/*! force constant. equals omega^2, since m=1 */	double k;
-	/*! eigen frequency in (atomic time unit)^-2 */		double w;
-	/*! shift parabola by this amount to the right (to be able to stay in the positive domain for moderate quantum numbers)*/
-														double shift;
+	double k;		///< force constant. equals omega^2, since m=1
+	double w;		///< eigen frequency in (atomic time unit)^-2
+	double shift;	///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
 	friend class boost::serialization::access;
     template<class Archive>
@@ -261,8 +260,7 @@ private:
 	double lambda;
 	double zim;
 
-	/*! shift parabola by this amount to the right (to be able to stay in the positive domain for moderate quantum numbers)*/
-	double shift;
+	double shift;	///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
 	friend class boost::serialization::access;
     template<class Archive>

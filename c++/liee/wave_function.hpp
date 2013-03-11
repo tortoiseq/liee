@@ -20,7 +20,7 @@ public:
 
 
 /*!
- * Potential well with memory charge, dc-field and absorbing potential on the right side.
+ * Reads the WF and interpolates to the grid of the experiment.
  */
 class WF_Reader : public Wave_Function, public Module
 {
