@@ -65,7 +65,7 @@ class Obs_Snapshot_WF : public Observer
 public:
 	int 	step_r;
 	int 	step_t;
-	string	format;
+	string	format;		///< cache format string for fprintf
 	bool 	do_square;	///< only save the square of the complex wf
 	bool	do_normalize;
 

@@ -33,16 +33,19 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	if ( step_t > Nt ) { step_t = Nt; }
 	config->getParam("t_samples")->value = 1 + Nt / step_t;	// save the actual number of samples
 
-	stringstream ss;
-	ss << "%1." << int( config->getParam("precision")->value ) << "g\t";
-	format = ss.str();
-	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	do_square = config->getParam("square")->text.compare("true") == 0;
+	stringstream ss;
+	int digits = int( config->getParam("precision")->value );
+	if (do_square) {
+		ss << "%1." << digits << "g\t";
+	} else {
+		ss << "%1." << digits << "g,%1." << digits << "g\t";
+	}
+	format = ss.str();
+
+	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	do_normalize = config->getParam("normalize")->text.compare("true") == 0;
 	// delete previous snapshot file
-	//TODO in case of NOT "do_square", delete the Re_ / Im_ files (just in case)
-	//TODO but also have the problem that those wont get included in the result-archive, since they differ from the OUTFILE name used
-	//TODO ... see Noumerov handling of multiple OUTFILEs, in case it got solved there
 	FILE* f = boinc_fopen( filename.c_str(), "w" );
 	fclose( f );
 }
@@ -77,36 +80,23 @@ void Obs_Snapshot_WF::observe( Module* state )
    		fac = 1.0 / s->integrate_psi_sqr();
    	}
 
-    FILE *f_re, *f_im;
-   	if (not do_square) {
-   		string name = "Re_" + filename;
-   		f_re = boinc_fopen( name.c_str(), "a" );
-   		name = "Im_" + filename;
-   		f_im = boinc_fopen( name.c_str(), "a" );
-   	}
-   	else {
-   		f_re = boinc_fopen( filename.c_str(), "a" );
-   	}
+    FILE *file;
+	file = boinc_fopen( filename.c_str(), "a" );
 
    	for ( size_t i = 0; i < s->Nr; i += step_r ) {
 		double re, im;
     	if ( do_square ) {
     		re = fac * real( s->psi[i] * conj( s->psi[i] ) );
-    		fprintf( f_re, format.c_str(), re );
+    		fprintf( file, format.c_str(), re );
     	}
     	else {
     		re = fac * real( s->psi[i] );
     		im = fac * imag( s->psi[i] );
-    		fprintf( f_re, format.c_str(), re );
-    		fprintf( f_im, format.c_str(), im );
+    		fprintf( file, format.c_str(), re, im );
     	}
 	}
-	fprintf( f_re, "\n" );
-   	fclose( f_re );
-	if ( not do_square ) {
-		fprintf( f_im, "\n" );
-    	fclose( f_im );
-	}
+	fprintf( file, "\n" );
+   	fclose( file );
 }
 
 //-------------------------------------------------------------------------------------------------------------
