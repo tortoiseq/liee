@@ -84,6 +84,7 @@ int main( int argc, char* argv[] )
     string resolved_param_name;
     boinc_resolve_filename_s( "liee_parameter.xml", resolved_param_name );
     Config cnf( resolved_param_name );
+    LOG_INFO( "Config done");
     vector<Module*> deps;
     int last_i_stored = -1;
     map<string, string> results;
