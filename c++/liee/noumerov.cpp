@@ -67,13 +67,26 @@ void Noumerov1d::estimate_effort( Conf_Module* config, double & flops, double & 
 
 void Noumerov1d::summarize( map<string, string> & results )
 {
-	results["init_E0"] = doub2str( spectrum[0].E );
+	stringstream ss;
+	ss << "{";
+	bool first = true;
+	for ( size_t i = lvl_lo; i <= lvl_up; i++ ) {
+		if ( not first) { ss << ","; }
+		first = false;
+		if ( spectrum[i  -lvl_lo].num_trial > 0 ) {
+			ss << "{" << i << "," << spectrum[i - lvl_lo].E*CONV_au_eV << "," << spectrum[i - lvl_lo].werror << "}";
+		}
+	}
+	ss << "}";
+
+
+	results["Numerov_Spectrum"] = ss.str();
 	if ( is_objective ) {
 		if ( target_E.size() > 0 ) {
 			double target = boost::lexical_cast<double>( target_E );
-			results["objective"] = doub2str( abs( target - spectrum[0].E ) );
+			results["objective"] = doub2str( abs( target - spectrum[0].E*CONV_au_eV ) );
 		} else {
-			results["objective"] = doub2str( spectrum[0].E );
+			results["objective"] = doub2str( spectrum[0].E*CONV_au_eV );
 		}
 	}
 }
@@ -424,16 +437,6 @@ void Noumerov1d::save_results( string & filename )
 		}
 	}
 
-	string fspec = filename + "_spectrum.dat";
-	files.push_back( fspec );
-	FILE* f = boinc_fopen( fspec.c_str(), "w" );
-
-	for ( size_t i = lvl_lo; i <= lvl_up; i++ ) {
-		if ( spectrum[i  -lvl_lo].num_trial > 0 ) {
-			fprintf( f, "%d\t%1.16g\t%1.16g\n", (int)i, spectrum[i - lvl_lo].E, spectrum[i - lvl_lo].werror );
-		}
-	}
-	fclose( f );
 	tar_gz_files( ".", files, filename );
 }
 
@@ -464,7 +467,7 @@ bool Noumerov1d::execute()
 			continue;
 		}
 
-		LOG_DEBUG( "Converged at level " << Qb.level << "with Energy " << Qb.E << " \t remaining difference: " << Qb.werror );;
+		LOG_DEBUG( "Converged at level " << Qb.level << " with Energy " << Qb.E << " \t remaining difference: " << Qb.werror );;
 
 		if ( Qb.level <= lvl_up  && Qb.level >= lvl_lo )
 		{
