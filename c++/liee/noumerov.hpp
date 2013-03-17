@@ -95,6 +95,7 @@ public:
 	string filename;
 	bool is_objective;
 	string target_E;
+	double sys_err_correct;
 
 	Noumerov1d() {}
 
@@ -125,6 +126,7 @@ public:
 		ar & filename;
 		ar & is_objective;
 		ar & target_E;
+		ar & sys_err_correct;
 	}
 
 	double evaluate_energy( Integration_Rec& ir );

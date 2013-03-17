@@ -46,6 +46,7 @@ void Noumerov1d::initialize( Conf_Module* config, vector<Module*> dependencies )
 	if ( is_objective ) {
 		target_E = config->getParam("target_E")->text;
 	}
+	sys_err_correct = config->getParam("E_correct")->value / CONV_au_eV;
 	exec_done = false;
 	iteration = 0;
 	limbo = 0;
@@ -257,26 +258,26 @@ void Noumerov1d::blend_wf( Integration_Rec& rec )
 	double sigma = 0.1 * abs(rec.xb - rec.xa);
 
 	BOOST_FOREACH( double x, sample_positions ) {
-    	double y;
-    	double yr = alglib::spline1dcalc( sp_r, x );
-    	double yl = alglib::spline1dcalc( sp_l, x );
-    	double weight = exp( -pow( (x - rec.middle) / sigma , 2.0) );
+		double y;
+		double yr = alglib::spline1dcalc( sp_r, x );
+		double yl = alglib::spline1dcalc( sp_l, x );
+		double weight = exp( -pow( (x - rec.middle) / sigma , 2.0) );
 
-    	if ( x < rec.middle && x > rec.xa ) {
-    		y = yr * (1.0 - weight) + yl * weight;
-    	}
-    	else if ( x > rec.middle && x < rec.xb ) {
-    		y = yl * (1.0 - weight) + yr * weight;
-    	}
-    	else if ( x < rec.xa ) {
-    		y = yr;
-    	}
-    	else if ( x > rec.xb ) {
-    		y = yl;
-    	}
+		if ( x < rec.middle && x > rec.xa ) {
+			y = yr * (1.0 - weight) + yl * weight;
+		}
+		else if ( x > rec.middle && x < rec.xb ) {
+			y = yl * (1.0 - weight) + yr * weight;
+		}
+		else if ( x < rec.xa ) {
+			y = yr;
+		}
+		else if ( x > rec.xb ) {
+			y = yl;
+		}
 
-    	rec.blend.push_back( Point( x, y ) );
-    }
+		rec.blend.push_back( Point( x, y ) );
+	}
 	std::sort( rec.blend.begin(), rec.blend.end(), less_than_point_x() );
 }
 
@@ -307,12 +308,12 @@ double Noumerov1d::mean_square_error( Integration_Rec& rec )
 
 	vector<double> sample_positions;
 	BOOST_FOREACH( Point p, rec.leftwards ) {
-		if ( p.x > rec.xa  &&  p.x < rec.xb ) {
+		if ( p.x > rec.xa && p.x < rec.xb ) {
 			sample_positions.push_back( p.x );
 		}
 	}
 	BOOST_FOREACH( Point p, rec.rightwards ) {
-		if ( p.x > rec.xa  &&  p.x < rec.xb ) {
+		if ( p.x > rec.xa && p.x < rec.xb ) {
 			sample_positions.push_back( p.x );
 		}
 	}
@@ -474,6 +475,13 @@ bool Noumerov1d::execute()
 			int num_trial = spectrum[Qb.level - lvl_lo].num_trial;
 			if ( ( spectrum[Qb.level - lvl_lo].num_trial == 0 )	|| spectrum[Qb.level - lvl_lo].werror > Qb.werror )	{
 				// found a new one or better one
+
+				// for debuging, try to systematically alter the found Energy
+				double tmp = Qb.werror;
+				Qb.E += sys_err_correct;
+				evaluate_energy( Qb );
+				Qb.werror = tmp;	// pretend its the pre-correction error
+
 				spectrum[Qb.level - lvl_lo] = Qb;
 				DEBUG_SHOW4( num_trial, Qb.level, Qb.E, Qb.werror );
 			}
@@ -491,7 +499,6 @@ bool Noumerov1d::execute()
 			// nothing left to target or iteration limit reached
 			break;
 		}
-		//DEBUG_SHOW( iteration );
 		DEBUG_SHOW2( Q_bottom, Q_top );
 	}
 
@@ -556,42 +563,28 @@ bool Noumerov1d::target_missed_levels( double & Q_bottom, double & Q_top )
 
 void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec& a, Integration_Rec& b, Integration_Rec& c )
 {
-//	DEBUG_BEACON("*");
 	Integration_Rec d( a );
-//	DEBUG_BEACON("?");
 	provider->evaluate_energy( a );
-//	DEBUG_BEACON(".");
 	a.clear();							// clear the data, since for the moment we are only interested in E
-//	DEBUG_BEACON("?");
 	provider->evaluate_energy( b );
-//	DEBUG_BEACON(".");
 	b.clear();							// ^-- ...and werror. copy-assigning filled vectors would be wasted effort.
-//	DEBUG_BEACON("?");
 	provider->evaluate_energy( c );
-//	DEBUG_BEACON(".");
 	c.clear();
 
-//	DEBUG_BEACON("?");
 	provider->try_fixate_bounds( a, b, c, d );
-//	DEBUG_BEACON(".");
 	double gs = ( 3.0 - sqrt( 5.0 ) ) / 2.0;
 
 	if (not ((a.E < b.E) && (b.E < c.E) && (b.werror < a.werror) && (b.werror < c.werror)) ) {
-//		DEBUG_BEACON("-");
 		throw Except__Preconditions_Fail( __LINE__ );
 	}
 
-//	DEBUG_BEACON("^");
 	while ( abs( c.E - a.E ) > tol )
 	{
-//		DEBUG_SHOW( abs( c.E - a.E ) );
 		double ab = abs( b.E - a.E );
 		double bc = abs( b.E - c.E );
 		if ( ab > bc ) {	// bisect [ab] for it is the bigger interval
 			d.E = b.E - gs * ab;
-//			DEBUG_BEACON("?");
 			provider->evaluate_energy( d );
-//			DEBUG_BEACON(".");
 			d.clear();
 			if ( d.werror < b.werror ) { // test point d is the lowest --> exclude c
 				c = b;
@@ -603,9 +596,7 @@ void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec
 		}
 		else { // bisect interval [bc]
 			d.E = b.E + gs * bc;
-//			DEBUG_BEACON("?");
 			provider->evaluate_energy( d );
-//			DEBUG_BEACON(".");
 			d.clear();
 			if ( d.werror < b.werror ) { // test point d is the lowest --> exclude a
 				a = b;
@@ -615,11 +606,8 @@ void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec
 				c = d;
 			}
 		}
-//		DEBUG_BEACON("?");
 		provider->try_fixate_bounds( a, b, c, d );
-//		DEBUG_BEACON(".");
 	}
-//	DEBUG_BEACON("#");
 }
 
 } //namespace liee
