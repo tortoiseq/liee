@@ -35,6 +35,7 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 	parse_datafile( resolved_name, parsed );
 	double r_min = parsed[0];
 	double r_max = parsed[ parsed.size() - 2 ];
+	DEBUG_SHOW2(r_min, r_max);
 	LOG_INFO( "Read " << parsed.size() / 2 << "WF samples from file" );;
 
 	for( size_t i = 0; i < parsed.size()-2; i++ ) {

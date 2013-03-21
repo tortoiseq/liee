@@ -46,7 +46,6 @@ void Noumerov1d::initialize( Conf_Module* config, vector<Module*> dependencies )
 	if ( is_objective ) {
 		target_E = config->getParam("target_E")->text;
 	}
-	sys_err_correct = config->getParam("E_correct")->value / CONV_au_eV;
 	exec_done = false;
 	iteration = 0;
 	limbo = 0;
@@ -239,50 +238,28 @@ double Noumerov1d::penetrate_border( double Q, double x_turn, double d, double n
 /*!
  * Blends the two solutions so that the exponential tail is taken from only
  * the solution which starts on the same side (has minimal error).
- * The middle is mixed 50%-50%.
+ * (changed to simply joining the halves at the middle)
  */
 void Noumerov1d::blend_wf( Integration_Rec& rec )
 {
-	alglib::spline1dinterpolant sp_r = to_cubic_spline( rec.rightwards );
-	alglib::spline1dinterpolant sp_l = to_cubic_spline( rec.leftwards );
-
-	vector<double> sample_positions;
+	rec.blend.clear();
 	BOOST_FOREACH( Point p, rec.leftwards ) {
-		sample_positions.push_back( p.x );
+		if ( p.x > rec.middle ) {
+			rec.blend.push_back( p );
+		}
 	}
 	BOOST_FOREACH( Point p, rec.rightwards ) {
-		sample_positions.push_back( p.x );
-	}
-
-	rec.blend.clear();
-	double sigma = 0.1 * abs(rec.xb - rec.xa);
-
-	BOOST_FOREACH( double x, sample_positions ) {
-		double y;
-		double yr = alglib::spline1dcalc( sp_r, x );
-		double yl = alglib::spline1dcalc( sp_l, x );
-		double weight = exp( -pow( (x - rec.middle) / sigma , 2.0) );
-
-		if ( x < rec.middle && x > rec.xa ) {
-			y = yr * (1.0 - weight) + yl * weight;
+		if ( p.x <= rec.middle ) {
+			rec.blend.push_back( p );
 		}
-		else if ( x > rec.middle && x < rec.xb ) {
-			y = yl * (1.0 - weight) + yr * weight;
-		}
-		else if ( x < rec.xa ) {
-			y = yr;
-		}
-		else if ( x > rec.xb ) {
-			y = yl;
-		}
-
-		rec.blend.push_back( Point( x, y ) );
 	}
 	std::sort( rec.blend.begin(), rec.blend.end(), less_than_point_x() );
 }
 
 /*!
  * Normalise the area between the classical turning points to equal 1.
+ * This normalisation neglects the tails because the integration at
+ * least in one direction is subject to larger erros.
  */
 void Noumerov1d::normalize( vector<Point> & wf, double xa, double xb, int sign )
 {
@@ -475,13 +452,6 @@ bool Noumerov1d::execute()
 			int num_trial = spectrum[Qb.level - lvl_lo].num_trial;
 			if ( ( spectrum[Qb.level - lvl_lo].num_trial == 0 )	|| spectrum[Qb.level - lvl_lo].werror > Qb.werror )	{
 				// found a new one or better one
-
-				// for debuging, try to systematically alter the found Energy
-				double tmp = Qb.werror;
-				Qb.E += sys_err_correct;
-				evaluate_energy( Qb );
-				Qb.werror = tmp;	// pretend its the pre-correction error
-
 				spectrum[Qb.level - lvl_lo] = Qb;
 				DEBUG_SHOW4( num_trial, Qb.level, Qb.E, Qb.werror );
 			}
