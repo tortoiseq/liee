@@ -21,7 +21,7 @@
 	#define INFO_SHOW2(a,b) LOG4CXX_INFO(logger, #a << "=" << (a) << "\t" << #b << "=" << (b) );
 	#define INFO_SHOW3(a,b,c) LOG4CXX_INFO(logger, #a << "=" << (a) << "\t" << #b << "=" << (b) << "\t" << #c << "=" << (c) );
 	#define INFO_SHOW4(a,b,c,d) LOG4CXX_INFO(logger, #a << "=" << (a) << "\t" << #b << "=" << (b) << "\t" << #c << "=" << (c) << "\t" << #d << "=" << (d) );
-	#define DBG_TRACE LOG4CXX_TRACE(logger, __FILE__ << " :: " << __FUNCTION__ << "() #" << __LINE__);
+	#define DBG_TRACE LOG4CXX_DEBUG(logger, __FILE__ << " :: " << __FUNCTION__ << "() #" << __LINE__);
 
 	#define DECLARE_LOGGER log4cxx::LoggerPtr logger;
 	#define GET_LOGGER(name) logger = log4cxx::Logger::getLogger(name);
@@ -234,6 +234,12 @@ void parse_datafile( const string filename, vector<double> & data );
 double sum( const vector<double> & x );
 double arithmetic_mean( const vector<double> & x );
 double variance( const vector<double> & x );
+
+/*!
+ * Gives the distance between the nearest grid-position: i*step and pos
+ */
+double offgrid( double pos, double step );
+
 
 //----------------------------very basic juggling-------------------------------------------------------------
 

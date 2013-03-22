@@ -25,6 +25,7 @@ struct Integration_Rec
 	double xb;				///< Right classical turning point
 	double a;				///< Left integration bound
 	double b;				///< Right integration bound
+	double dx;				///< maximum step size
 	double middle;
 	bool fixed_bounds;		///< if true, then keep bounds fixed to assure final convergence
 	vector<Point> blend;
@@ -68,6 +69,7 @@ struct Integration_Rec
 		ar & xb;
 		ar & a;
 		ar & b;
+		ar & dx;
 		ar & middle;
 		ar & fixed_bounds;
 		ar & num_trial;
@@ -131,14 +133,14 @@ public:
 	void try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, Integration_Rec& ir3, Integration_Rec& ir4 );
 
 private:
-	void noumerovate( double Q, double a, double b, vector<Point> & solution );
+	void noumerovate( double Q, double a, double m, double b, double dx, vector<Point> & solution );
 	double penetrate_border( double Q, double x_turn, double d, double not_less_than );
 
 	void save_graph( string & filename, vector<Point>& data );
 	void save_results( string & filename );
 	void blend_wf( Integration_Rec& ir );
-	bool is_integer( double d, double epsilon );
-	void normalize( vector<Point> & wf, double xa, double xb, int sign );
+	void normalize_area( vector<Point> & wf, double xa, double xb, int sign );
+	void scale_to_matching_midpoint( Integration_Rec& ir );
 	double mean_square_error( Integration_Rec& ir );
 	size_t count_nodes( vector<Point>& wf );
 	bool target_missed_levels( double& Q_bottom, double& Q_top );

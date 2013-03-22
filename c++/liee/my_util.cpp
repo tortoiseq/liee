@@ -497,4 +497,16 @@ double variance( const vector<double> & x )
 	return var;
 }
 
+double offgrid( double pos, double step )
+{
+	double c = abs(pos - ceil(pos / step) * step);
+	double f = abs(pos - floor(pos / step) * step);
+	if ( c < f ) {
+		return c;
+	}
+	else {
+		return f;
+	}
+}
+
 } //namespace liee

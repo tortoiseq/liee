@@ -92,29 +92,13 @@ void Noumerov1d::summarize( map<string, string> & results )
 }
 
 /*!
- * Is the given floating point number d closer than epsilon to the nearest integer?
- */
-bool Noumerov1d::is_integer( double d, double epsilon )
-{
-	double df = abs( floor( d ) - d );
-	double dc = abs( ceil( d ) - d );
-
-	if ( df < epsilon  ||  dc < epsilon ) {
-		return true;
-	}
-	else return false;
-}
-
-/*!
  * Integrates from inner point a to outer b for estimated energy eigenvalue E
  * (negative dx interchanges inner and outer point)
  */
-void Noumerov1d::noumerovate( double Q, double a, double b, vector<Point> & solution )
+void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx, vector<Point> & solution )
 {
-//	DEBUG_BEACON("%");
-//	DEBUG_SHOW3( Q, a, b );
-	double dx = abs(a - b) / N_min;
-	b = a + dx * ceil( (b - a) / dx ); // make sure a and b are separated by dx times an integer
+	//DEBUG_SHOW4(Q, a, m, b);
+	//DEBUG_SHOW(dx);
 	double cumulative_error;
 	double u_next;
 	double steps_needed = N_min / 2;
@@ -125,11 +109,9 @@ void Noumerov1d::noumerovate( double Q, double a, double b, vector<Point> & solu
 		cumulative_error = 0;
 		steps_needed *= 2.0;
 		steps_took = 1;
-		double h;
 		double h_ = pow( epsilon / 7.2 / steps_needed / pow( (pot->Vr( a, 0 ) - Q) / 6, 3.0 ), 1.0/6 );		//(3.2)
-
-		h = dx; // maximal step size
-		while ( h > h_ ) {	// h has to satisfy: dx / 2^i   ;i being an integer
+		double h = dx; // maximal step size
+		while ( abs(h) > h_ ) {	// h has to satisfy: dx / 2^i   ;i being an integer
 			h /= 2.0;
 		}
 		if ( b < a ) h *= -1;	// reverse direction with negative step size
@@ -138,7 +120,7 @@ void Noumerov1d::noumerovate( double Q, double a, double b, vector<Point> & solu
 
 		double u_last, u_this, T_last, T_this, T_next;
 		double x = a + h; //points at 'u_next'
-		double homerun = abs( a - b );
+		double homerun;
 
 		T_this = h2o6 * (pot->Vr( a, 0 ) - Q);        //(2.7);
 		u_this = 1.0;
@@ -161,8 +143,8 @@ void Noumerov1d::noumerovate( double Q, double a, double b, vector<Point> & solu
 			cumulative_error += 7.2 * pow( abs( T_next ), 3 );
 			solution.push_back( Point( x, u_next ) );
 
-			homerun = abs( x - b );
-			// save distance from finish     && |T| much smaller than thresh. && not exceeding max step size
+			homerun = abs( x - m );
+			// save distance from middle     && |T| much smaller than thresh. && not exceeding max step size
 			if ( homerun > abs( 4.0 * h ) && abs( T_next ) < T_thresh / 10.0  &&  abs(2.0 * h) <= dx ) {
 				// double step size
 				h *= 2.0;
@@ -174,8 +156,8 @@ void Noumerov1d::noumerovate( double Q, double a, double b, vector<Point> & solu
 			}
 			// if |T| exceeds save value
 			else if ( abs( T_next ) > T_thresh ||
-			// or         close to finish      && current step size would miss exact finish point, (but don't get too tiny)
-					( (homerun < abs( 2.0 * h) && (not is_integer( homerun / h, 5e-3 )) && (dx / h < 1024) ) ) )
+			// or         close to middle        && current step size would miss exact midpoint
+					( homerun < abs( 4.0 * dx )  &&  offgrid( homerun, abs(h) ) < 1e-6 * dx ) )
 			{
 				// half step size
 				double x0 = x - 0.5 * h;
@@ -187,7 +169,8 @@ void Noumerov1d::noumerovate( double Q, double a, double b, vector<Point> & solu
 				u_this = ( (1.0 - T_next) * u_next + (1.0 - h2o6 * (pot->Vr( x0 - h, 0 ) - Q)) * u_this ) / (2.0 + 10.0 * T_this); //(3.5)
 			}
 
-		} while ( homerun > abs( h / 2.0 ) ); //we want to end the loop with x->next ~=~ b and two previous samples
+		} while ( (x < b && h > 0) || (x > b && h < 0) ); //overshoot the midpoint till reached b
+		//DEBUG_SHOW3( x, b, h );
 		// here was the slope calculation
 	}
 	// we _really_ want no error bigger than epsilon, so repeat the whole integration with smaller
@@ -261,7 +244,7 @@ void Noumerov1d::blend_wf( Integration_Rec& rec )
  * This normalisation neglects the tails because the integration at
  * least in one direction is subject to larger erros.
  */
-void Noumerov1d::normalize( vector<Point> & wf, double xa, double xb, int sign )
+void Noumerov1d::normalize_area( vector<Point> & wf, double xa, double xb, int sign )
 {
 	vector<Point> wf_sqr;
 	for ( size_t i = 0; i < wf.size(); i++ ) {
@@ -306,6 +289,50 @@ double Noumerov1d::mean_square_error( Integration_Rec& rec )
 	return result;
 }
 
+/*!
+ *	Normalising both branches to area=1 might cause a small mismatch at the common midpoint due to inaccuracies.
+ *	This Method re-scales, in order to have a smooth transition.
+ *
+ *	This method is probably not needed and currently only logs what would have been done, so the alleged benefit
+ *	can be estimated. For now it seems that the y-mismatch is by and large a function of the x-mismatch and that
+ *	the area-normalisation works reasonably well. It seems to scale again does more harm than good.
+ */
+void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
+{
+	if ( ir.leftwards.size() == 0 || ir.rightwards.size() == 0 ) {
+		evaluate_energy( ir );	// have to reevaluate if data got cleared
+	}
+	//TODO-performance cache the midpoint index instead of finding it again, or at least use phone-book strategy
+	int midi_left;
+	double closest = ir.b - ir.a;
+	for( size_t i = 0; i < ir.leftwards.size(); i++ ) {		// dumb but surely effective, elaborate above TODO if overall plan has worked out
+		if ( abs( ir.leftwards[i].x - ir.middle ) < closest ) {
+			midi_left = i;
+			closest = abs( ir.leftwards[i].x - ir.middle );
+		}
+	}
+	int midi_right;
+	closest = ir.b - ir.a;
+	for( size_t i = 0; i < ir.rightwards.size(); i++ ) {		// dumb but surely effective, elaborate above TODO if overall plan has worked out
+		if ( abs( ir.rightwards[i].x - ir.middle ) < closest ) {
+			midi_right = i;
+			closest = abs( ir.rightwards[i].x - ir.middle );
+		}
+	}
+
+	double mid_offset = ir.leftwards[midi_left].x - ir.rightwards[midi_right].x;
+	double scale = ir.leftwards[midi_left].y / ir.rightwards[midi_right].y;
+	DEBUG_SHOW3( ir.middle, mid_offset, (scale-1.0) );
+	return;	// testing
+
+	// only scale if reasonably close match (last polish)
+	if ( abs(scale - 1) < 1e-3 ) {
+		for( size_t i = 0; i < ir.rightwards.size(); i++ ) {
+			ir.rightwards[i].y *= scale;
+		}
+	}
+}
+
 double Noumerov1d::evaluate_energy( Integration_Rec& ir )
 {
 	if ( not ir.fixed_bounds )
@@ -313,19 +340,23 @@ double Noumerov1d::evaluate_energy( Integration_Rec& ir )
 		pot->get_outer_turningpoints( ir.E, ir.xa, ir.xb );
 		ir.a = penetrate_border( ir.E, ir.xa, 1e-10 * (ir.xa - ir.xb), ir.xa );
 		ir.b = penetrate_border( ir.E, ir.xb, 1e-10 * (ir.xb - ir.xa), ir.xb );
+		ir.dx = abs(ir.xa - ir.xb) / N_min;
 		ir.middle = 0.5 * (ir.xa + ir.xb);
+		ir.a = ir.middle - ir.dx * ceil( (ir.middle - ir.a) / ir.dx ); // make sure a and middle are separated by dx times an integer
+		ir.b = ir.middle - ir.dx * ceil( (ir.middle - ir.b) / ir.dx ); // both end-points shifted slightly in order to be located on the same dx-grid with the middle
+
 	}
 	ir.rightwards.clear();
 	ir.leftwards.clear();
 	int sign = 1;
-	noumerovate( ir.E, ir.a, ir.xb, ir.rightwards );
-	normalize( ir.rightwards, ir.xa, ir.xb, sign );
+	noumerovate( ir.E, ir.a, ir.middle, ir.xb, ir.dx, ir.rightwards );
+	normalize_area( ir.rightwards, ir.xa, ir.xb, sign );
 	if ( ir.rightwards.back().y < 0 ) {
 		sign = -1;
 	}
-	noumerovate( ir.E, ir.b, ir.xa, ir.leftwards );
+	noumerovate( ir.E, ir.b, ir.middle, ir.xa, ir.dx, ir.leftwards );
 	std::sort( ir.leftwards.begin(), ir.leftwards.end(), less_than_point_x() );
-	normalize( ir.leftwards, ir.xa, ir.xb, sign );
+	normalize_area( ir.leftwards, ir.xa, ir.xb, sign );
 
 	blend_wf( ir );
 	ir.level = count_nodes( ir.blend );
@@ -445,13 +476,13 @@ bool Noumerov1d::execute()
 			continue;
 		}
 
-		LOG_DEBUG( "Converged at level " << Qb.level << " with Energy " << Qb.E << " \t remaining difference: " << Qb.werror );;
-
+		//LOG_DEBUG( "Converged at level " << Qb.level << " with Energy " << Qb.E << " \t remaining difference: " << Qb.werror );;
 		if ( Qb.level <= lvl_up  && Qb.level >= lvl_lo )
 		{
 			int num_trial = spectrum[Qb.level - lvl_lo].num_trial;
 			if ( ( spectrum[Qb.level - lvl_lo].num_trial == 0 )	|| spectrum[Qb.level - lvl_lo].werror > Qb.werror )	{
 				// found a new one or better one
+				//scale_to_matching_midpoint( Qb );	// only check if there is a step at the midpoint
 				spectrum[Qb.level - lvl_lo] = Qb;
 				DEBUG_SHOW4( num_trial, Qb.level, Qb.E, Qb.werror );
 			}
@@ -469,7 +500,7 @@ bool Noumerov1d::execute()
 			// nothing left to target or iteration limit reached
 			break;
 		}
-		DEBUG_SHOW2( Q_bottom, Q_top );
+		//DEBUG_SHOW2( Q_bottom, Q_top );
 	}
 
 	// save wave functions and free memory
