@@ -92,7 +92,7 @@ void Noumerov1d::summarize( map<string, string> & results )
 }
 
 /*!
- * Integrates from inner point a to outer b for estimated energy eigenvalue E
+ * Integrates from inner point a to outer b for estimated energy eigenvalue Q
  * (negative dx interchanges inner and outer point)
  */
 void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx, vector<Point> & solution )
@@ -194,10 +194,10 @@ double Noumerov1d::penetrate_border( double Q, double x_turn, double d, double n
     do {
     	d *= 2.0; //increase penetration to the left until A is sufficiently large (triangle estimation)
     	if ( ( pot->Vr( x_turn + d, 0 ) - Q ) < 0 ) {
-    		A = 0;;
+    		A = 0;
     	}
     	else {
-    		A = 0.5 * abs( d ) * sqrt( 2.0 * ( pot->Vr( x_turn + d, 0 ) - Q ) );;
+    		A = 0.5 * abs( d ) * sqrt( 2.0 * ( pot->Vr( x_turn + d, 0 ) - Q ) );
     	}
 
     } while ( A < -log( tail_tiny ) );;
@@ -205,13 +205,13 @@ double Noumerov1d::penetrate_border( double Q, double x_turn, double d, double n
     double x = x_turn;;
     // start integrating (sum) all over again with a step-size of 1/1000 of the estimated penetration depth
     for ( A = 0.0; ; x += d / 1000.0 ) {
-    	if ( real( pot->V( x, 0 ) ) < Q ) continue;;
+    	if ( real( pot->V( x, 0 ) ) < Q ) continue;
     	if ( A > -log( tail_tiny ) ) {
-    		if ( d > 0  &&  x > not_less_than ) break;;
-    		if ( d < 0  &&  x < not_less_than ) break;;
+    		if ( d > 0  &&  x > not_less_than ) break;
+    		if ( d < 0  &&  x < not_less_than ) break;
     	}
-    	A += abs( d ) / 1000.0 * sqrt( 2.0 * ( pot->Vr( x, 0 ) - Q ) );;
-    }
+    	A += abs( d ) / 1000.0 * sqrt( 2.0 * ( pot->Vr( x, 0 ) - Q ) );
+    };;
     // to fulfil the not_less_than condition, outward integration would go further than the allowed underflow ttoo_tiny,
     if ( A > -log( ttoo_tiny ) ) {
     	throw Except__Too_Far_Out( __LINE__ );;
@@ -241,20 +241,73 @@ void Noumerov1d::blend_wf( Integration_Rec& rec )
 }
 
 /*!
+ * Too many samples cause things to break. This method drops expendable samples, e.g. those which
+ * are closer to the predecessor than a given portion.
+ * Example: portion_to_drop == 0.5
+ * 				all samples with distances smaller than the median distance
+ * 				to the predecessor are dropped, but NEVER two consecutive samples.
+ *
+ * Performance tip: This method is meant to be a lifeline when in serious trouble to overshoot,
+ * avoid situations which call this method often, by choosing parameters compatible with reasonable sample rates.
+ */
+void Noumerov1d::drop_overly_dense_samples( vector<Point> & wf, double portion_to_drop )
+{
+	vector<double> histogram;;
+	histogram.resize( wf.size()-1 );;
+	for ( size_t i = 1; i < wf.size(); i++ ) {
+		histogram[i] = abs( wf[i].x - wf[i-1].x );
+	};;
+	std::sort( histogram.begin(), histogram.end() );;
+	size_t i = (size_t)( portion_to_drop * histogram.size() );;
+	if ( i < 0 || i > histogram.size() ) {
+		LOG4CXX_FATAL( logger, "drop_overly_dense_samples could not find threshold element" ); //TODO for debug, no need to check in final code
+	}
+	double threshold = histogram[i];;
+	histogram.clear();;
+
+	vector<Point> temp;
+	bool dropped_last = false;;
+	temp.push_back( wf[0] );;
+	for ( size_t i = 1; i < wf.size()-1; i++ ) {
+		if ( abs( wf[i].x - wf[i-1].x ) >= threshold || dropped_last ) {
+			dropped_last = false;
+			temp.push_back( wf[i] );
+		} else {
+			dropped_last = true;
+		}
+	};;
+	temp.push_back( wf[ wf.size()-1 ] );;
+	wf = temp;
+	DEBUG_SHOW( wf.size() );;
+}
+
+/*!
  * Normalise the area between the classical turning points to equal 1.
  * This normalisation neglects the tails because the integration at
  * least in one direction is subject to larger erros.
  */
 void Noumerov1d::normalize_area( vector<Point> & wf, double xa, double xb, int sign )
 {
+	/*
+	while ( wf.size() > 200000 ) {
+		drop_overly_dense_samples( wf, 0.5 );;
+		DEBUG_SHOW( wf.size() );;
+	}*/
+	if ( wf.size() > 200000 ) throw Except__Preconditions_Fail( __LINE__ );
+
 	vector<Point> wf_sqr;;
 	for ( size_t i = 0; i < wf.size(); i++ ) {
 		wf_sqr.push_back( Point( wf[i].x, pow( wf[i].y, 2.0 ) ) );
 	}
+
+#ifdef ALGLIB
 	alglib::spline1dinterpolant spline = to_cubic_spline( wf_sqr );;
 	double A0_xa = alglib::spline1dintegrate( spline, xa );;
 	double A0_xb = alglib::spline1dintegrate( spline, xb );;
 	double A = A0_xb - A0_xa;;
+#else
+	double A = simple_integrate( wf_sqr, xa, xb );;
+#endif
 
 	double norm_factor = sign / sqrt( A );;
 	for ( size_t i = 0; i < wf.size(); i++ ) {
@@ -264,8 +317,13 @@ void Noumerov1d::normalize_area( vector<Point> & wf, double xa, double xb, int s
 
 double Noumerov1d::mean_square_error( Integration_Rec& rec )
 {
+#ifdef ALGLIB
 	alglib::spline1dinterpolant sp1 = to_cubic_spline( rec.leftwards );;
 	alglib::spline1dinterpolant sp2 = to_cubic_spline( rec.rightwards );;
+#else
+	Linear_Interpolant sp1( rec.leftwards );;
+	Linear_Interpolant sp2( rec.rightwards );;
+#endif
 
 	vector<double> sample_positions;;
 	BOOST_FOREACH( Point p, rec.leftwards ) {
@@ -285,7 +343,11 @@ double Noumerov1d::mean_square_error( Integration_Rec& rec )
 	// weight in favour of centring points
 	BOOST_FOREACH( double x, sample_positions ) {
 		double weight = exp( -pow( (x - rec.middle) / sigma , 2.0) );
+#ifdef ALGLIB
 		result += weight * pow( alglib::spline1dcalc( sp1, x ) - alglib::spline1dcalc( sp2, x ), 2.0 );
+#else
+		result += weight * pow( sp1.interpol(x) - sp2.interpol(x), 2.0 );
+#endif
 	};;
 	return result;
 }
@@ -360,6 +422,7 @@ double Noumerov1d::evaluate_energy( Integration_Rec& ir )
 	normalize_area( ir.leftwards, ir.xa, ir.xb, sign );;
 
 	blend_wf( ir );;
+	//DEBUG_SHOW( ir.blend.size() );
 	ir.level = count_nodes( ir.blend );;
 	ir.werror = mean_square_error( ir );;
 	return ir.werror;
@@ -380,8 +443,7 @@ void Noumerov1d::try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, 
 		if ( ir1.E > ir3.E || ir2.E > ir3.E ) {
 			throw Except__Preconditions_Fail( __LINE__ );
 		}
-		double x1a, x3a, x1b, x3b;;
-		double a1, a3, b1, b3;
+		double x1a, x3a, x1b, x3b, a3, b3;;
 		// first find integration bounds for E3 which is higher and therefore reach out farther
 		pot->get_outer_turningpoints( ir3.E, x3a, x3b );;
 		a3 = penetrate_border( ir3.E, x3a, 1e-10 * (x3a - x3b), x3a );;
@@ -390,8 +452,8 @@ void Noumerov1d::try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, 
 		// then set integration bounds for Q1 under the condition to reach at least as far as for Q2
 		pot->get_outer_turningpoints( ir1.E, x1a, x1b );;
 		try {
-			a1 = penetrate_border( ir1.E, x1a, 1e-10 * (x1a - x1b), a3 );;
-			b1 = penetrate_border( ir1.E, x1b, 1e-10 * (x1b - x1a), b3 );;
+			penetrate_border( ir1.E, x1a, 1e-10 * (x1a - x1b), a3 );;
+			penetrate_border( ir1.E, x1b, 1e-10 * (x1b - x1a), b3 );;
 		}
 		catch ( Except__Too_Far_Out & e ) {
 			// failure: E1 and E3 are too far apart to have common bounds (and to fixate them)
@@ -455,7 +517,7 @@ void Noumerov1d::save_results( string & filename )
  */
 bool Noumerov1d::execute()
 {
-	LOG_INFO( "Searching for Eigenstates in interval [" << Q_lo << " .. " << Q_up << "]" );;
+	LOG_INFO( "Searching for Eigenstates in interval [" << Q_lo*CONV_au_eV << " .. " << Q_up*CONV_au_eV << "]" );;
 	Noum_Golden_Section_Search golden( 1e-15 );;
 	size_t lvls = lvl_up - lvl_lo + 1;;
 	spectrum.resize( lvls );;
@@ -485,9 +547,8 @@ bool Noumerov1d::execute()
 				// found a new one or better one
 				//scale_to_matching_midpoint( Qb );	// only check if there is a step at the midpoint
 				spectrum[Qb.level - lvl_lo] = Qb;;
-				DEBUG_SHOW4( num_trial, Qb.level, Qb.E, Qb.werror );
 			}
-			DEBUG_SHOW4( iteration, num_trial, spectrum[Qb.level-lvl_lo].werror, Qb.werror);
+			DEBUG_SHOW4( num_trial, Qb.level, Qb.E*CONV_au_eV, Qb.werror);
 			spectrum[Qb.level - lvl_lo].num_trial = num_trial + 1;;
 		}
 		else if ( Qb.level > lvl_up ) {
@@ -509,9 +570,9 @@ bool Noumerov1d::execute()
 		save_results( filename );;
 	}
 	BOOST_FOREACH( Integration_Rec r, spectrum ) {
-		r.leftwards.resize( 0 );
-		r.rightwards.resize( 0 );
-		r.blend.resize( 0 );
+		r.leftwards.clear();
+		r.rightwards.clear();
+		r.blend.clear();
 	};;
 	return true;
 }
@@ -563,6 +624,7 @@ bool Noumerov1d::target_missed_levels( double & Q_bottom, double & Q_top )
 
 void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec& a, Integration_Rec& b, Integration_Rec& c )
 {
+	log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger( "Noum_Golden_Section_Search" );
 	Integration_Rec d( a );;
 	provider->evaluate_energy( a );
 	a.clear();							// clear the data, since for the moment we are only interested in E

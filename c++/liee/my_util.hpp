@@ -12,6 +12,10 @@
 #ifndef MY_UTIL_H_
 #define MY_UTIL_H_
 
+
+#define AT(a) at(a);
+//#define AT(a) [a];
+
 #ifdef LOG_ENABLED
 	#define DEBUG_SHOW(a) LOG4CXX_DEBUG(logger, #a << "=" << (a) );
 	#define DEBUG_SHOW2(a,b) LOG4CXX_DEBUG(logger, #a << "=" << (a) << "\t" << #b << "=" << (b) );
@@ -64,6 +68,7 @@
 #include <vector>
 #include <map>
 #include <complex>
+#include <assert.h>
 
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/split_free.hpp>
@@ -136,6 +141,65 @@ struct less_than_point_x
     {
         return ( p1.x  < p2.x );
     }
+};
+
+/*
+ * Simplistic alternative for ALGLIB's cubic spline.
+ */
+struct Linear_Interpolant
+{
+	vector<Point>& d;
+	int pos;
+
+	Linear_Interpolant( vector<Point>& data ) : d(data), pos(0)
+	{
+		std::sort( d.begin(), d.end(), less_than_point_x() );
+	}
+
+	double interpol( double x )	{
+		if ( x == d.at(pos).x ) return d.at(pos).y;
+
+		// to find the point in our data nearest to the requested x, determine in which direction to move (starting from the cached position of last call)
+		int dir = 1;
+		if ( x < d.at(pos).x ) { dir = -1; }
+		double nearest = 2 * abs( d.front().x - d.back().x );
+
+		size_t i, j = pos;
+		while ( i >= 0 && i < d.size() && abs( d.at(i).x - x ) < nearest ) {	// move until the distance to x gets bigger again
+			nearest = abs( d.at(i).x - x );
+			pos = i;	// cache the index, because next request is probably close to it
+			i += dir;
+		}
+		i = pos;	// last step was one too far
+		double xi = d.at(i).x;
+		double yi = d.at(i).y;
+
+		if ( x == xi ) return d.at(i).y;
+
+		if ( i == 0 && x < xi ) {	// extrapolate towards left
+			double dx = x - xi;
+			double m = ( d.at(i+1).y - yi ) / ( d.at(i+1).x - xi );
+			return yi + m * dx;
+		}
+
+		if ( i == d.size()-1  &&  x > xi ) {	// extrapolate towards right
+			double dx = x - xi;
+			double m = ( yi - d.at(i-1).y ) / ( xi - d.at(i-1).x );
+			return yi + m * dx;
+		}
+
+		j = i + 1;
+		if ( x < xi ) {			// make sure that: xi < xj  &&  i < j
+			j = i;
+			i = j - 1;
+			xi = d.at(i).x;
+			yi = d.at(i).y;
+		}
+		double xj = d.at(j).x;
+		double yj = d.at(j).y;
+		// linear interpolation
+		return yi + (x-xi) * (yj-yi) / (xj-xi);
+	}
 };
 
 alglib::spline1dinterpolant to_cubic_spline( vector<Point>& data );
@@ -235,10 +299,11 @@ double sum( const vector<double> & x );
 double arithmetic_mean( const vector<double> & x );
 double variance( const vector<double> & x );
 
-/*!
- * Gives the distance between the nearest grid-position: i*step and pos
- */
+/*! Gives the distance between the nearest grid-position: i*step and pos */
 double offgrid( double pos, double step );
+
+/* Trapezoid rule summation over sampled data, integration bounds a, b */
+double simple_integrate( const vector<Point> data, double a, double b );
 
 
 //----------------------------very basic juggling-------------------------------------------------------------

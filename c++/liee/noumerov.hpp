@@ -28,8 +28,8 @@ struct Integration_Rec
 	double dx;				///< maximum step size
 	double middle;
 	bool fixed_bounds;		///< if true, then keep bounds fixed to assure final convergence
-	vector<Point>* blend;
-	vector<Point>* rightwards, leftwards;
+	vector<Point> blend;
+	vector<Point> rightwards, leftwards;
 	int num_trial;
 
 	// default constructor
@@ -48,9 +48,9 @@ struct Integration_Rec
 
 	void clear()
 	{
-		delete( blend );
-		delete( rightwards );
-		delete( leftwards );
+		blend.clear();
+		rightwards.clear();
+		leftwards.clear();
 	}
 
     inline bool operator> ( const Integration_Rec& that )
@@ -133,14 +133,14 @@ public:
 	void try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, Integration_Rec& ir3, Integration_Rec& ir4 );
 
 private:
-	vector<Point>* noumerovate( double Q, double a, double m, double b, double dx );
+	void noumerovate( double Q, double a, double m, double b, double dx, vector<Point> & solution );
 	double penetrate_border( double Q, double x_turn, double d, double not_less_than );
 
-	void save_graph( string & filename, vector<Point>* data );
+	void save_graph( string & filename, vector<Point>& data );
 	void save_results( string & filename );
 	void blend_wf( Integration_Rec& ir );
-	vector<Point>* drop_overly_dense_samples( vector<Point> & wf, double portion_to_drop );
-	void normalize_area( vector<Point>& wf, double xa, double xb, int sign );
+	void drop_overly_dense_samples( vector<Point> & wf, double portion_to_drop );
+	void normalize_area( vector<Point> & wf, double xa, double xb, int sign );
 	void scale_to_matching_midpoint( Integration_Rec& ir );
 	double mean_square_error( Integration_Rec& ir );
 	size_t count_nodes( vector<Point>& wf );
