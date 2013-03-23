@@ -13,9 +13,6 @@
 #define MY_UTIL_H_
 
 
-#define AT(a) at(a);
-//#define AT(a) [a];
-
 #ifdef LOG_ENABLED
 	#define DEBUG_SHOW(a) LOG4CXX_DEBUG(logger, #a << "=" << (a) );
 	#define DEBUG_SHOW2(a,b) LOG4CXX_DEBUG(logger, #a << "=" << (a) << "\t" << #b << "=" << (b) );
