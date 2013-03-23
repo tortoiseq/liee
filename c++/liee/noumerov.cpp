@@ -141,6 +141,7 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 			T_next = h2o6 * (pot->Vr( x, 0 ) - Q);        //(2.7);
 			u_next = ((2.0 + 10.0 * T_this) * u_this - (1.0 - T_last) * u_last) / (1.0 - T_next);  //(2.8)
 			cumulative_error += 7.2 * pow( abs( T_next ), 3 );
+			if ( isinf(u_next) ) throw Except__Too_Far_Out( __LINE__ );
 			solution.push_back( Point( x, u_next ) );
 
 			homerun = abs( x - m );
@@ -398,28 +399,41 @@ void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
 
 double Noumerov1d::evaluate_energy( Integration_Rec& ir )
 {
-	if ( not ir.fixed_bounds )
-	{
-		pot->get_outer_turningpoints( ir.E, ir.xa, ir.xb );;
-		ir.a = penetrate_border( ir.E, ir.xa, 1e-10 * (ir.xa - ir.xb), ir.xa );;
-		ir.b = penetrate_border( ir.E, ir.xb, 1e-10 * (ir.xb - ir.xa), ir.xb );;
-		ir.dx = abs(ir.xa - ir.xb) / N_min;;
-		ir.middle = 0.5 * (ir.xa + ir.xb);;
-		ir.a = ir.middle - ir.dx * ceil( (ir.middle - ir.a) / ir.dx );; // make sure a and middle are separated by dx times an integer
-		ir.b = ir.middle - ir.dx * ceil( (ir.middle - ir.b) / ir.dx );; // both end-points shifted slightly in order to be located on the same dx-grid with the middle
+	again:;
+	try {
+		if ( not ir.fixed_bounds )
+		{
+			pot->get_outer_turningpoints( ir.E, ir.xa, ir.xb );;
+			ir.a = penetrate_border( ir.E, ir.xa, 1e-10 * (ir.xa - ir.xb), ir.xa );;
+			ir.b = penetrate_border( ir.E, ir.xb, 1e-10 * (ir.xb - ir.xa), ir.xb );;
+			ir.dx = abs(ir.xa - ir.xb) / N_min;;
+			ir.middle = 0.5 * (ir.xa + ir.xb);;
+			ir.a = ir.middle - ir.dx * ceil( (ir.middle - ir.a) / ir.dx );; // make sure a and middle are separated by dx times an integer
+			ir.b = ir.middle - ir.dx * ceil( (ir.middle - ir.b) / ir.dx );; // both end-points shifted slightly in order to be located on the same dx-grid with the middle
 
+		}
+		ir.rightwards.clear();;
+		ir.leftwards.clear();;
+		int sign = 1;;
+		noumerovate( ir.E, ir.a, ir.middle, ir.xb, ir.dx, ir.rightwards );;
+		normalize_area( ir.rightwards, ir.xa, ir.xb, sign );;
+		if ( ir.rightwards.back().y < 0 ) {
+			sign = -1;
+		}
+		noumerovate( ir.E, ir.b, ir.middle, ir.xa, ir.dx, ir.leftwards );;
+		std::sort( ir.leftwards.begin(), ir.leftwards.end(), less_than_point_x() );;
+		normalize_area( ir.leftwards, ir.xa, ir.xb, sign );;
+	} catch ( Except__Too_Far_Out & e ) {
+		LOG_WARN( "Hit an infinite value when integrating Numerov. Increase parameter tail_tiny_range[] if this warning appears often!" );
+		ir.rightwards.clear();
+		ir.leftwards.clear();
+		if ( ir.fixed_bounds ) {
+			LOG_WARN( "Trying to reevaluate without fixed bounds." );
+			ir.fixed_bounds = false;
+			goto again;
+		}
+		else throw e;
 	}
-	ir.rightwards.clear();;
-	ir.leftwards.clear();;
-	int sign = 1;;
-	noumerovate( ir.E, ir.a, ir.middle, ir.xb, ir.dx, ir.rightwards );;
-	normalize_area( ir.rightwards, ir.xa, ir.xb, sign );;
-	if ( ir.rightwards.back().y < 0 ) {
-		sign = -1;
-	}
-	noumerovate( ir.E, ir.b, ir.middle, ir.xa, ir.dx, ir.leftwards );;
-	std::sort( ir.leftwards.begin(), ir.leftwards.end(), less_than_point_x() );;
-	normalize_area( ir.leftwards, ir.xa, ir.xb, sign );;
 
 	blend_wf( ir );;
 	//DEBUG_SHOW( ir.blend.size() );
@@ -523,8 +537,9 @@ bool Noumerov1d::execute()
 	spectrum.resize( lvls );;
 	double Q_bottom = Q_lo;;
 	double Q_top = Q_up;;
+	int error_counter = 0;
 
-	while ( true )
+	while ( iteration < max_iterations )
 	{
 		Integration_Rec Qa, Qb, Qc;;
 		Qa.E = Q_bottom + ((double)rand() / (double)RAND_MAX) * (Q_top - Q_bottom);
@@ -536,6 +551,16 @@ bool Noumerov1d::execute()
 		}
 		catch ( Except__Preconditions_Fail & e ) {
 			// evaluation of the three energies could not bracket a minimum --> retry
+			iteration++;
+			;; continue;
+		}
+		catch ( Except__Too_Far_Out & e ) {
+			// evaluation of one of the three energies hit infinity --> retry
+			iteration++;
+			if ( error_counter++ > 13 ) {
+				LOG_FATAL("Hit too often infinity during integration! Must exit before memory leakage causes real trouble!")
+				break;
+			}
 			;; continue;
 		}
 
@@ -557,22 +582,20 @@ bool Noumerov1d::execute()
 		else if ( Qb.level < lvl_lo ) {
 			Q_bottom = Q_lo = Qb.E;;
 		}
-
-		if ( (not target_missed_levels( Q_bottom, Q_top )) || ++iteration > max_iterations ) {
-			// nothing left to target or iteration limit reached
-			break;
-		}
+		iteration++;
+		if ( not target_missed_levels( Q_bottom, Q_top ) )	break;	// nothing left to target
 		//DEBUG_SHOW2( Q_bottom, Q_top );
 	};;
+	if ( iteration >= max_iterations ) {
+		LOG_WARN("Giving up! Reached maximum number of allowed minimisation attempts in Numerov.");
+	}
 
 	// save wave functions and free memory
 	if ( filename.size() > 0 ) {
 		save_results( filename );;
 	}
 	BOOST_FOREACH( Integration_Rec r, spectrum ) {
-		r.leftwards.clear();
-		r.rightwards.clear();
-		r.blend.clear();
+		r.clear();
 	};;
 	return true;
 }
