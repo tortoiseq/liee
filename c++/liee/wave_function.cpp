@@ -26,7 +26,7 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 
 	double dr = config->getParam("dr")->value * 1e-9 / CONV_au_m;
 	double r_range = config->getParam("r_range")->value * 1e-9 / CONV_au_m;
-	double r_start = pot->r_start;
+	double r_start = pot->get_r_start();
 	int Nr = 1 + r_range / dr;
 
 	//bool complex = config->getParam("complex"]->text.compare("true") == 0; //TODO(depricated)

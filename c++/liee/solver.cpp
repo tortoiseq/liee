@@ -177,7 +177,9 @@ void Crank_Nicholson::evolve_1step()
 {
 	// update potential and recalculate 'd'
     for (size_t j=0; j < Nr; j++) {
-   		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx(0.0, dt / 4.0) * potential->V( potential->r_start + dr * j, t ); //#(45)
+   		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx(0.0, dt / 4.0) * potential->V( potential->get_r_start() + dr * j, t ); //#(45)
+
+   				//
     }
 
     alfa[0] = d[0];

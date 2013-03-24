@@ -130,7 +130,7 @@ void Obs_Tunnel_Ratio::initialize( Conf_Module* config, vector<Module*> dependen
 	ra = config->getParam("r_a")->value / CONV_au_nm;
 	rb = config->getParam("r_b")->value / CONV_au_nm;
 	if ( ra < 0 ) ra = 0;
-	if ( rb > pot->r_range ) { rb = pot->r_range; }
+	if ( rb > pot->get_r_range() ) { rb = pot->get_r_range(); }
 
 	// temporal downsampling
 	t_range = config->getParam("t_range")->value / CONV_au_fs;

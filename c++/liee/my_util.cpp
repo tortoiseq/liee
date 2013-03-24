@@ -184,13 +184,18 @@ alglib::spline1dinterpolant to_cubic_spline( vector<Point> & data )
     alglib_impl::ae_vector_set_length( &vec_x, data.size(), &my_state);
     alglib_impl::ae_vector_set_length( &vec_y, data.size(), &my_state );
 
-//	FILE* f = fopen( "debug.dat", "w" );
+    //stringstream ss;
+    //ss << "debug-" << time(0) << "-" << clock();
+	//FILE* f = fopen( ss.str().c_str(), "w" );
     for( size_t i = 0; i < data.size(); i++ ) {
         vec_x.ptr.p_double[i] = data[i].x;
         vec_y.ptr.p_double[i] = data[i].y;
-//		fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
+		//fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
+    	if ( isnan( data[i].x * data[i].y ) || isinf( data[i].y ) || isinf( data[i].x ) ) {
+    		throw Except__Preconditions_Fail( __LINE__ );
+    	}
     }
-//	fclose( f );
+	//fclose( f );
 
     alglib::real_1d_array arr_x( &vec_x );
     alglib::real_1d_array arr_y( &vec_y );
@@ -508,5 +513,18 @@ double offgrid( double pos, double step )
 		return f;
 	}
 }
+
+double simple_integrate( const vector<Point> data, double a, double b )
+{
+	double A = 0;
+	for(size_t i = 1; i < data.size(); i++ ) {
+		if ( data.at(i).x > a && data.at(i).x < b ) {
+			A += 0.5 * ( data.at(i).y + data.at(i-1).y ) * ( data.at(i).x - data.at(i-1).x );	// trapezoid rule
+		}
+		else if ( data.at(i).x >= b ) break;
+	}
+	return A;
+}
+
 
 } //namespace liee
