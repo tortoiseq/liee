@@ -33,15 +33,19 @@ public:
 	map<string, bool> EXECUTION_REQUIRED;
 
 	Module_Factory() {
-		EXECUTION_REQUIRED["gauss_envelope"] 		= false;
-		EXECUTION_REQUIRED["gauss_slm"]		 		= false;
-		EXECUTION_REQUIRED["harmonic_osci"] 		= false;
-		EXECUTION_REQUIRED["metal_surface"] 		= false;
-		EXECUTION_REQUIRED["wf_reader"] 			= false;
-		EXECUTION_REQUIRED["wf_snapshots"] 			= false;
-		EXECUTION_REQUIRED["tunnel_ratio"] 			= false;
-		EXECUTION_REQUIRED["crank_nicholson"] 		= true;
-		EXECUTION_REQUIRED["noumerov"] 				= true;
+		EXECUTION_REQUIRED["main_pot"] 			= false;
+		EXECUTION_REQUIRED["gaussian"]			= false;
+		EXECUTION_REQUIRED["SLM"] 				= false;
+		EXECUTION_REQUIRED["round_well"] 		= false;
+		EXECUTION_REQUIRED["harmonic_osci"] 	= false;
+		EXECUTION_REQUIRED["metal_surface"] 	= false;
+		EXECUTION_REQUIRED["zero_pot"] 			= false;
+
+		EXECUTION_REQUIRED["wf_reader"] 		= false;
+		EXECUTION_REQUIRED["wf_snapshots"] 		= false;
+		EXECUTION_REQUIRED["tunnel_ratio"] 		= false;
+		EXECUTION_REQUIRED["crank_nicholson"] 	= true;
+		EXECUTION_REQUIRED["noumerov"] 			= true;
 	}
 
 	static Module* assemble( string & type, string & name )
@@ -53,31 +57,43 @@ public:
 	{
 		DECLARE_LOGGER
 		GET_LOGGER( "liee.Module_Factory" );
-		if ( m->type.compare( "potential" ) == 0 && m->name.compare( "gauss_envelope" ) == 0 ) {
-			Pot_Gauss* p = dynamic_cast<Pot_Gauss*>( m );;
+		if ( m->type.compare( "potential" ) == 0 && m->name.compare( "main_pot" ) == 0 ) {
+			Potential* p = dynamic_cast<Potential*>( m );;
 			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
-			LOG_DEBUG( "writing as Potential_1");;
+			LOG_DEBUG( "writing as Potential");;
 			*oarch << p;;
 		}
-		else if ( m->type.compare( "potential" ) == 0 && m->name.compare( "harmonic_osci" ) == 0 ) {
+		else if ( m->type.compare( "pulse" ) == 0 && m->name.compare( "gaussian" ) == 0 ) {
+			Gaussian_Pulse* p = dynamic_cast<Gaussian_Pulse*>( m );;
+			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
+			LOG_DEBUG( "writing as Gaussian_Pulse");;
+			*oarch << p;;
+		}
+		else if ( m->type.compare( "pulse" ) == 0 && m->name.compare( "SLM" ) == 0 ) {
+			Spatial_Light_Modificator* p = dynamic_cast<Spatial_Light_Modificator*>( m );;
+			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
+			LOG_DEBUG( "Spatial_Light_Modificator");;
+			*oarch << p;;
+		}
+		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "round_well" ) == 0 ) {
+			Pot_Round_Well_wImage* p = dynamic_cast<Pot_Round_Well_wImage*>( m );;
+			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
+			LOG_DEBUG( "writing as Pot_Harm_Oscillator");;
+			*oarch << p;;
+		}
+		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "harmonic_osci" ) == 0 ) {
 			Pot_Harm_Oscillator* p = dynamic_cast<Pot_Harm_Oscillator*>( m );;
 			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
 			LOG_DEBUG( "writing as Pot_Harm_Oscillator");;
 			*oarch << p;;
 		}
-		else if ( m->type.compare( "potential" ) == 0 && m->name.compare( "gauss_slm" ) == 0 ) {
-			Pot_GaussSLM* p = dynamic_cast<Pot_GaussSLM*>( m );;
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
-			LOG_DEBUG( "writing as Pot_GaussSLM");;
-			*oarch << p;;
-		}
-		else if ( m->type.compare( "potential" ) == 0 && m->name.compare( "metal_surface" ) == 0 ) {
+		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "metal_surface" ) == 0 ) {
 			Chulkov_Image_Potential* p = dynamic_cast<Chulkov_Image_Potential*>( m );;
 			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
 			LOG_DEBUG( "writing as Chulkov_Image_Potential");;
 			*oarch << p;;
 		}
-		else if ( m->type.compare( "potential" ) == 0 && m->name.compare( "zero_pot" ) == 0 ) {
+		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "zero_pot" ) == 0 ) {
 			Zero_Pot* p = dynamic_cast<Zero_Pot*>( m );;
 			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");;
 			LOG_DEBUG( "writing as Zero_Potential");;
@@ -115,33 +131,44 @@ public:
 		}
 	}
 
+
 	static Module* load( string & type, string & name, boost::archive::binary_iarchive* iarch )
 	{
 		DECLARE_LOGGER
 		GET_LOGGER( "liee.Module_Factory" );
 		Module* m;;
 
-		if ( type.compare( "potential" ) == 0 && name.compare( "gauss_envelope" ) == 0 ) {
-			Pot_Gauss* p = new Pot_Gauss();;
+		if ( type.compare( "potential" ) == 0 && name.compare( "main_pot" ) == 0 ) {
+			Potential* p = new Potential();;
 			if ( iarch != NULL ) *iarch >> p;;
 			m = p;;
 		}
-		else if ( type.compare( "potential" ) == 0 && name.compare( "harmonic_osci" ) == 0 ) {
+		else if ( type.compare( "pulse" ) == 0 && name.compare( "gaussian" ) == 0 ) {
+			Gaussian_Pulse* p = new Gaussian_Pulse();;
+			if ( iarch != NULL ) *iarch >> p;;
+			m = p;;
+		}
+		else if ( type.compare( "pulse" ) == 0 && name.compare( "SLM" ) == 0 ) {
+			Spatial_Light_Modificator* p = new Spatial_Light_Modificator();;
+			if ( iarch != NULL ) *iarch >> p;;
+			m = p;;
+		}
+		else if ( type.compare( "pot_const" ) == 0 && name.compare( "round_well" ) == 0 ) {
+			Pot_Round_Well_wImage* p = new Pot_Round_Well_wImage;;
+			if ( iarch != NULL ) *iarch >> p;;
+			m = p;;
+		}
+		else if ( type.compare( "pot_const" ) == 0 && name.compare( "harmonic_osci" ) == 0 ) {
 			Pot_Harm_Oscillator* p = new Pot_Harm_Oscillator();;
 			if ( iarch != NULL ) *iarch >> p;;
 			m = p;;
 		}
-		else if ( type.compare( "potential" ) == 0 && name.compare( "gauss_slm" ) == 0 ) {
-			Pot_GaussSLM* p = new Pot_GaussSLM();;
-			if ( iarch != NULL ) *iarch >> p;;
-			m = p;;
-		}
-		else if ( type.compare( "potential" ) == 0 && name.compare( "metal_surface" ) == 0 ) {
+		else if ( type.compare( "pot_const" ) == 0 && name.compare( "metal_surface" ) == 0 ) {
 			Chulkov_Image_Potential* p = new Chulkov_Image_Potential();;
 			if ( iarch != NULL ) *iarch >> p;;
 			m = p;;
 		}
-		else if ( type.compare( "potential" ) == 0 && name.compare( "zero_pot" ) == 0 ) {
+		else if ( type.compare( "pot_const" ) == 0 && name.compare( "zero_pot" ) == 0 ) {
 			Zero_Pot* p = new Zero_Pot();;
 			if ( iarch != NULL ) *iarch >> p;;
 			m = p;;

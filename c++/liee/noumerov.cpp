@@ -19,7 +19,7 @@ void Noumerov1d::register_dependencies( vector<Module*> dependencies )
 		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
 			LOG_INFO( "found a potential to use");
 			pot = dynamic_cast<Potential*>( dependencies[i] );;
-			double V_min = pot->Vr( pot->get_Vmin_pos(), 0.0 );;
+			double V_min = pot->getPot_const()->V( pot->getPot_const()->get_Vmin_pos() );;
 			if ( Q_lo < V_min ) {
 				Q_lo = V_min;;
 			}
@@ -403,7 +403,7 @@ double Noumerov1d::evaluate_energy( Integration_Rec& ir )
 	try {
 		if ( not ir.fixed_bounds )
 		{
-			pot->get_outer_turningpoints( ir.E, ir.xa, ir.xb );;
+			pot->getPot_const()->get_outer_turningpoints( ir.E, ir.xa, ir.xb );;
 			ir.a = penetrate_border( ir.E, ir.xa, 1e-10 * (ir.xa - ir.xb), ir.xa );;
 			ir.b = penetrate_border( ir.E, ir.xb, 1e-10 * (ir.xb - ir.xa), ir.xb );;
 			ir.dx = abs(ir.xa - ir.xb) / N_min;;
@@ -459,12 +459,12 @@ void Noumerov1d::try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, 
 		}
 		double x1a, x3a, x1b, x3b, a3, b3;;
 		// first find integration bounds for E3 which is higher and therefore reach out farther
-		pot->get_outer_turningpoints( ir3.E, x3a, x3b );;
+		pot->getPot_const()->get_outer_turningpoints( ir3.E, x3a, x3b );;
 		a3 = penetrate_border( ir3.E, x3a, 1e-10 * (x3a - x3b), x3a );;
 		b3 = penetrate_border( ir3.E, x3b, 1e-10 * (x3b - x3a), x3b );;
 
 		// then set integration bounds for Q1 under the condition to reach at least as far as for Q2
-		pot->get_outer_turningpoints( ir1.E, x1a, x1b );;
+		pot->getPot_const()->get_outer_turningpoints( ir1.E, x1a, x1b );;
 		try {
 			penetrate_border( ir1.E, x1a, 1e-10 * (x1a - x1b), a3 );;
 			penetrate_border( ir1.E, x1b, 1e-10 * (x1b - x1a), b3 );;
