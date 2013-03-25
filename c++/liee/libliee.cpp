@@ -32,7 +32,7 @@ extern "C" void init_potential()
     {
     	// find the potential, assemble and initialise
     	if ( config->chain[i]->type.compare( "potential" ) == 0 ) {
-    		Module* m = factory.assemble( config->chain[i]->type, config->chain[i]->name );
+    		Module* m = factory.assemble( config->chain[i]->type, config->chain[i]->name, config->chain[i]->serial );
     		vector<Module*> deps;	// empty since not used in potential
     		m->initialize( config->chain[i], deps );
     		my_pot = dynamic_cast<Potential*>( m );

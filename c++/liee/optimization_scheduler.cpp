@@ -352,7 +352,7 @@ void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job,
     vector<Module*> deps;
     BOOST_FOREACH( Conf_Module* cm, templ.chain ) {
     	if ( cm->stage != 1 ) continue; // the app is concerned with stage-1 only, e.g. tasks for compute-hosts
-    	Module* m = Module_Factory::assemble( cm->type, cm->name );
+    	Module* m = Module_Factory::assemble( cm->type, cm->name, cm->serial );
     	m->estimate_effort( cm, flops, ram, disk );
     }
     cout << "flops/ram/disk:" << flops << "\t" << ram << "\t" << disk << "\n";

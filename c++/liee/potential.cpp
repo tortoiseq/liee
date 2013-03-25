@@ -91,13 +91,17 @@ inline double Gaussian_Pulse::electric_field( double t )
 void Potential::register_dependencies( vector<Module*> dependencies )
 {
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
-		if ( dependencies[i]->type.compare("pot_const") == 0 ) {
-			LOG_INFO( "found a static potential to use");;
+		if ( dependencies[i]->type.compare("pot_const") == 0  &&  dependencies[i]->serial == reg_serials[0] ) {
+			LOG_INFO( "found a static potential to use: " + dependencies[i]->name);;
 			well = dynamic_cast<Pot_const*>( dependencies[i] );
 		}
 		else if ( dependencies[i]->type.compare("pulse") == 0 ) {
-			LOG_INFO( "found a laser pulse to use");;
-			pulses.push_back( dynamic_cast<Laser_Field*>( dependencies[i] ) );
+			for( size_t id = 1; id < reg_serials.size(); id++ ) {
+				if ( reg_serials[id] == dependencies[i]->serial ) {
+					LOG_INFO( "found a laser pulse to use: " + dependencies[i]->name );;
+					pulses.push_back( dynamic_cast<Laser_Field*>( dependencies[i] ) );
+				}
+			}
 		}
 	}
 }
@@ -126,6 +130,12 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	dx_sample = pos_range / (int_samples - 1);
 	for( size_t i = 0; i < int_samples; i++ ) {
 		Pulse_samples[i] = Point( i * dx_sample, 0.0 );
+	}
+
+	// save the relevant module id's of constant potential and pulses and register them
+	reg_serials.push_back( (int)config->getParam("my_pot_const")->value );
+	BOOST_FOREACH( double serial, config->getParam("my_pulses")->values ) {
+		reg_serials.push_back( (int) serial );
 	}
 	register_dependencies( dependencies );
 }
@@ -240,10 +250,12 @@ void Spatial_Light_Modificator::register_dependencies( vector<Module*> dependenc
 {
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare("pulse") == 0 ) {
-			LOG_INFO( "found a laser pulse to use");;
-			o_pulse = dynamic_cast<Laser_Field*>( dependencies[i] );
-			break; 	// TODO here we just take the first pulse, but it's important to check "target",
-					// because parameter-file can have multiple pulses for different purposes
+			for( size_t id = 1; id < pulse_serials.size(); id++ ) {
+				if ( pulse_serials[id] == dependencies[i]->serial ) {
+					LOG_INFO( "found a laser pulse to use: " + dependencies[i]->name );;
+					pulses.push_back( dynamic_cast<Laser_Field*>( dependencies[i] ) );
+				}
+			}
 		}
 	}
 }
@@ -251,6 +263,9 @@ void Spatial_Light_Modificator::register_dependencies( vector<Module*> dependenc
 void Spatial_Light_Modificator::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_GaussSLM" );
+	BOOST_FOREACH( double serial, config->getParam("orig_pulses")->values ) {
+		pulse_serials.push_back( (int) serial );
+	}
 	register_dependencies( dependencies );
 
 	//TODO improve the following sandbox code!

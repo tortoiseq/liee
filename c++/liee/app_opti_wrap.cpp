@@ -147,12 +147,12 @@ int main( int argc, char* argv[] )
     	Module* m;;
     	if ( i <= last_i_stored ) {
         	LOG_DEBUG( "load from state stored in checkpoint archive" );;
-   			m = factory.load( cnf.chain[i]->type, cnf.chain[i]->name, iarch );;
+   			m = factory.load( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial, iarch );;
    			m->reinitialize( cnf.chain[i], deps );;
     	}
     	else {
         	LOG_DEBUG( "assemble from config and initialise" );;
-    		m = factory.assemble( cnf.chain[i]->type, cnf.chain[i]->name );;
+    		m = factory.assemble( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial );;
    			m->initialize( cnf.chain[i], deps );;
     	}
 

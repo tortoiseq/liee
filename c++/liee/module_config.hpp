@@ -126,6 +126,7 @@ protected:
 public:
 	string name;
 	string type;
+	int serial;		//< id defined in parameter file
 
 	virtual ~Module() {}
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies ) = 0;

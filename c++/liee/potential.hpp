@@ -135,7 +135,8 @@ public:
 	virtual void summarize( map<string, string> & results );
 
 private:
-	Laser_Field* o_pulse;
+	vector<Laser_Field*> pulses;
+	vector<int> pulse_serials;		///< remember which dependency modules to register
 	double L;
 	double st;
 
@@ -144,6 +145,7 @@ protected:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
+    	ar & pulse_serials;
         ar & L;
         ar & st;
     }
@@ -182,6 +184,8 @@ public:
 private:
 	Pot_const* well;
 	vector<Laser_Field*> pulses;
+	vector<int> reg_serials;		///< remember which dependency modules to register
+
 
 	double r_range;
 	double r_start;
@@ -208,6 +212,7 @@ protected:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
+    	ar & reg_serials;
     	ar & r_range;
     	ar & r_start;
         ar & wcap;

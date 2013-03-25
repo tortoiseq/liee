@@ -48,9 +48,9 @@ public:
 		EXECUTION_REQUIRED["noumerov"] 			= true;
 	}
 
-	static Module* assemble( string & type, string & name )
+	static Module* assemble( string & type, string & name, int serial )
 	{
-		return load( type, name, NULL );
+		return load( type, name, serial, NULL );
 	}
 
 	static void store( Module*  m, boost::archive::binary_oarchive* oarch )
@@ -132,7 +132,7 @@ public:
 	}
 
 
-	static Module* load( string & type, string & name, boost::archive::binary_iarchive* iarch )
+	static Module* load( string & type, string & name, int serial, boost::archive::binary_iarchive* iarch )
 	{
 		DECLARE_LOGGER
 		GET_LOGGER( "liee.Module_Factory" );
@@ -201,6 +201,7 @@ public:
 
 		m->type = type;;
 		m->name = name;;
+		m->serial = serial;
 		return m;
 	}
 
