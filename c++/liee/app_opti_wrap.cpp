@@ -127,87 +127,87 @@ int main( int argc, char* argv[] )
 	logger = log4cxx::Logger::getLogger( "liee.app_opti_wrap" );
 #endif
 
-    ifstream ifs("checkpoint.archive");;
-    boost::archive::binary_iarchive* iarch = NULL;;
+    ifstream ifs("checkpoint.archive");
+    boost::archive::binary_iarchive* iarch = NULL;
     if ( ifs ) {
-    	LOG_DEBUG( "Found checkpoint file" );;
-    	iarch = new boost::archive::binary_iarchive( ifs );;
-    	*iarch >> last_i_stored;;
-    	LOG_DEBUG( "last_i_stored = " << last_i_stored );;
+    	LOG_DEBUG( "Found checkpoint file" );
+    	iarch = new boost::archive::binary_iarchive( ifs );
+    	*iarch >> last_i_stored;
+    	LOG_DEBUG( "last_i_stored = " << last_i_stored );
     }
     else {
-    	LOG_DEBUG( "NO checkpoint file present" );;
+    	LOG_DEBUG( "NO checkpoint file present" );
     }
 
     for ( int i = 0; i < (int)cnf.chain.size(); i++ )
     {
-    	LOG_INFO( "Chain step " << i << ": " << cnf.chain[i]->type << " -> " << cnf.chain[i]->name );;
+    	LOG_INFO( "Chain step " << i << ": " << cnf.chain[i]->type << " -> " << cnf.chain[i]->name );
     	// load or construct or ignore?
     	if ( cnf.chain[i]->stage != 1 ) continue; // this app is concerned with stage-1 only, e.g. tasks for compute-hosts
-    	Module* m;;
+    	Module* m;
     	if ( i <= last_i_stored ) {
-        	LOG_DEBUG( "load from state stored in checkpoint archive" );;
-   			m = factory.load( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial, iarch );;
-   			m->reinitialize( cnf.chain[i], deps );;
+        	LOG_DEBUG( "load from state stored in checkpoint archive" );
+   			m = factory.load( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial, iarch );
+   			m->reinitialize( cnf.chain[i], deps );
     	}
     	else {
-        	LOG_DEBUG( "assemble from config and initialise" );;
-    		m = factory.assemble( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial );;
-   			m->initialize( cnf.chain[i], deps );;
+        	LOG_DEBUG( "assemble from config and initialise" );
+    		m = factory.assemble( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial );
+   			m->initialize( cnf.chain[i], deps );
     	}
 
     	// initialised or reconstructed module to store to dependencies
-    	deps.push_back( m );;
+    	deps.push_back( m );
 
     	if ( factory.EXECUTION_REQUIRED[ m->name ] )
     	{
-    		Module_Exec* me = dynamic_cast<Module_Exec*>( m );;
+    		Module_Exec* me = dynamic_cast<Module_Exec*>( m );
 
-    		if ( me->exec_done ) LOG_DEBUG( "module has executed already" );;
+    		if ( me->exec_done ) LOG_DEBUG( "module has executed already" );
 
     		// continue with execution
     		while ( not me->exec_done )
     		{
-            	LOG_DEBUG( "In (run - checkpoint ..) -loop" );;
-    			bool done = me->execute();;
-    			me->exec_done = done;;		// just in case the module forgot to set this flag
+            	LOG_DEBUG( "In (run - checkpoint ..) -loop" );
+    			bool done = me->execute();
+    			me->exec_done = done;		// just in case the module forgot to set this flag
 
     			// returning from execution without being done means we need to save the checkpoint
     			if ( not done )
     			{
-                	LOG_DEBUG( "Not yet done, but need to checkpoint" );;
-    				if ( ifs ) ifs.close();;
-    		        boinc_begin_critical_section();;
-    			    ofstream ofstream( "checkpoint.archive" );;
-    			    boost::archive::binary_oarchive oarch( ofstream );;
-    			    oarch << i;; //save last_i_stored
+                	LOG_DEBUG( "Not yet done, but need to checkpoint" );
+    				if ( ifs ) ifs.close();
+    		        boinc_begin_critical_section();
+    			    ofstream ofstream( "checkpoint.archive" );
+    			    boost::archive::binary_oarchive oarch( ofstream );
+    			    oarch << i; //save last_i_stored
 
     			    for ( size_t j = 0; j < deps.size(); j++ ) {
-    			    	LOG_DEBUG( "SAVING " << j << "..." );;
-   			    		factory.store( deps[j], &oarch );;	// let the factory store the module, because only there the exact type is known
+    			    	LOG_DEBUG( "SAVING " << j << "..." )
+   			    		factory.store( deps[j], &oarch );	// let the factory store the module, because only there the exact type is known
     			    }
-    			    ofstream.close();;
-    		        boinc_end_critical_section();;
-    		        boinc_checkpoint_completed();;
+    			    ofstream.close();
+    		        boinc_end_critical_section();
+    		        boinc_checkpoint_completed();
     			} else {
-    				LOG_DEBUG( "DONE!" );;
+    				LOG_DEBUG( "DONE!" );
     			}
     		}
     	}
     	if ( m->type.compare( "observer" ) != 0 ) { // observers need to wait and see before they can summarise their findings
-    		m->summarize( results );;
+    		m->summarize( results );
     	}
     }
 
     for ( size_t i = 0; i < deps.size(); i++ ) {
     	if ( deps[i]->type.compare( "observer" ) == 0 ) {
-    		deps[i]->summarize( results );;
+    		deps[i]->summarize( results );
     	}
     }
 
-    boinc_begin_critical_section();;
-    cnf.save_text( "summary.txt", results );;
-	LOG_INFO( "Re-packaging liee_outfile and about to exit");;
+    boinc_begin_critical_section();
+    cnf.save_text( "summary.txt", results );
+	LOG_INFO( "Re-packaging liee_outfile and about to exit")
 	// from here on: NO MORE LOGGING
 
 #ifdef LOG_ENABLED

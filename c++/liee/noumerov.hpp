@@ -33,11 +33,8 @@ struct Integration_Rec
 	int num_trial;
 
 	// default constructor
-	Integration_Rec( )
-	{
-		num_trial = 0;
-		fixed_bounds = false;
-	}
+	Integration_Rec( ) : E(0), werror(0), level(0), xa(0), xb(0), a(0), b(0), dx(0),
+			middle(0), fixed_bounds(false), num_trial(0) {}
 
 	void set_bounds( double a, double b, double xa, double xb, bool fixed )
 	{
@@ -97,8 +94,6 @@ public:
 	string filename;
 	bool is_objective;
 	string target_E;
-
-	Noumerov1d() {}
 
 	void register_dependencies( vector<Module*> dependencies );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );

@@ -21,8 +21,8 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 		}
 	}
 
-    string resolved_name;;
-    boinc_resolve_filename_s( config->getParam("INFILE")->text.c_str(), resolved_name );;
+    string resolved_name;
+    boinc_resolve_filename_s( config->getParam("INFILE")->text.c_str(), resolved_name );
 
 	double dr = config->getParam("dr")->value * 1e-9 / CONV_au_m;
 	double r_range = config->getParam("r_range")->value * 1e-9 / CONV_au_m;
@@ -36,7 +36,7 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 	double r_min = parsed[0];
 	double r_max = parsed[ parsed.size() - 2 ];
 	DEBUG_SHOW2(r_min, r_max);
-	LOG_INFO( "Read " << parsed.size() / 2 << "WF samples from file" );;
+	LOG_INFO( "Read " << parsed.size() / 2 << "WF samples from file" )
 
 	for( size_t i = 0; i < parsed.size()-2; i++ ) {
 		if ( i % 2 == 0 ) {

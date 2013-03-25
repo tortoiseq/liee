@@ -388,7 +388,7 @@ class Golden_Section_Search
 public:
 	double tol;
 	double fmin;
-	Golden_Section_Search( double tolerance ) : tol( tolerance ) {}
+	Golden_Section_Search( double tolerance ) : tol( tolerance ), fmin(0) {}
 
 	double minimize( boost::function<double (double)> func, const double a, const double b, const double c );
 };

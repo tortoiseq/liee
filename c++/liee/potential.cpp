@@ -92,13 +92,13 @@ void Potential::register_dependencies( vector<Module*> dependencies )
 {
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare("pot_const") == 0  &&  dependencies[i]->serial == reg_serials[0] ) {
-			LOG_INFO( "found a static potential to use: " + dependencies[i]->name);;
+			LOG_INFO( "found a static potential to use: " + dependencies[i]->name)
 			well = dynamic_cast<Pot_const*>( dependencies[i] );
 		}
 		else if ( dependencies[i]->type.compare("pulse") == 0 ) {
 			for( size_t id = 1; id < reg_serials.size(); id++ ) {
 				if ( reg_serials[id] == dependencies[i]->serial ) {
-					LOG_INFO( "found a laser pulse to use: " + dependencies[i]->name );;
+					LOG_INFO( "found a laser pulse to use: " + dependencies[i]->name )
 					pulses.push_back( dynamic_cast<Laser_Field*>( dependencies[i] ) );
 				}
 			}
@@ -252,7 +252,7 @@ void Spatial_Light_Modificator::register_dependencies( vector<Module*> dependenc
 		if ( dependencies[i]->type.compare("pulse") == 0 ) {
 			for( size_t id = 1; id < pulse_serials.size(); id++ ) {
 				if ( pulse_serials[id] == dependencies[i]->serial ) {
-					LOG_INFO( "found a laser pulse to use: " + dependencies[i]->name );;
+					LOG_INFO( "found a laser pulse to use: " + dependencies[i]->name )
 					pulses.push_back( dynamic_cast<Laser_Field*>( dependencies[i] ) );
 				}
 			}

@@ -103,11 +103,11 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 	//TODO when we have more than just the Crank-Nicholson, this code needs to move to Solver::register_dependencies
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare("potential") == 0 ) {
-			LOG_INFO( "found potential to use");;
+			LOG_INFO( "found potential to use")
 			potential = dynamic_cast<Potential*>( dependencies[i] );
 		}
 		else if ( count == 0  &&  dependencies[i]->type.compare("initial_wf") == 0 ) {
-			LOG_INFO( "found initial WV to use");;
+			LOG_INFO( "found initial WV to use")
 			Wave_Function* wf = dynamic_cast<Wave_Function*>( dependencies[i] );
 
 			this->psi.resize( Nr );
@@ -122,7 +122,7 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 		}
 		else if ( dependencies[i]->type.compare("observer") == 0 ) {
 			//TODO check, if observer's->target matches this->serial
-			LOG_INFO( "found an observer to use");;
+			LOG_INFO( "found an observer to use")
 			obs.push_back( dynamic_cast<Observer*>( dependencies[i] ) );
 		}
 	}
