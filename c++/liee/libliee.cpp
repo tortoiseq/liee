@@ -16,29 +16,35 @@ namespace lib_liee {
 extern "C" void init_potential()
 {
     Module_Factory factory;
-    Config* config;
+    Config* cnf;
     try {
-    	config = new Config( "liee_parameter.xml" );
+    	cnf = new Config( "liee_parameter.xml" );
     }
     catch ( Except__Preconditions_Fail & e )
     {
     	if ( e.specification_code == 6544 ) {
-    		config = new Config( "liee_parameter.XML" );	// try if the auto-renamed parameter file is present instead of the default one
+    		cnf = new Config( "liee_parameter.XML" );	// try if the auto-renamed parameter file is present instead of the default one
     	}
     	else { throw e; }
     }
 
-    for ( int i = 0; i < (int)config->chain.size(); i++ )
+    // go over the chain like in app_opti_wrap.cpp to assemble the required Modules (but don't execute any tasks)
+    vector<Module*> deps;
+    for ( int i = 0; i < (int)cnf->chain.size(); i++ )
     {
-    	// find the potential, assemble and initialise
-    	if ( config->chain[i]->type.compare( "potential" ) == 0 ) {
-    		Module* m = factory.assemble( config->chain[i]->type, config->chain[i]->name, config->chain[i]->serial );
-    		vector<Module*> deps;	// empty since not used in potential
-    		m->initialize( config->chain[i], deps );
+    	if ( cnf->chain[i]->stage != 1 ) continue; // only concerned with stage-1 only, e.g. tasks for compute-hosts
+
+    	Module* m;
+   		m = factory.assemble( cnf->chain[i]->type, cnf->chain[i]->name, cnf->chain[i]->serial );
+		m->initialize( cnf->chain[i], deps );
+    	deps.push_back( m );
+
+    	if ( cnf->chain[i]->type.compare( "potential" ) == 0 ) {
     		my_pot = dynamic_cast<Potential*>( m );
     	}
     }
-    delete config;
+
+    delete cnf;
 }
 
 extern "C" void calc_potential( double r, double t, double & V_real, double & V_imag )
