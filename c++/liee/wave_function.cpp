@@ -33,6 +33,10 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 	vector<double> parsed;
 	vector<Point> wave_funct;
 	parse_datafile( resolved_name, parsed );
+	if ( parsed.size() == 0 ) {
+		LOG_FATAL( "Can't read WF data (file not found): " + resolved_name );
+		Except__Preconditions_Fail( __LINE__ );
+	}
 	double r_min = parsed[0];
 	double r_max = parsed[ parsed.size() - 2 ];
 	DEBUG_SHOW2(r_min, r_max);

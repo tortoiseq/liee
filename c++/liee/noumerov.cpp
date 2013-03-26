@@ -18,8 +18,9 @@ void Noumerov1d::register_dependencies( vector<Module*> dependencies )
 	for ( size_t i = 0; i < dependencies.size(); i++) {
 		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
 			LOG_INFO( "found a potential to use");
-			pot = dynamic_cast<Potential*>( dependencies[i] );
-			double V_min = pot->getPot_const()->V( pot->getPot_const()->get_Vmin_pos() );
+			Potential* main_pot = dynamic_cast<Potential*>( dependencies[i] );
+			pot = main_pot->getPot_const();
+			double V_min = pot->V( pot->get_Vmin_pos() );
 			if ( Q_lo < V_min ) {
 				Q_lo = V_min;
 			}
@@ -109,7 +110,7 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 		cumulative_error = 0;
 		steps_needed *= 2.0;
 		steps_took = 1;
-		double h_ = pow( epsilon / 7.2 / steps_needed / pow( (pot->Vr( a, 0 ) - Q) / 6, 3.0 ), 1.0/6 );		//(3.2)
+		double h_ = pow( epsilon / 7.2 / steps_needed / pow( (pot->V( a ) - Q) / 6, 3.0 ), 1.0/6 );		//(3.2)
 		double h = dx; // maximal step size
 		while ( abs(h) > h_ ) {	// h has to satisfy: dx / 2^i   ;i being an integer
 			h /= 2.0;
@@ -122,9 +123,9 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 		double x = a + h; //points at 'u_next'
 		double homerun;
 
-		T_this = h2o6 * (pot->Vr( a, 0 ) - Q);        //(2.7);
+		T_this = h2o6 * (pot->V( a ) - Q);        //(2.7);
 		u_this = 1.0;
-		T_next = h2o6 * (pot->Vr( x, 0 ) - Q);        //(2.7);
+		T_next = h2o6 * (pot->V( x ) - Q);        //(2.7);
 		u_next = exp( sqrt( 3.0 * T_this ) + sqrt( 3.0 * T_next ) );    //(7.3)
 		cumulative_error += 7.2 * pow( abs( T_next ), 3 );
 		solution.push_back( Point( a, u_this ) );
@@ -138,7 +139,7 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 			x += h; //points at 'u_next'
 			steps_took++;
 
-			T_next = h2o6 * (pot->Vr( x, 0 ) - Q);        //(2.7);
+			T_next = h2o6 * (pot->V( x ) - Q);        //(2.7);
 			u_next = ((2.0 + 10.0 * T_this) * u_this - (1.0 - T_last) * u_last) / (1.0 - T_next);  //(2.8)
 			cumulative_error += 7.2 * pow( abs( T_next ), 3 );
 			if ( isinf(u_next) ) throw Except__Too_Far_Out( __LINE__ );
@@ -166,8 +167,8 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 				h2o6 *= 0.25;
 				T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );		//(3.2)
 				T_next /= 4.0;
-				T_this = h2o6 * (pot->Vr( x0, 0 ) - Q);
-				u_this = ( (1.0 - T_next) * u_next + (1.0 - h2o6 * (pot->Vr( x0 - h, 0 ) - Q)) * u_this ) / (2.0 + 10.0 * T_this); //(3.5)
+				T_this = h2o6 * (pot->V( x0 ) - Q);
+				u_this = ( (1.0 - T_next) * u_next + (1.0 - h2o6 * (pot->V( x0 - h ) - Q)) * u_this ) / (2.0 + 10.0 * T_this); //(3.5)
 			}
 		} while ( (x < b && h > 0) || (x > b && h < 0) ); //overshoot the midpoint till reached b
 		//DEBUG_SHOW3( x, b, h );
@@ -194,11 +195,11 @@ double Noumerov1d::penetrate_border( double Q, double x_turn, double d, double n
     double A; // area under sqrt(V) beyond turning points
     do {
     	d *= 2.0; //increase penetration to the left until A is sufficiently large (triangle estimation)
-    	if ( ( pot->Vr( x_turn + d, 0 ) - Q ) < 0 ) {
+    	if ( ( pot->V( x_turn + d ) - Q ) < 0 ) {
     		A = 0;
     	}
     	else {
-    		A = 0.5 * abs( d ) * sqrt( 2.0 * ( pot->Vr( x_turn + d, 0 ) - Q ) );
+    		A = 0.5 * abs( d ) * sqrt( 2.0 * ( pot->V( x_turn + d ) - Q ) );
     	}
 
     } while ( A < -log( tail_tiny ) );
@@ -206,12 +207,12 @@ double Noumerov1d::penetrate_border( double Q, double x_turn, double d, double n
     double x = x_turn;
     // start integrating (sum) all over again with a step-size of 1/1000 of the estimated penetration depth
     for ( A = 0.0; ; x += d / 1000.0 ) {
-    	if ( real( pot->V( x, 0 ) ) < Q ) continue;
+    	if ( pot->V( x ) < Q ) continue;
     	if ( A > -log( tail_tiny ) ) {
     		if ( d > 0  &&  x > not_less_than ) break;
     		if ( d < 0  &&  x < not_less_than ) break;
     	}
-    	A += abs( d ) / 1000.0 * sqrt( 2.0 * ( pot->Vr( x, 0 ) - Q ) );
+    	A += abs( d ) / 1000.0 * sqrt( 2.0 * ( pot->V( x ) - Q ) );
     }
     // to fulfil the not_less_than condition, outward integration would go further than the allowed underflow ttoo_tiny,
     if ( A > -log( ttoo_tiny ) ) {
@@ -261,7 +262,7 @@ void Noumerov1d::drop_overly_dense_samples( vector<Point> & wf, double portion_t
 	std::sort( histogram.begin(), histogram.end() );
 	size_t i = (size_t)( portion_to_drop * histogram.size() );
 	if ( i < 0 || i > histogram.size() ) {
-		LOG4CXX_FATAL( logger, "drop_overly_dense_samples could not find threshold element" ); //TODO for debug, no need to check in final code
+		LOG_FATAL( "drop_overly_dense_samples could not find threshold element" ); //TODO for debug, no need to check in final code
 	}
 	double threshold = histogram[i];
 	histogram.clear();
@@ -403,7 +404,7 @@ double Noumerov1d::evaluate_energy( Integration_Rec& ir )
 	try {
 		if ( not ir.fixed_bounds )
 		{
-			pot->getPot_const()->get_outer_turningpoints( ir.E, ir.xa, ir.xb );
+			pot->get_outer_turningpoints( ir.E, ir.xa, ir.xb );
 			ir.a = penetrate_border( ir.E, ir.xa, 1e-10 * (ir.xa - ir.xb), ir.xa );
 			ir.b = penetrate_border( ir.E, ir.xb, 1e-10 * (ir.xb - ir.xa), ir.xb );
 			ir.dx = abs(ir.xa - ir.xb) / N_min;
@@ -459,12 +460,12 @@ void Noumerov1d::try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, 
 		}
 		double x1a, x3a, x1b, x3b, a3, b3;
 		// first find integration bounds for E3 which is higher and therefore reach out farther
-		pot->getPot_const()->get_outer_turningpoints( ir3.E, x3a, x3b );
+		pot->get_outer_turningpoints( ir3.E, x3a, x3b );
 		a3 = penetrate_border( ir3.E, x3a, 1e-10 * (x3a - x3b), x3a );
 		b3 = penetrate_border( ir3.E, x3b, 1e-10 * (x3b - x3a), x3b );
 
 		// then set integration bounds for Q1 under the condition to reach at least as far as for Q2
-		pot->getPot_const()->get_outer_turningpoints( ir1.E, x1a, x1b );
+		pot->get_outer_turningpoints( ir1.E, x1a, x1b );
 		try {
 			penetrate_border( ir1.E, x1a, 1e-10 * (x1a - x1b), a3 );
 			penetrate_border( ir1.E, x1b, 1e-10 * (x1b - x1a), b3 );
@@ -474,10 +475,11 @@ void Noumerov1d::try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, 
 			return;
 		}
 		// success
-		ir1.set_bounds( a3, b3, x1a, x1b, true );
-		ir2.set_bounds( a3, b3, x1a, x1b, true );
-		ir3.set_bounds( a3, b3, x1a, x1b, true );
-		ir4.set_bounds( a3, b3, x1a, x1b, true );
+		double dx = abs( x1a - x1b ) / N_min;
+		ir1.set_bounds( a3, b3, x1a, x1b, dx, true );
+		ir2.set_bounds( a3, b3, x1a, x1b, dx, true );
+		ir3.set_bounds( a3, b3, x1a, x1b, dx, true );
+		ir4.set_bounds( a3, b3, x1a, x1b, dx, true );
 	}
 }
 
@@ -647,7 +649,9 @@ bool Noumerov1d::target_missed_levels( double & Q_bottom, double & Q_top )
 
 void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec& a, Integration_Rec& b, Integration_Rec& c )
 {
+#ifdef LOG_ENABLED
 	log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger( "Noum_Golden_Section_Search" );
+#endif
 	Integration_Rec d( a );
 	provider->evaluate_energy( a );
 	a.clear();							// clear the data, since for the moment we are only interested in E

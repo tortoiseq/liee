@@ -67,7 +67,7 @@ inline double Pot_Round_Well_wImage::V( double r )
 
 void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
-	t_ofs = config->getParam("t_envl_center")->value / CONV_au_fs;
+	t_ofs = config->getParam("t_centre")->value / CONV_au_fs;
 	fwhm = config->getParam("FWHM")->value / CONV_au_fs;
 	ga = 2.0 * log( 2.0 ) / pow( this->fwhm, 2.0 );
 	F0 = config->getParam("amplitude")->value / CONV_au_V * CONV_au_m ;
@@ -78,12 +78,10 @@ void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependenci
 
 inline double Gaussian_Pulse::electric_field( double t )
 {
-	//if (r <= 0) return 0;
-	double t_ = t - t_ofs;	// + r / 137.0;
+	double t_ = t - t_ofs;
 	double t2 = pow(t_, 2.0);
-	double lorentz = 1.0; // + gamma * s2 / ( s2 + pow(r, 2.0) );
 	double gauss = exp( -ga * t2 ) * cos( theta0 * t2 + omega0 * t_ + phi0 );
-	return F0 * lorentz * gauss;
+	return F0 * gauss;
 }
 
 //----------------------------------------------------------------------------------------------------------
@@ -109,6 +107,13 @@ void Potential::register_dependencies( vector<Module*> dependencies )
 void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Potential" );
+	// save the relevant module id's of constant potential and pulses and register them
+	reg_serials.push_back( (int)config->getParam("my_pot_const")->value );
+	BOOST_FOREACH( double serial, config->getParam("my_pulses")->values ) {
+		reg_serials.push_back( (int) serial );
+	}
+	register_dependencies( dependencies );
+
 	r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double inner_cutoff = config->getParam("inner_cutoff")->value / CONV_au_eV;
 	double dummy;
@@ -117,7 +122,7 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	r0 = config->getParam("r0")->value / CONV_au_nm;
 	k_geom = config->getParam("k_geom")->value;
 	F_dc = -1 * config->getParam("U_dc")->value / CONV_au_V / k_geom / r0;
-	t_charge = config->getParam("t_charge")->value / CONV_au_fs;
+	t_charge = 10.0 / CONV_au_fs;	//TODO redo all adiabatic activation //config->getParam("t_charge")->value / CONV_au_fs;
 	gamma = config->getParam("near_amplf")->value;
 	double s = config->getParam("near_width")->value / CONV_au_nm;
 	s2 = pow( s , 2.0);
@@ -131,13 +136,6 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	for( size_t i = 0; i < int_samples; i++ ) {
 		Pulse_samples[i] = Point( i * dx_sample, 0.0 );
 	}
-
-	// save the relevant module id's of constant potential and pulses and register them
-	reg_serials.push_back( (int)config->getParam("my_pot_const")->value );
-	BOOST_FOREACH( double serial, config->getParam("my_pulses")->values ) {
-		reg_serials.push_back( (int) serial );
-	}
-	register_dependencies( dependencies );
 }
 
 void Potential::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -206,7 +204,8 @@ inline double Potential::F_pulse( double r, double t )
 	BOOST_FOREACH( Laser_Field* p, pulses ) {
 		F += p->electric_field( t_ );
 	}
-	return F;
+	double resonant_amplify = 1.0 + gamma * s2 / ( s2 + pow(r, 2.0) );
+	return resonant_amplify * F;
 }
 
 inline double Potential::V_pulse( double r, double t )

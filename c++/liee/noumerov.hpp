@@ -36,9 +36,9 @@ struct Integration_Rec
 	Integration_Rec( ) : E(0), werror(0), level(0), xa(0), xb(0), a(0), b(0), dx(0),
 			middle(0), fixed_bounds(false), num_trial(0) {}
 
-	void set_bounds( double a, double b, double xa, double xb, bool fixed )
+	void set_bounds( double a, double b, double xa, double xb, double dx, bool fixed )
 	{
-		this->a = a; this->b = b; this->xa = xa; this->xb = xb;
+		this->a = a; this->b = b; this->xa = xa; this->xb = xb; this->dx = dx;
 		this->fixed_bounds = fixed;
 		middle = 0.5 * (xa + xb);
 	}
@@ -76,7 +76,7 @@ struct Integration_Rec
 class Noumerov1d : public Module_Exec
 {
 public:
-	Potential* pot;
+	Pot_const* pot;
 	vector<Integration_Rec> spectrum;
 	double Q_up;
 	double Q_lo;
