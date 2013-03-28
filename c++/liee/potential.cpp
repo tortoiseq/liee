@@ -19,13 +19,16 @@ namespace liee {
 void Pot_Round_Well_wImage::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_Round_Well_wImage" );
-	width = config->getParam("width")->value / CONV_au_nm ;
+	width = config->getParam("width")->value / CONV_au_nm;
 	depth = config->getParam("depth")->value / CONV_au_eV;
 	expo = config->getParam("boxness")->value / ( width / 2.0 );
 
 	a = depth / cosh( expo * width / 2.0 );
 	shift_cosh = log( (8.0 * depth + expo - sqrt( expo*expo + 16.0 * depth * expo ) ) / 4.0 / a ) / expo;
 	shift_mirror = 1.0 / ( 4.0 * depth - 2.0 * a * exp( expo * shift_cosh ) );
+	shift = shift_cosh - shift_mirror;
+
+	DEBUG_SHOW3( a, shift_cosh*CONV_au_nm, shift_mirror*CONV_au_nm );
 }
 
 void Pot_Round_Well_wImage::get_outer_turningpoints( const double E, double & leftmost, double & rightmost )
@@ -54,14 +57,16 @@ double Pot_Round_Well_wImage::get_Vmin_pos()
 inline double Pot_Round_Well_wImage::V( double r )
 {
 	double r_ = r - shift_mirror;
-	if ( r_ < 0 ) {
-		double v = -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well
-		return v;
-	}
-	else {
-		return -1.0 / ( 4.0 * ( r_ + shift_mirror ) );	// mirror charge
-	}
+	if ( r_ < 0 )
+		return -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well
+	else
+		return -0.25 / r ;	// mirror charge
 }
+/*
+{
+	if ( r > shift_mirror )	return -0.25 / r;			// mirror charge
+	return -depth + a * cosh( expo * ( r + shift ) ); 	// potential well
+}/* */
 
 //----------------------------------------------------------------------------------------------------------
 

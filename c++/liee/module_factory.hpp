@@ -50,7 +50,6 @@ public:
 
 	static Module* assemble( string & type, string & name, int serial )
 	{
-		cout << "HMPF ! \n";
 		return load( type, name, serial, NULL );
 	}
 

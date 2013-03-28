@@ -53,6 +53,7 @@ private:
 	double a;
 	double shift_cosh;
 	double shift_mirror;
+	double shift;
 
 protected:
 	friend class boost::serialization::access;
@@ -65,6 +66,7 @@ protected:
     	ar & a;
     	ar & shift_cosh;
     	ar & shift_mirror;
+    	ar & shift;
     }
 };
 

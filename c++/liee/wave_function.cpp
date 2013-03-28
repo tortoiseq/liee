@@ -70,15 +70,20 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 	slope_end = abs( (wave_funct[e].y - wave_funct[e-1].y) / (wave_funct[e].x - wave_funct[e-1].x) );
 	tail.clear();
 	l = wave_funct[e-1];
+	int sign_r_tail = 1;
+	if ( wave_funct.back().y < 0 ) {
+		sign_r_tail = -1;
+	}
 	BOOST_REVERSE_FOREACH( Point p, wave_funct )
 	{
-		tail.push_back( Point( p.x, log(p.y) ) );
+		tail.push_back( Point( p.x, log( abs(p.y) ) ) );
 		if ( p.x < l.x ) {
 			double slope = abs( (l.y - p.y) / (l.x - p.x) );
 			if ( slope > 2 * slope_end  &&  tail.size() > 10 ) break;
 		}
 		l = p;
 	}
+
 	double m_r, n_r, dm_r, dn_r;
 	linear_fit( tail, m_r, n_r, dm_r, dn_r);
 	DEBUG_SHOW3( tail.size(), m_r, n_r );
@@ -97,7 +102,7 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 				psi.push_back( dcmplx( exp( m_l * r + n_l ), 0.0 ) );
 			}
 			else if ( r > r_max ) {
-				psi.push_back( dcmplx( exp( m_r * r + n_r ), 0.0 ) );
+				psi.push_back( dcmplx( sign_r_tail * exp( m_r * r + n_r ), 0.0 ) );
 			}
 		}
 	}
