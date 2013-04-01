@@ -72,6 +72,12 @@ int assimilate_handler( WORKUNIT& wu, vector<RESULT>& /*results*/, RESULT& canon
             const char* result_dir = config.project_path("results");
             double y = 666;
 	    
+	    boost::filesystem::path dest( fi.path );
+	    if ( not boost::filesystem::exists( dest ) ) {
+		log_messages.printf( MSG_DEBUG, ("Expected OUTFILE: " + fi.path + " not found! (debuggy: will pretend it's ok and return success)\n").c_str() );
+		return 0;
+	    }
+	    
 	    // test whether output_file is only the log (indicates error)
 	    ifstream ifs( fi.path.c_str(), ifstream::in );
 	    string line = "";
@@ -107,7 +113,7 @@ int assimilate_handler( WORKUNIT& wu, vector<RESULT>& /*results*/, RESULT& canon
             stringstream tar_cmd;
             tar_cmd << "tar -C " << result_dir << " -xzf " << fi.path;
             int ret = system( tar_cmd.str().c_str() );
-            
+	    
             stringstream result_file;
             result_file << result_dir << "/" << wu.name << "/summary.txt";
             line = "";

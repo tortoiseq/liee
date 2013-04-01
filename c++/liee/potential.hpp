@@ -26,10 +26,33 @@ class Pot_const : public Module
 public:
 	//! potential energy at position r
 	virtual inline double V( double r ) = 0;
-	//! exposes the classical turning-points for a particle with energy E
-	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost ) = 0;
-	//! returns the position r for which the potential has its global minimum
-	virtual double get_Vmin_pos() = 0;
+
+	/*!
+	 * exposes the classical turning-points for a particle with energy E
+	 *
+	 * limited default implementation provided:
+	 * 		- uses root-finding by bracketing and bisection from pivot point get_Vmin_pos() outwards
+	 * 		- is not guaranteed to reach the _outer_ turning points, yet more likely the inner ones (for a periodic potential)
+	 * 		- much slower than evaluation of a moderate expression
+	 * --> overwrite with analytic solution E=V(r), r minimal (maximal) for anything but testing
+	 */
+	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
+
+	/*!
+	 * returns the position r for which the potential has its global minimum
+	 *
+	 * limited default implementation provided:
+	 * 		- uses minimum search by bracketing starting at r = 0
+	 * 		- is not guaranteed to reach the lowest V(r) for weird periodic potentials,
+	 * 		  but should do the trick in most practical cases
+	 * 		- result is cached in case the method is called many times
+	 */
+	virtual double get_Vmin_pos();
+
+private:
+	inline double deltaV( double r, double E ) { return E - V(r); }
+	bool been_there = false;
+	double r_min;
 };
 
 class Pot_Round_Well_wImage : public Pot_const
@@ -46,16 +69,14 @@ public:
 	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
 	virtual double get_Vmin_pos();
 
-private:
+protected:
 	double width;
 	double depth;
 	double expo;
 	double a;
 	double shift_cosh;
 	double shift_mirror;
-	double shift;
 
-protected:
 	friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
@@ -66,7 +87,52 @@ protected:
     	ar & a;
     	ar & shift_cosh;
     	ar & shift_mirror;
-    	ar & shift;
+    }
+};
+
+/*!
+ * For experimenting with the left potential wall's influence on the eigenvalue spectrum,
+ * the strong exponential repulsion from Pot_Round_Well_wImage is substituded by a more
+ * curvy polynomial.
+ */
+class Pot_Experimental : public Pot_const
+{
+public:
+	virtual inline double V( double r );
+	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
+		GET_LOGGER( "Pot_Experimental" );
+	}
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}	// effort depends on callers
+	virtual void summarize( map<string, string> & results ) {}	// nothing to write home about
+
+private:
+	double width;
+	double depth;
+	double expo;
+	double a;
+	double shift_cosh;
+	double shift_mirror;
+
+	double v_scale;
+	double h_scale;
+	double power;
+	vector<double> b;
+
+	friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+        ar & width;
+        ar & depth;
+        ar & expo;
+    	ar & a;
+    	ar & shift_cosh;
+    	ar & shift_mirror;
+        ar & v_scale;
+        ar & h_scale;
+        ar & power;
+        ar & b;
     }
 };
 

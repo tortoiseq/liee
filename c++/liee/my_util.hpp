@@ -69,6 +69,7 @@
 
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/split_free.hpp>
+#include <boost/function.hpp>
 
 #ifdef LOG_ENABLED
 	// include log4cxx header files.
@@ -202,6 +203,7 @@ struct Linear_Interpolant
 alglib::spline1dinterpolant to_cubic_spline( vector<Point>& data );
 
 /*! complex error function from product series */
+//TODO use <boost/math/special_functions/erf.hpp>
 dcmplx cerf( dcmplx z );
 
 /*! real-valued Lambert W-function */
@@ -295,6 +297,13 @@ void parse_datafile( const string filename, vector<double> & data );
 double sum( const vector<double> & x );
 double arithmetic_mean( const vector<double> & x );
 double variance( const vector<double> & x );
+
+/*!
+ * Using bisection to find a root between a and b.
+ * If there are more than one between a and b, it can't tell that fact and just return the first available.
+ * Preconditions:  funct(x) unique and continuous,  funct(a) * funct(b) < 0 bracketed already
+ */
+double find_root( boost::function<double (double)> func, double a, double b, double tol = 1e-15 );
 
 /*! Gives the distance between the nearest grid-position: i*step and pos */
 double offgrid( double pos, double step );

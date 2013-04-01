@@ -34,7 +34,8 @@ def main():
         if o in ("-e", "--experiment"):
             ex = a
         elif o in ("-p", "--params"):
-            ps = re.findall( r'\w+', a )        
+            ps = re.findall( r'\w+', a )
+            print( ps )
         elif o in ("--plot-each",):
             plot_each = True        
         elif o in ("--tiny",):

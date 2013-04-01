@@ -37,6 +37,7 @@ public:
 		EXECUTION_REQUIRED["gaussian"]			= false;
 		EXECUTION_REQUIRED["SLM"] 				= false;
 		EXECUTION_REQUIRED["round_well"] 		= false;
+		EXECUTION_REQUIRED["pot_lol"] 			= false;
 		EXECUTION_REQUIRED["harmonic_osci"] 	= false;
 		EXECUTION_REQUIRED["metal_surface"] 	= false;
 		EXECUTION_REQUIRED["zero_pot"] 			= false;
@@ -77,6 +78,12 @@ public:
 		}
 		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "round_well" ) == 0 ) {
 			Pot_Round_Well_wImage* p = dynamic_cast<Pot_Round_Well_wImage*>( m );
+			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
+			LOG_DEBUG( "Pot_Round_Well_wImage");
+			*oarch << p;
+		}
+		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "pot_lol" ) == 0 ) {
+			Pot_Experimental* p = dynamic_cast<Pot_Experimental*>( m );
 			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
 			LOG_DEBUG( "Pot_Round_Well_wImage");
 			*oarch << p;
@@ -155,6 +162,11 @@ public:
 		}
 		else if ( type.compare( "pot_const" ) == 0 && name.compare( "round_well" ) == 0 ) {
 			Pot_Round_Well_wImage* p = new Pot_Round_Well_wImage;
+			if ( iarch != NULL ) *iarch >> p;
+			m = p;
+		}
+		else if ( type.compare( "pot_const" ) == 0 && name.compare( "pot_lol" ) == 0 ) {
+			Pot_Experimental* p = new Pot_Experimental;
 			if ( iarch != NULL ) *iarch >> p;
 			m = p;
 		}

@@ -24,7 +24,7 @@ Conf_Param::Conf_Param(TiXmlElement* pParamNode)
 
 	fixed = true;
 	logscale = false;
-	if ( pParamNode->Attribute( "fixed" ) != NULL && strcmp( pParamNode->Attribute( "variable" ), "YES" ) == 0 ) {
+	if ( pParamNode->Attribute( "variable" ) != NULL && strcmp( pParamNode->Attribute( "variable" ), "YES" ) == 0 ) {
 		fixed = false;
 		if ( pParamNode->Attribute( "logscale" ) != NULL && strcmp( pParamNode->Attribute( "logscale" ), "true" ) == 0 ) {
 			logscale = true;

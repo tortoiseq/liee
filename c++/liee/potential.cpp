@@ -9,12 +9,71 @@
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/math/special_functions/erf.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 #include "potential.hpp"
+#include "optimizer.hpp"
 
 using namespace std;
 namespace liee {
 
+
+double Pot_const::get_Vmin_pos()
+{
+	if (been_there) return r_min;
+
+	double b = 0;
+	double Vb = V(b);
+	// bracket minimum at b==0 by pushing a and b further along the negative/positive axis
+	double a = -1e-40;	while ( V(a) <= Vb || isinf(a) ) { a *= 2; }
+	double c = 1e-40;	while ( V(c) <= Vb || isinf(c) ) { c *= 2; }
+
+	boost::function<double(double)> funct;
+	funct = boost::bind( &Pot_const::V, this, _1 );
+
+	opti::Golden_Section_Search minimizer( 1e-12 );
+	r_min = minimizer.minimize( funct, a, b, c );
+	DEBUG_SHOW( r_min*CONV_au_nm );
+
+	been_there = true;
+	return r_min;
+}
+
+void Pot_const::get_outer_turningpoints( double E, double & leftmost, double & rightmost )
+{
+	boost::function<double(double)> deltaE;
+	deltaE = boost::bind( &Pot_const::deltaV, this, _1, E );
+
+	double E_V0 = deltaE( r_min );
+	if ( E_V0 < 0 ) {
+		// E must not be lower than minimum
+		leftmost = numeric_limits<double>::quiet_NaN();
+		rightmost = numeric_limits<double>::quiet_NaN();
+		return;
+	}
+
+	vector<double> result;
+	result.resize(2);
+	for ( int i = 0; i <= 1 ; i++ )	// left and right turning-point
+	{
+		double d = pow( -1, double( i + 1 ) );	// -1 and 1
+
+		while ( deltaE( r_min + d ) * E_V0 > 0 )   {
+			d *= 2;
+			if ( isinf( d ) ) {
+				result[i] = numeric_limits<double>::quiet_NaN();
+				break;
+			}
+		}
+		result[i] = find_root( deltaE, r_min, r_min + d, 1e-12 );
+	}
+	leftmost = result[0];
+	rightmost = result[1];
+}
+
+//----------------------------------------------------------------------------------------------------------
 
 void Pot_Round_Well_wImage::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
@@ -26,9 +85,27 @@ void Pot_Round_Well_wImage::initialize( Conf_Module* config, vector<Module*> dep
 	a = depth / cosh( expo * width / 2.0 );
 	shift_cosh = log( (8.0 * depth + expo - sqrt( expo*expo + 16.0 * depth * expo ) ) / 4.0 / a ) / expo;
 	shift_mirror = 1.0 / ( 4.0 * depth - 2.0 * a * exp( expo * shift_cosh ) );
-	shift = shift_cosh - shift_mirror;
+}
+void Pot_Experimental::initialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Module.Experimental" );
+	width = config->getParam("width")->value / CONV_au_nm;
+	depth = config->getParam("depth")->value / CONV_au_eV;
+	expo = config->getParam("boxness")->value / ( width / 2.0 );
+	a = depth / cosh( expo * width / 2.0 );
+	shift_cosh = log( (8.0 * depth + expo - sqrt( expo*expo + 16.0 * depth * expo ) ) / 4.0 / a ) / expo;
+	shift_mirror = 1.0 / ( 4.0 * depth - 2.0 * a * exp( expo * shift_cosh ) );
 
-	DEBUG_SHOW3( a, shift_cosh*CONV_au_nm, shift_mirror*CONV_au_nm );
+	v_scale = config->getParam("v_scale")->value;
+	h_scale = config->getParam("h_scale")->value;
+	power = config->getParam("power")->value;
+	b.resize(6);
+	b[0] = -2164.61;
+	b[1] = -422.862;
+	b[2] = -32.9888;
+	b[3] = -1.27608;
+	b[4] = -0.0244718;
+	b[5] = -0.000186276;
 }
 
 void Pot_Round_Well_wImage::get_outer_turningpoints( const double E, double & leftmost, double & rightmost )
@@ -58,15 +135,25 @@ inline double Pot_Round_Well_wImage::V( double r )
 {
 	double r_ = r - shift_mirror;
 	if ( r_ < 0 )
-		return -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well
+		return -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well (right)
 	else
 		return -0.25 / r ;	// mirror charge
 }
-/*
+
+inline double Pot_Experimental::V( double r )
 {
-	if ( r > shift_mirror )	return -0.25 / r;			// mirror charge
-	return -depth + a * cosh( expo * ( r + shift ) ); 	// potential well
-}/* */
+	double r_ = r - shift_mirror;
+	if ( r_ < 0 ) {
+		double weight = 0.5 * ( 1.0 + boost::math::erf<double>( 0.01 * (r_ + shift_cosh + 5*19) ) );
+		double poli = b[0];
+		for ( size_t i = 1; i < b.size(); i++ ) { poli += b[i] * pow( (r * CONV_au_nm)-7.0, (double)i ); }
+		poli =  (poli) / CONV_au_eV;
+		double wall = -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well (right)
+		return weight * wall + ( 1 - weight ) * poli;
+	}
+	else
+		return -0.25 / r ;	// mirror charge
+}
 
 //----------------------------------------------------------------------------------------------------------
 

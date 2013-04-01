@@ -13,7 +13,7 @@ import math
 def main():
     # parse arguments
     try:
-        opts, args = getopt.getopt( sys.argv[1:], "x:y:z:N:M:f", ["file="] )
+        opts, args = getopt.getopt( sys.argv[1:], "x:y:z:N:M:f:r", ["file="] )
     except getopt.GetoptError, err:
         print str(err) # will print something like "option -a not recognized"
         sys.exit(2)
@@ -24,7 +24,7 @@ def main():
     z = 2
     N = 10
     M = 10
-    ipr = 1     #interpolation range
+    ipr = 2     #interpolation range
     fname = "data" 
                 
     for o, a in opts:
@@ -40,6 +40,8 @@ def main():
             M = int(a)
         elif o in ("-z",):
             z = int(a)
+        elif o in ("-r",):
+            ipr = int(a)
         else:
             assert False, "unhandled option"
     

@@ -502,6 +502,31 @@ double variance( const vector<double> & x )
 	return var;
 }
 
+double find_root( boost::function<double (double)> func, double a, double b, double tol )
+{
+	double fa = func(a);
+	double fb = func(b);
+	double m;
+
+	while ( abs( a - b ) / ( abs(a) + abs(b) ) > tol )
+	{
+		m = 0.5 * (a + b);
+		double fm = func(m);
+		if ( fa * fm < 0 ) {
+			b = m;
+			fb = fm;
+		}
+		else if ( fb * fm < 0 ) {
+			a = m;
+			fa = fm;
+		}
+		else if ( fm == 0 ) {
+			break;
+		}
+	}
+	return m;
+}
+
 double offgrid( double pos, double step )
 {
 	double c = abs(pos - ceil(pos / step) * step);

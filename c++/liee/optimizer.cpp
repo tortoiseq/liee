@@ -12,7 +12,9 @@
 
 #include "optimizer.hpp"
 
-#include "sched_config.h"	//TODO: remove (only for debugging -> logging)
+#ifdef SERVER
+#include "sched_config.h"	// only for server-sided  logging
+#endif
 
 using namespace std;
 
@@ -327,7 +329,12 @@ int opti::Rasterizer::generate_requests( vector<Request> & work )
 {
 	cout << "...opti::Rasterizer::generate_requests() \n";
 	if ( discharged ) {
-		log_messages.printf( MSG_CRITICAL, "This Rasterizer created all its jobs already. Re-initialize if you want to play again! \n" );
+		//TODO 1) use logger in #else case 2) really critical or maybe just warning level?
+		#ifdef SERVER
+			log_messages.printf( MSG_CRITICAL, "This Rasterizer created all its jobs already. Re-initialize if you want to play again! \n" );
+		#else
+			cout << "This Rasterizer created all its jobs already. Re-initialize if you want to play again! \n";
+		#endif
 		return 1;
 	}
 	work.clear();
