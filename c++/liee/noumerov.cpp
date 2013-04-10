@@ -510,17 +510,14 @@ void Noumerov1d::save_graph( string & filename, vector<Point>& data )
 
 void Noumerov1d::save_results( string & filename )
 {
-	DEBUG_SHOW( filename );
 	vector<string> files;
 	for ( size_t i = lvl_lo; i <= lvl_up; i++ )
 	{
 		if ( spectrum[i].num_trial > 0 ) {
-			DEBUG_SHOW( i );
 			evaluate_energy( spectrum[i - lvl_lo] );
 
 			string si = boost::lexical_cast<string>( i );
 			string fi = filename + "_" + string( 4 - si.size(), '0') + si + ".dat"; 	// or printf("%04d", i) ?
-			DEBUG_SHOW( fi );
 			//save_graph( ss0.str() + "_l.dat", spectrum[i - lvl_lo].leftwards );
 			//save_graph( ss0.str() + "_r.dat", spectrum[i - lvl_lo].rightwards );
 			files.push_back( fi );

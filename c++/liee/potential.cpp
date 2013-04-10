@@ -27,15 +27,14 @@ double Pot_const::get_Vmin_pos()
 	double b = 0;
 	double Vb = V(b);
 	// bracket minimum at b==0 by pushing a and b further along the negative/positive axis
-	double a = -1e-40;	while ( V(a) <= Vb || isinf(a) ) { a *= 2; }
-	double c = 1e-40;	while ( V(c) <= Vb || isinf(c) ) { c *= 2; }
+	double a = -1e-40;	while ( V(a) <= Vb && !isinf(a) ) { a *= 2; }
+	double c = 1e-40;	while ( V(c) <= Vb && !isinf(c) ) { c *= 2; }
 
 	boost::function<double(double)> funct;
 	funct = boost::bind( &Pot_const::V, this, _1 );
 
 	opti::Golden_Section_Search minimizer( 1e-12 );
 	r_min = minimizer.minimize( funct, a, b, c );
-	DEBUG_SHOW( r_min*CONV_au_nm );
 
 	been_there = true;
 	return r_min;
@@ -64,10 +63,11 @@ void Pot_const::get_outer_turningpoints( double E, double & leftmost, double & r
 			d *= 2;
 			if ( isinf( d ) ) {
 				result[i] = numeric_limits<double>::quiet_NaN();
-				break;
+				goto skip_find_root;
 			}
 		}
 		result[i] = find_root( deltaE, r_min, r_min + d, 1e-12 );
+		skip_find_root:;
 	}
 	leftmost = result[0];
 	rightmost = result[1];
@@ -100,12 +100,18 @@ void Pot_Experimental::initialize( Conf_Module* config, vector<Module*> dependen
 	h_scale = config->getParam("h_scale")->value;
 	power = config->getParam("power")->value;
 	b.resize(6);
+
+	b[0] = 2.3 * width;	// left-sigma / left-width
+	b[1] = config->getParam("boxness")->value / ( b[0] / 2.0 );	// left-expo
+	b[2] = depth / cosh( b[1] * b[0] / 2.0 );	//left-a
+	/*
 	b[0] = -2164.61;
 	b[1] = -422.862;
 	b[2] = -32.9888;
 	b[3] = -1.27608;
 	b[4] = -0.0244718;
 	b[5] = -0.000186276;
+	*/
 }
 
 void Pot_Round_Well_wImage::get_outer_turningpoints( const double E, double & leftmost, double & rightmost )
@@ -144,15 +150,49 @@ inline double Pot_Experimental::V( double r )
 {
 	double r_ = r - shift_mirror;
 	if ( r_ < 0 ) {
-		double weight = 0.5 * ( 1.0 + boost::math::erf<double>( 0.01 * (r_ + shift_cosh + 5*19) ) );
+		double x = r_ + shift_cosh;
+		double wall = -depth + a * cosh( expo * x );
+
+		double a1 = 0.0001;	// vertical scale of ROOT
+		double a2 = 1.0;	// horizontal squeeze of ROOT
+		double a3 = 0.0;	// shift ROOT rightwards (in ratio of width)
+		double a4 = 1.2;	// exponent of r-power
+
+		if ( (-x + a3 * width) < 0 ) {
+			return wall;
+		} else {
+			double root = -depth + a1 * pow( a2 * ( -x + a3 * width ), a4 );
+
+			double a5 = 0.25;	// shift midpoint of weighting Gauss leftwards (in ratio of width) relative to the middle of the well
+			double a6 = 0.1;	// right-sigma of weighting Gauss (in ratio of width)
+			double a7 = 2.3;	// left-sigma of weighting Gauss (in ratio of width)
+
+
+			double gx = x + a5 * width;
+			if ( gx > 0 ) {
+				gx = gx / ( a6 * width );
+			} else {
+				gx = gx / ( a7 * width );
+				wall = -depth + b[2] * cosh( b[1] * x );	// use wider left exponential wall to avoid too sudden onset
+			}
+			double weight = exp( -pow( gx, 2.0 ) );
+			return ( 1 - weight ) * wall  +  weight * root;
+		}
+
+		/*
 		double poli = b[0];
-		for ( size_t i = 1; i < b.size(); i++ ) { poli += b[i] * pow( (r * CONV_au_nm)-7.0, (double)i ); }
-		poli =  (poli) / CONV_au_eV;
-		double wall = -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well (right)
+		for ( size_t i = 1; i < b.size(); i++ ) {
+			poli += b[i] * pow( (r * CONV_au_nm)-7.0, (double)i );	// evaluate polynomial well (left)
+		}
+		poli =  poli / CONV_au_eV;
+
+		double weight = 0.5 * ( 1.0 + boost::math::erf<double>( 0.01 * (r_ + shift_cosh + 5*19) ) ); // manually adjusted
+		double wall = -depth + a * cosh( expo * (r_ + shift_cosh) ); // for morphing former potential shape into the polynomial
 		return weight * wall + ( 1 - weight ) * poli;
+		*/
 	}
 	else
-		return -0.25 / r ;	// mirror charge
+		return -0.25 / r ;	// mirror charge (right)
 }
 
 //----------------------------------------------------------------------------------------------------------
@@ -210,6 +250,8 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	double inner_cutoff = config->getParam("inner_cutoff")->value / CONV_au_eV;
 	double dummy;
 	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );	// set r_start where the inner_cutoff-Energy is reached
+	//r_start = -60.0 / CONV_au_nm;
+	DEBUG_SHOW( r_start );
 
 	r0 = config->getParam("r0")->value / CONV_au_nm;
 	k_geom = config->getParam("k_geom")->value;
