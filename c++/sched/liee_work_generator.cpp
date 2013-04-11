@@ -52,11 +52,23 @@ int APP_ID = 1; //TODO make configurable!
 //
 void make_job( DB_WORKUNIT & job, vector<string> & dep_files, int & flag ) 
 {
+    //TODO try using the API call instead of system call
     stringstream command;
     command << "/var/www/boinc/liee/bin/create_work --appname liee_worker --wu_name ";
     command << job.name; //wu_name
     command << " --wu_template ./workspace/" << experiment << "_in";
     command << " --result_template workspace/" << experiment << "_out";		// does not accept absolute paths
+    command << " --priority " << job.priority;
+    command << " --rsc_fpops_est " << job.rsc_fpops_est;
+    command << " --rsc_fpops_bound " << job.rsc_fpops_bound;
+    command << " --rsc_memory_bound " << job.rsc_memory_bound;
+    command << " --rsc_disk_bound " << job.rsc_disk_bound;
+    command << " --delay_bound " << job.delay_bound;
+    command << " --min_quorum " << job.min_quorum;
+    command << " --target_nresults " << job.target_nresults;
+    command << " --max_error_results " << job.max_error_results;
+    command << " --max_total_results " << job.max_total_results;
+    command << " --max_success_results " << job.max_success_results;
 
     const char* infiles[ dep_files.size() ];
     for ( size_t i = 0; i < dep_files.size(); i++ ) {
@@ -85,9 +97,10 @@ void main_loop()
     int flag;
     bool no_progress = true;
 
+    //TODO timeouts adjustable at commandline
     while ( true ) 
     {
-        sleep( 2 );
+        sleep( 200 );
         //check_stop_daemons();
         
         // see if optimiser has new requests vector<Job_Record> & jobs
@@ -119,7 +132,7 @@ void main_loop()
         
         // sleep some if both of the last two actions failed, otherwise hurry on
         if ( no_progress && (count == 0) ) {
-            sleep( 15 );
+            sleep( 1500 );
         }
     }
 }

@@ -110,7 +110,6 @@ public:
 	vector<double>	psi_sqr;	///< total probability over integration region for each time sample
 	int 	step_t;
 	int		t_samples;
-	//bool	written;
 	double 	tunnel_ratio;		///< portion of probability lost during simulation
 	double	ra;
 	double	rb;
@@ -130,10 +129,55 @@ public:
         ar & psi_sqr;
         ar & step_t;
         ar & t_samples;
-        //ar & written;
         ar & tunnel_ratio;
         ar & ra;
         ar & rb;
+        ar & is_objective;
+    }
+};
+
+/*!
+ * This Observer can be used together with a dummy Solver instead a solver of the time-dependent Schroedinger equation.
+ * The WF is mostly ignored though, instead the time-dependent Potential is used for the JWKB approximation
+ * of the quasi-stationary tunnel rate by integrating over the auto-detected barrier. //TODO blah blah
+ */
+class Obs_JWKB_Tunnel : public Observer
+{
+public:
+	vector<double>	j;	///< total probability over integration region for each time sample
+	double 	sum_j;		///< portion of probability lost during simulation
+	Potential* V;		///< potential for integration
+	double E;			///< energy of initial state, reverse engineered from curvature of WF at the potentials minimum
+	double dr;			///< global dx, used as small step into the barrier to reverse engineer the effective Field strength at the surface
+	double Vp0;			///< cache V(0+dx, 0) potential without field one step into the barrier (assuming field is deactivated at t=0)
+	double last_r2;		///< cache latest second turning point
+	int N;				///< number of samples for numerical integration over the barrier
+	double g;			///< JWKB constant
+	int 	step_t;
+	int		t_samples;
+	bool 	is_objective;
+
+    virtual void observe( Module* state );
+	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
+	virtual void summarize( map<string, string> & results );
+
+	friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+    	ar & boost::serialization::base_object<Observer>( *this );
+    	ar & j;
+    	ar & sum_j;
+    	ar & E;
+    	ar & dr;
+    	ar & Vp0;
+    	ar & last_r2;
+    	ar & N;
+    	ar & g;
+        ar & step_t;
+        ar & t_samples;
         ar & is_objective;
     }
 };

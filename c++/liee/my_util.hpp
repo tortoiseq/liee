@@ -256,6 +256,11 @@ struct Except__Convergence_Fail {
 	Except__Convergence_Fail( int c ) : specification_code( c ) {}
 };
 
+struct Except__Too_Far_Out {
+	int specification_code;
+	Except__Too_Far_Out( int c ) : specification_code( c ) {}
+};
+
 //----------------------------I/O utility-------------------------------------------------------------
 
 /*!

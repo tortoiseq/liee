@@ -142,11 +142,6 @@ private:
 	bool target_missed_levels( double& Q_bottom, double& Q_top );
 };
 
-struct Except__Too_Far_Out {
-	int specification_code;
-	Except__Too_Far_Out( int c ) : specification_code( c ) {}
-};
-
 /*!
  * This is a slight adaption of liee::opti::Golden_Section_Search, which adds
  * nothing but the call to try_fixate_bounds() after each iteration. The generic

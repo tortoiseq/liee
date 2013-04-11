@@ -3,9 +3,13 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+
 #include "my_util.hpp"
 #include "solver.hpp"
 #include "observer.hpp"
+#include "wave_function.hpp"
 
 using namespace std;
 
@@ -143,7 +147,6 @@ void Obs_Tunnel_Ratio::initialize( Conf_Module* config, vector<Module*> dependen
 	if ( step_t > Nt ) { step_t = Nt; }
 	t_samples = 1 + Nt / step_t;
 	config->getParam("t_samples")->value = t_samples;	// save the actual number of samples
-//	written = false;
 }
 
 void Obs_Tunnel_Ratio::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -160,7 +163,7 @@ void Obs_Tunnel_Ratio::estimate_effort( Conf_Module* config, double & flops, dou
 
 	flops += abs( 8 * Nt + N * Nr * 8 );	// called Nt times without saving + t_sample times to integrate (psi psi*)
 	ram += 1024;
-	disk += 20 * N;
+	disk += 30 * N;
 }
 
 void Obs_Tunnel_Ratio::summarize( map<string, string> & results )
@@ -192,7 +195,159 @@ void Obs_Tunnel_Ratio::observe( Module* state )
     	}
     	fprintf( f, "\n" );
     	fclose( f );
-    	//written = true;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Obs_JWKB_Tunnel" );
+	//register dependencies
+	Wave_Function* wf;
+	for ( size_t i = 0; i < dependencies.size(); i++ ) {
+		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
+			V = dynamic_cast<Potential*>( dependencies[i] );
+		}
+		else if ( dependencies[i]->type.compare( "initial_wf" ) == 0 ) {
+			wf = dynamic_cast<Wave_Function*>( dependencies[i] );
+		}
+	}
+	filename = config->getParam("OUTFILE")->text;
+	is_objective = config->getParam("is_objective")->text.compare( "true" ) == 0;
+	dr = config->getParam("dr")->value / CONV_au_nm;
+	N = (int)config->getParam("int_samples")->value / CONV_au_nm;
+
+	//calculate E from curvature of WF: E = V - hbar^2/(2m Psi) d^2/dr^2 Psi
+	double rmin = V->getPot_const()->get_Vmin_pos();
+	double Vmin = V->getPot_const()->V(rmin);
+	Vp0 = V->getPot_const()->V(dr);
+	double r0 = V->get_r_start();
+	int i_middle = (int)( (rmin - r0) / dr );
+	E = Vmin - ( wf->psi[i_middle-1].real() - 2 * wf->psi[i_middle].real() + wf->psi[i_middle+1].real() ) / ( pow( dr, 2.0 ) * 2.0 * wf->psi[i_middle].real() );
+	DEBUG_SHOW(E);
+	g = 4.0 * CONST_PI * sqrt( 2.0 );
+
+	// temporal downsampling
+	// (code duplication with tunnel ratio observer)
+	t_range = config->getParam("t_range")->value / CONV_au_fs;
+	dt = config->getParam("dt")->value / CONV_au_fs;
+	counter = 0;
+	int Nt = 1.0 + t_range / dt;
+	step_t = floor( Nt / config->getParam("t_samples")->value );
+	dt *= step_t;
+	if ( step_t < 1 ) { step_t = 1; }
+	if ( step_t > Nt ) { step_t = Nt; }
+	t_samples = 1 + Nt / step_t;
+	config->getParam("t_samples")->value = t_samples;	// save the actual number of samples
+}
+
+void Obs_JWKB_Tunnel::reinitialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Obs_JWKB_Tunnel" );
+	for ( size_t i = 0; i < dependencies.size(); i++ ) {
+		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
+			V = dynamic_cast<Potential*>( dependencies[i] );
+		}
+	}
+}
+
+void Obs_JWKB_Tunnel::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
+{
+	double Nr = config->getParam("r_range")->value / config->getParam("dr")->value;
+	double Nt = config->getParam("t_range")->value / config->getParam("dt")->value;
+	double N =  config->getParam("t_samples")->value;
+
+	flops += abs( 8 * Nt + N * Nr * 10 );	// called Nt times without saving + t_sample times to integrate over the squareroot of barrier hight
+	ram += 1024;
+	disk += 20 * N;
+}
+
+void Obs_JWKB_Tunnel::summarize( map<string, string> & results )
+{
+	results["jwkb_J"] = doub2str( sum_j ); //TODO boost conversion
+	if ( is_objective ) {
+		results["objective"] = doub2str( sum_j );
+	}
+}
+
+void Obs_JWKB_Tunnel::observe( Module* state )
+{
+	if ( counter++ % step_t != 0 ) return;
+	Solver* s = dynamic_cast<Solver*>( state );
+	boost::function<double(double)> deltaE;
+	deltaE = boost::bind( &Potential::deltaV, V, _1, s->t, E );
+
+	// estimate actual field strength from the change in potentials height compared with t0
+	double F = ( Vp0 - V->V( dr, s->t ) ).real() / dr;
+	if (F <= 0 ) {
+		// barrier goes up +++ assume slow varying F --> infinite barrier --> j=0
+		j.push_back( 0.0 );
+	}
+	else {
+		// find left turning point starting at r==0
+		double r1 = 0;
+		double d = dr;
+		double a = deltaE( r1 );
+		if ( a < 0 ) { d = -dr; } // r1 already inside barrier -->, direction backwards
+		while ( deltaE( r1 + d ) * a > 0 ) {
+			d *= 2;
+			if ( isinf( d ) ) {	throw Except__Too_Far_Out( __LINE__ ); }
+		}
+		r1 = find_root( deltaE, r1, r1 + d, 1e-12 );
+
+		//TODO resolve code duplication with Pot_const::get_outer_turningpoints() by writing a robust and general root-finding routine
+		// find right turning point
+		// assume constant F +++ assume V approaching 0 for r > 0
+		double r2 = -E / F;
+
+		if ( abs( deltaE( r2 ) ) > abs( deltaE( last_r2 ) ) ) {
+			// last turning-point was better than new estimate
+			r2 = last_r2;
+		}
+		d = dr;
+		a = deltaE( r2 );
+		if ( a > 0 ) { d = -dr; } // r1 already outside barrier --> direction backwards
+		while ( deltaE( r2 + d ) * a > 0 ) {
+			d *= 2;
+			if ( isinf( d ) ) {	throw Except__Too_Far_Out( __LINE__ ); }
+		}
+		r2 = find_root( deltaE, r2, r2 + d, 1e-12 );
+
+		DEBUG_SHOW2(r1, r2);
+
+		// integrate: dr sqrt( V(r) - E )
+		d = ( r2 - r1 ) / ( N - 1.0 );
+		vector<Point> samples;
+		for ( double r = r1; r <= r2; r += d ) {
+			samples.push_back( Point( r, sqrt( -deltaE(r) ) ) );
+		}
+
+		double A = 0;
+	#ifdef ALGLIB
+		alglib::spline1dinterpolant spline = to_cubic_spline( samples );
+		double A0_xa = alglib::spline1dintegrate( spline, r1 );
+		double A0_xb = alglib::spline1dintegrate( spline, r2 );
+		A = A0_xb - A0_xa;
+	#else
+		A = simple_integrate( samples, r1, r2 );
+	#endif
+		DEBUG_SHOW( A );
+		j.push_back( exp( -g * A ) );
+		DEBUG_SHOW( j.back() );
+	}
+
+	// save after getting the last sample (again some code duplication with tunnel observer)
+	if ( (int)j.size() >= t_samples-1 ) {	// for the sake of robustness we are willing to write the outfile at last-1 step and overwrite at last step, to make sure it gets written at least once.
+											//TODO: check log output, if t_samples calculation is always spot on -> two writes, and remove the additional write out at last-1
+		LOG_DEBUG( "Writing Tunnel data at time-step " << j.size() << " of " << t_samples );
+		sum_j = sum(j);
+    	FILE* f = boinc_fopen( filename.c_str(), "w" );
+    	for ( size_t i = 0; i < j.size(); i++ )	{
+    		fprintf( f, "%1.6g\t%1.10g\n", i * dt , j[i] );
+    	}
+    	fprintf( f, "\n" );
+    	fclose( f );
     }
 }
 

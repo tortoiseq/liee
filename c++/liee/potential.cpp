@@ -78,6 +78,7 @@ void Pot_const::get_outer_turningpoints( double E, double & leftmost, double & r
 void Pot_Round_Well_wImage::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_Round_Well_wImage" );
+	been_there = false;
 	width = config->getParam("width")->value / CONV_au_nm;
 	depth = config->getParam("depth")->value / CONV_au_eV;
 	expo = config->getParam("boxness")->value / ( width / 2.0 );
@@ -89,6 +90,7 @@ void Pot_Round_Well_wImage::initialize( Conf_Module* config, vector<Module*> dep
 void Pot_Experimental::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Experimental" );
+	been_there = false;
 	width = config->getParam("width")->value / CONV_au_nm;
 	depth = config->getParam("depth")->value / CONV_au_eV;
 	expo = config->getParam("boxness")->value / ( width / 2.0 );
@@ -525,6 +527,7 @@ double Pot_Harm_Oscillator::get_Vmin_pos()
 void Pot_Harm_Oscillator::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_Harm_Oscillator" );
+	been_there = false;
 	this->k = config->getParam("k")->value / 1e-30 * CONV_au_s * CONV_au_s;
 	this->w = sqrt( k );
 	this->shift = config->getParam("shift")->value  * 1e-9 / CONV_au_m;
@@ -625,6 +628,7 @@ double Chulkov_Image_Potential::get_Vmin_pos()
 void Chulkov_Image_Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Chulkov_Image_Potential" );
+	been_there = false;
 	//this->r_end = config->getParam("r_end"]->value * 1e-9 / CONV_au_m;
 
 	// Das hier und die Funktion im Anhang erzeugen das Potential für Beryllium(0001)

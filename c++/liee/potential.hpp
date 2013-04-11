@@ -49,9 +49,9 @@ public:
 	 */
 	virtual double get_Vmin_pos();
 
-private:
+protected:
 	inline double deltaV( double r, double E ) { return E - V(r); }
-	bool been_there = false;
+	bool been_there;
 	double r_min;
 };
 
@@ -239,6 +239,8 @@ public:
 	double get_r_range() { return r_range; }
 	//!at which r to start the simulation
 	double get_r_start() { return r_start; }
+
+	inline double deltaV( double r, double t, double E ) { return E - V(r, t).real(); }
 
 	void register_dependencies( vector<Module*> dependencies );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );

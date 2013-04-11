@@ -473,7 +473,7 @@ void parse_datafile( const string filename, vector<double> & data )
 	}
 }
 
-//!
+//! sums up all doubles in vector
 double sum( const vector<double> & x )
 {
 	double sum = 0;

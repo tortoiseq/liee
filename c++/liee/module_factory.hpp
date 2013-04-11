@@ -45,6 +45,7 @@ public:
 		EXECUTION_REQUIRED["wf_reader"] 		= false;
 		EXECUTION_REQUIRED["wf_snapshots"] 		= false;
 		EXECUTION_REQUIRED["tunnel_ratio"] 		= false;
+		EXECUTION_REQUIRED["JWKB_tunnel"] 		= false;
 		EXECUTION_REQUIRED["crank_nicholson"] 	= true;
 		EXECUTION_REQUIRED["noumerov"] 			= true;
 	}
@@ -130,6 +131,12 @@ public:
 			LOG_DEBUG( "writing as Obs_Tunnel_Ratio");
 			*oarch << p;
 		}
+		else if ( m->type.compare( "observer" ) == 0 && m->name.compare( "JWKB_tunnel" ) == 0 ) {
+			Obs_JWKB_Tunnel* p = dynamic_cast<Obs_JWKB_Tunnel*>( m );
+			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
+			LOG_DEBUG( "writing as Obs_JWKB_Tunnel");
+			*oarch << p;
+		}
 		else if ( m->type.compare( "solver" ) == 0 && m->name.compare( "crank_nicholson" ) == 0 ) {
 			Crank_Nicholson* p = dynamic_cast<Crank_Nicholson*>( m );
 			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
@@ -202,6 +209,11 @@ public:
 		}
 		else if ( type.compare( "observer" ) == 0 && name.compare( "tunnel_ratio" ) == 0 ) {
 			Obs_Tunnel_Ratio* p = new Obs_Tunnel_Ratio();
+			if ( iarch != NULL ) *iarch >> p;
+			m = p;
+		}
+		else if ( type.compare( "observer" ) == 0 && name.compare( "JWKB_tunnel" ) == 0 ) {
+			Obs_JWKB_Tunnel* p = new Obs_JWKB_Tunnel();
 			if ( iarch != NULL ) *iarch >> p;
 			m = p;
 		}

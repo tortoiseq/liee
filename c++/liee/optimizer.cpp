@@ -96,7 +96,7 @@ int opti::Shot_Gun_Optimizer::assimilate_results( const vector<Request> & result
 		for ( int bi = 0; bi < num_bullets_per_shot; bi++ )	{
 			if ( in_flight[bi].id == result[ri].id )
 			{
-			    in_flight[bi].id = -1; // free slot!
+			    in_flight[bi].id = -1; // freeing the slot
 				if ( result[ri].flag == 0 )
 				{
 					in_flight[bi].x = in_flight[bi].x_new;
@@ -110,7 +110,7 @@ int opti::Shot_Gun_Optimizer::assimilate_results( const vector<Request> & result
 			}
 		}
 	}
-	convergence_test( in_flight );
+	convergence_test( in_flight );	// this is silly, it wont converge unless the objective is flat
 	return 0;
 }
 

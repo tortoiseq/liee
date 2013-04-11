@@ -29,6 +29,14 @@ public:
 	vector<string> infiles;
 	int appid;
 
+    int priority;
+    int delay_bound;
+    int min_quorum;
+    int target_nresults;
+    int max_error_results;
+    int max_total_results;
+    int max_success_results;
+    int rsc_bandwidth_bound;
 
 	Opti_Scheduler( string exp, int app_id );
 	~Opti_Scheduler();

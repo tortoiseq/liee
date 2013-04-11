@@ -70,7 +70,7 @@ int assimilate_handler( WORKUNIT& wu, vector<RESULT>& /*results*/, RESULT& canon
         {
             OUTPUT_FILE_INFO& fi = output_files[0];
             const char* result_dir = config.project_path("results");
-            double y = 666;
+            double y = numeric_limits<double>::quiet_NaN();
 	    
 	    boost::filesystem::path dest( fi.path );
 	    if ( not boost::filesystem::exists( dest ) ) {

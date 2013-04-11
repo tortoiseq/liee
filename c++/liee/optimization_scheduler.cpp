@@ -37,6 +37,34 @@ Opti_Scheduler::Opti_Scheduler( string exp, int app_id )
 	state_file_name = "/var/www/boinc/liee/workspace/" + experiment + "_state";
 	appid = app_id;
 	opti = NULL;
+
+	//some defaults
+    priority = 0;
+    delay_bound = 86400;
+    min_quorum = 1;
+    target_nresults = 1;
+    max_error_results = 4;
+    max_total_results = 8;
+    max_success_results = 4;
+    rsc_bandwidth_bound = 0;
+
+    // fetch user configured boinc parameters from config
+	string conf_filename = "/var/www/boinc/liee/workspace/" + experiment + "_conf.xml";	//TODO get project root from boinc config
+    Config cnf( conf_filename );
+	for ( size_t i = 0; i < cnf.chain.size(); i++ ) {
+		if ( cnf.chain[i]->type.compare( "scheduler" ) == 0  &&  cnf.chain[i]->name.compare( "BOINC" ) == 0  )
+		{
+			Conf_Module* boinc_param = cnf.chain[i];
+		    priority = (int)boinc_param->getParam("priority")->value;
+		    delay_bound = (int)boinc_param->getParam("delay_bound")->value;
+		    min_quorum = (int)boinc_param->getParam("min_quorum")->value;
+		    target_nresults = (int)boinc_param->getParam("target_nresults")->value;
+		    max_error_results = (int)boinc_param->getParam("max_error_results")->value;
+		    max_total_results = (int)boinc_param->getParam("max_total_results")->value;
+		    max_success_results = (int)boinc_param->getParam("max_success_results")->value;
+		    rsc_bandwidth_bound = (int)boinc_param->getParam("rsc_bandwidth_bound")->value;
+		}
+	}
 }
 
 Opti_Scheduler::~Opti_Scheduler() {}
@@ -307,8 +335,6 @@ void Opti_Scheduler::initialize( int & flag )
 
 void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job, Config & templ, int & flag )
 {
-	int REPLICATION_FACTOR = 1;	//TODO make configurable
-
 	// make a unique name (for the job and its input file)
 	char path[512];
 	stringstream ss_name;
@@ -365,16 +391,18 @@ void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job,
     job.clear();
     job.appid = appid;
     strcpy( job.name, name.c_str() );
-    job.rsc_fpops_est = flops;
-    job.rsc_fpops_bound = 20 * flops;			//TODO maybe the estimated flops are too low, or maybe the low instruction-per-clock-rate under certain circumstances causing clients to run into the flop-limit if set substantially lower than this
-    job.rsc_memory_bound = 1.2 * ram + 1e6;
-    job.rsc_disk_bound = 1.2 * disk + 1e6;
-    job.delay_bound = 86400;
-    job.min_quorum = REPLICATION_FACTOR;
-    job.target_nresults = REPLICATION_FACTOR;
-    job.max_error_results = REPLICATION_FACTOR*4;
-    job.max_total_results = REPLICATION_FACTOR*8;
-    job.max_success_results = REPLICATION_FACTOR*4;
+    //TODO the estimated flops/ram/disk are currently much too low. --> multiply by 100 for estimate and 1000 for bound
+    job.rsc_fpops_est = 100.0 * flops;
+    job.rsc_fpops_bound = 1000.0 * flops;
+    job.rsc_memory_bound = 10.0 * ram + 1e6;
+    job.rsc_disk_bound = 10.0 * disk + 1e6;
+    job.delay_bound = delay_bound;
+    job.min_quorum = min_quorum;
+    job.target_nresults = target_nresults;
+    job.max_error_results = max_error_results;
+    job.max_total_results = max_total_results;
+    job.max_success_results = max_success_results;
+    job.rsc_bandwidth_bound = rsc_bandwidth_bound;
 }
 
 void Opti_Scheduler::make_jobs( vector<DB_WORKUNIT> & jobs, int & flag )
@@ -395,6 +423,7 @@ void Opti_Scheduler::make_jobs( vector<DB_WORKUNIT> & jobs, int & flag )
 
 	if ( work.size() == 0 ) return;
 
+	//TODO instead of parsing the config in every loop, keep some state information in memory
 	string conf_filename = "/var/www/boinc/liee/workspace/" + experiment + "_conf.xml";
     Config conf_template( conf_filename );
     infiles = conf_template.infiles;
