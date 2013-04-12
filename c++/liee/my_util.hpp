@@ -131,6 +131,9 @@ struct Point {
 	double x, y;
 	Point( double x, double y ) : x(x), y(y) {}
 	Point() : x(0), y(0) {}
+	friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version ) { ar & x; ar & y; }
 };
 
 struct less_than_point_x

@@ -192,6 +192,15 @@ alglib::spline1dinterpolant to_cubic_spline( vector<Point> & data )
         vec_y.ptr.p_double[i] = data[i].y;
 		//fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
     	if ( isnan( data[i].x * data[i].y ) || isinf( data[i].y ) || isinf( data[i].x ) ) {
+    		/*debug emergency out
+    	    stringstream ss;
+    	    ss << "debug-" << time(0) << "-" << clock();
+    		FILE* f = fopen( ss.str().c_str(), "w" );
+    	    for( size_t i = 0; i < data.size(); i++ ) {
+    	    	fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
+    	    }
+    	    fclose( f );
+    		//\debug emergency out */
     		throw Except__Preconditions_Fail( __LINE__ );
     	}
     }

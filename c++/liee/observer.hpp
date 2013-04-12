@@ -137,14 +137,18 @@ public:
 };
 
 /*!
- * This Observer can be used together with a dummy Solver instead a solver of the time-dependent Schroedinger equation.
- * The WF is mostly ignored though, instead the time-dependent Potential is used for the JWKB approximation
- * of the quasi-stationary tunnel rate by integrating over the auto-detected barrier. //TODO blah blah
+ * The Obs_JWKB_Tunnel observer can be used in conjunction with a solver of the time-dependent Schroedinger
+ * equation, but the WF-evolution is ignored. Instead the time-dependent potential is used for the JWKB
+ * approximation of the quasi-stationary tunnel rate by integrating over the barrier. The resulting tunnel
+ * rate in comparison with the dynamic rate (Obs_Tunnel_Ratio) gives insights on the ratio of
+ * absorption+over-the-barrier versus through-the-barrier emission.
  */
 class Obs_JWKB_Tunnel : public Observer
 {
 public:
 	vector<double>	j;	///< total probability over integration region for each time sample
+	vector<Point>	rt;	///< debug: record turning points
+	vector<double>	A;	///< debug: record integral of square-root(V-E) over barrier
 	double 	sum_j;		///< portion of probability lost during simulation
 	Potential* V;		///< potential for integration
 	double E;			///< energy of initial state, reverse engineered from curvature of WF at the potentials minimum
@@ -153,6 +157,7 @@ public:
 	double last_r2;		///< cache latest second turning point
 	int N;				///< number of samples for numerical integration over the barrier
 	double g;			///< JWKB constant
+	double r_end;		///< for r > r_end, the potential stops to be useful (because CAP takes over)
 	int 	step_t;
 	int		t_samples;
 	bool 	is_objective;
@@ -169,6 +174,8 @@ public:
     {
     	ar & boost::serialization::base_object<Observer>( *this );
     	ar & j;
+    	ar & rt;
+    	ar & A;
     	ar & sum_j;
     	ar & E;
     	ar & dr;
@@ -176,6 +183,7 @@ public:
     	ar & last_r2;
     	ar & N;
     	ar & g;
+    	ar & r_end;
         ar & step_t;
         ar & t_samples;
         ar & is_objective;
