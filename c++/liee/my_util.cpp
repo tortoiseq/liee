@@ -92,9 +92,10 @@ double BracketedInfixParser::eval( string ex )
 
 	// now, there should be exactly one operator left in the string.
 	// is it an unary operator?
-	if ( ex.find("-") == 0 ) {
-		return - eval( ex.substr( 1, ex.npos ), operand );
-	}
+	// revoke support of unary minus because it breaks number literals like 1.0E-9, now you have to type (0-$x) instead of (-$x)
+	//if ( ex.find("-") == 0 ) {
+	//	return - eval( ex.substr( 1, ex.npos ), operand );
+	//}
 	if ( ex.find("exp") == 0 ) {
 		return exp( eval( ex.substr( 3, ex.npos ), operand ) );
 	}

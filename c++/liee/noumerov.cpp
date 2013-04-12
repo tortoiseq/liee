@@ -515,17 +515,12 @@ void Noumerov1d::save_results( string & filename )
 	{
 		if ( spectrum[i].num_trial > 0 ) {
 			evaluate_energy( spectrum[i - lvl_lo] );
-
-			string si = boost::lexical_cast<string>( i );
-			string fi = filename + "_" + string( 4 - si.size(), '0') + si + ".dat"; 	// or printf("%04d", i) ?
-			//save_graph( ss0.str() + "_l.dat", spectrum[i - lvl_lo].leftwards );
-			//save_graph( ss0.str() + "_r.dat", spectrum[i - lvl_lo].rightwards );
+			string fi = filename + "_" + boost::lexical_cast<string>( i ) + ".dat";	// (no more leading zeros)
 			files.push_back( fi );
 			save_graph( fi , spectrum[i - lvl_lo].blend );
 			spectrum[i - lvl_lo].clear();
 		}
 	}
-
 	tar_gz_files( ".", files, filename );
 }
 

@@ -6,6 +6,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "module_config.hpp"
 #include "my_util.hpp"
@@ -166,12 +167,6 @@ void Conf_Module::evaluate_expressions()
 		for ( iter = param.begin(); iter != param.end(); ++iter )
 		{
 			Conf_Param* p = iter->second;
-			//debug------------------on
-			//bool dbg = false;
-			//if ( p->name.compare( "dt" ) == 0 ) {
-			//	cout << "found dt with textual = " << p->textual << "\n";
-			//}
-			//debug------------------off
 			if ( p->textual && p->text[0] == '(' ) {
 				try {
 					double v = parser.evaluate( p->text );
@@ -179,14 +174,30 @@ void Conf_Module::evaluate_expressions()
 					p->textual = false;
 					p->value = v;		// next loop this parameter is available in vars too
 				}
-				catch ( Except__Preconditions_Fail& e ) {	//TODO tailored exceptions
+				catch ( Except__Preconditions_Fail& e ) {
 					num_unresolved++;
 				}
 			}
 		}
 
 		// check end conditions
-		if ( num_unresolved == 0 ) break;	// done
+		if ( num_unresolved == 0 ) {
+			// done with numeric evaluations, now lastly check for strings with variable suffix, for e.g. numbered filenames
+			for ( iter = param.begin(); iter != param.end(); ++iter )
+			{
+				Conf_Param* p = iter->second;
+				// identify the hints for the syntax: state_$lvl
+				size_t opos = p->text.find("_$");
+				if ( p->textual  &&  opos != p->text.npos ) {
+					string key = p->text.substr( opos + 2, p->text.npos );
+					string prefix = p->text.substr( 0, opos );
+					if ( vars.find( key ) == vars.end() ) continue;		// suffix is not a known variable --> ignore
+					p->text = prefix + boost::lexical_cast<string>( (int)vars[key] );
+					DEBUG_SHOW3( prefix, key, p->text );
+				}
+			}
+			break;
+		}
 		if ( not num_unresolved < num_unres_last ) {
 			LOG_FATAL( "Could not evaluate all given expressions" );
 			exit(1);

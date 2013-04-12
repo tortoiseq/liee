@@ -32,15 +32,18 @@ extern "C" void init_potential()
     vector<Module*> deps;
     for ( int i = 0; i < (int)cnf->chain.size(); i++ )
     {
-    	if ( cnf->chain[i]->stage != 1 ) continue; // only concerned with stage-1 only, e.g. tasks for compute-hosts
+    	if ( cnf->chain[i]->type.compare("potential") == 0			// so far, only concerned with using potential components
+    			|| cnf->chain[i]->type.compare("pot_const") == 0
+    			|| cnf->chain[i]->type.compare("pulse") == 0 )
+    	{
+    		Module* m;
+    		m = factory.assemble( cnf->chain[i]->type, cnf->chain[i]->name, cnf->chain[i]->serial );
+    		m->initialize( cnf->chain[i], deps );
+    		deps.push_back( m );
 
-    	Module* m;
-   		m = factory.assemble( cnf->chain[i]->type, cnf->chain[i]->name, cnf->chain[i]->serial );
-		m->initialize( cnf->chain[i], deps );
-    	deps.push_back( m );
-
-    	if ( cnf->chain[i]->type.compare( "potential" ) == 0 ) {
-    		my_pot = dynamic_cast<Potential*>( m );
+    		if ( cnf->chain[i]->type.compare( "potential" ) == 0 ) {
+    			my_pot = dynamic_cast<Potential*>( m );
+    		}
     	}
     }
 

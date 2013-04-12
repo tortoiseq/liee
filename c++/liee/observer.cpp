@@ -225,7 +225,7 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 	int i_middle = (int)( (rmin - r0) / dr );
 	E = Vmin - ( wf->psi[i_middle-1].real() - 2 * wf->psi[i_middle].real() + wf->psi[i_middle+1].real() ) / ( pow( dr, 2.0 ) * 2.0 * wf->psi[i_middle].real() );
 	DEBUG_SHOW(E);
-	g = 4.0 * CONST_PI * sqrt( 2.0 );
+	g = 2.0 * sqrt( 2.0 );
 	last_r2 = numeric_limits<double>::quiet_NaN();
 
 	// temporal downsampling
@@ -333,8 +333,8 @@ void Obs_JWKB_Tunnel::observe( Module* state )
 		A = simple_integrate( samples, r1, r2 );
 	#endif
 		j.push_back( exp( -g * A ) );
-		rt.push_back( Point(0,0) );
-		this->A.push_back( 6e66 );
+		rt.push_back( Point( r1, r2 ) );
+		this->A.push_back( A );
 	}
 
 	// save after getting the last sample (again some code duplication with tunnel observer)
