@@ -300,6 +300,36 @@ dcmplx Potential::V( double r, double t )
 	}
 }
 
+dcmplx Potential::V_indexed( size_t ri, double t )
+{
+	return dcmplx( gridVre[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
+}
+
+void Potential::set_grid( double r_start, double range, size_t N )
+{
+	grid.clear();
+	gridVre.clear();
+	gridVim.clear();
+	double dr = range / (N - 1);
+
+	for ( size_t i = 0; i < N; i++ ) {
+		double r = r_start + i * dr;
+		grid.push_back( r );
+
+		double z = (r - (r_start + r_range - wcap) ) / wcap;	// CAP coordinate
+		if (z > 0.0 && z <= 1.0) 								// r is in CAP territory
+		{
+			double r_ = r_start + r_range - wcap;
+			gridVre.push_back( well->V( r_ ) +  V_Fdc( r_, t_charge ) );
+			gridVim.push_back( V_cap( z ) );
+		}
+		else {
+			gridVre.push_back( well->V( r ) +  V_Fdc( r, t_charge ) );
+			gridVim.push_back( 0.0 );
+		}
+	}
+}
+
 /*!
  * Returns only the real part, e.g. without the complex absorbing potential.
  */

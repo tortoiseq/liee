@@ -3,6 +3,7 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
+#include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
@@ -168,6 +169,19 @@ void Obs_Tunnel_Ratio::estimate_effort( Conf_Module* config, double & flops, dou
 
 void Obs_Tunnel_Ratio::summarize( map<string, string> & results )
 {
+	// save after getting the last sample
+   	tunnel_ratio = 1.0  -  psi_sqr.back() / psi_sqr.front();
+   	FILE* f = boinc_fopen( filename.c_str(), "w" );
+   	double last = psi_sqr.front();
+   	for ( size_t i = 0; i < psi_sqr.size(); i++ )
+   	{
+   		double j = ( last - psi_sqr[i] ) / dt;
+   		last = psi_sqr[i];
+   		fprintf( f, "%1.6g\t%1.15g\t%1.10g\n", i * dt , psi_sqr[i], j );
+   	}
+   	fprintf( f, "\n" );
+   	fclose( f );
+
 	results["tunnel_ratio"] = doub2str( tunnel_ratio ); //TODO boost conversion
 	if ( is_objective ) {
 		results["objective"] = doub2str( tunnel_ratio );
@@ -179,21 +193,6 @@ void Obs_Tunnel_Ratio::observe( Module* state )
 	if ( counter++ % step_t != 0 ) return;
 	Solver* s = dynamic_cast<Solver*>( state );
 	psi_sqr.push_back( s->integrate_psi_sqr( ra, rb ) );
-
-	// save after getting the last sample
-	if ( (int)psi_sqr.size() >= t_samples ) {
-    	tunnel_ratio = 1.0  -  psi_sqr.back() / psi_sqr.front();
-    	FILE* f = boinc_fopen( filename.c_str(), "w" );
-    	double last = psi_sqr.front();
-    	for ( size_t i = 0; i < psi_sqr.size(); i++ )
-    	{
-    		double j = ( last - psi_sqr[i] ) / dt;
-    		last = psi_sqr[i];
-    		fprintf( f, "%1.6g\t%1.15g\t%1.10g\n", i * dt , psi_sqr[i], j );
-    	}
-    	fprintf( f, "\n" );
-    	fclose( f );
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -227,6 +226,7 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 	DEBUG_SHOW(E);
 	g = 2.0 * sqrt( 2.0 );
 	last_r2 = numeric_limits<double>::quiet_NaN();
+	burst = false;
 
 	// temporal downsampling
 	// (code duplication with tunnel ratio observer)
@@ -265,7 +265,23 @@ void Obs_JWKB_Tunnel::estimate_effort( Conf_Module* config, double & flops, doub
 
 void Obs_JWKB_Tunnel::summarize( map<string, string> & results )
 {
-	results["jwkb_J"] = doub2str( sum_j ); //TODO boost conversion
+	sum_j = 0;
+	BOOST_FOREACH( double x, j ) {
+		if ( not isinf(x) ) {	// its no use to invalidate the aggregated J_tot just because some infinities have been picked up along the way
+			sum_j += x;
+		}
+	}
+
+	// save to file after getting the last sample (again some code duplication with tunnel observer)
+   	FILE* f = boinc_fopen( filename.c_str(), "w" );
+   	for ( size_t i = 0; i < j.size(); i++ )	{
+   		fprintf( f, "%1.6g\t%1.10g\t%1.6g\t%1.6g\t%1.8g\n", i * dt , j[i], rt[i].x, rt[i].y, A[i] );
+   	}
+   	fprintf( f, "\n" );
+   	fclose( f );
+
+   	results["jwkb_J"] = doub2str( sum_j ); //TODO boost conversion
+	results["jwkb_burst"] = burst==true ? 1.0 : 0.0;
 	if ( is_objective ) {
 		results["objective"] = doub2str( sum_j );
 	}
@@ -276,7 +292,7 @@ void Obs_JWKB_Tunnel::observe( Module* state )
 	if ( counter++ % step_t != 0 ) return;
 	Solver* s = dynamic_cast<Solver*>( state );
 	boost::function<double(double)> deltaE;
-	deltaE = boost::bind( &Potential::deltaV, V, _1, s->t, E );
+	deltaE = boost::bind( &Potential::deltaV, V, _1, s->t, E );	// deltaE(r) is mapped to deltaV(r, s->t, E)
 
 	double F = ( Vp0 - V->V( dr, s->t ) ).real() / dr;		// estimate actual field strength from the change in potentials height compared with t0
 	double r2 = -E / F;										// assume constant F +++ assume V approaching 0 for r > 0
@@ -292,8 +308,15 @@ void Obs_JWKB_Tunnel::observe( Module* state )
 		double a = deltaE( r1 );
 		if ( a < 0 ) { d = -dr; } 							// r1 already inside barrier --> direction backwards
 		while ( deltaE( r1 + d ) * a > 0 ) {
+			if ( r2 + d > r_end ) {							// no barrier at all --> j=infinity
+				j.push_back( numeric_limits<double>::infinity() );
+				burst = true;
+				rt.push_back( Point(0,0) );
+				A.push_back( 6e66 );
+				return;
+			}
 			d *= 2;
-			if ( isinf( d ) ) {	throw Except__Too_Far_Out( __LINE__ ); }
+			if ( isinf( d ) ) {	throw Except__Too_Far_Out( __LINE__ ); }	// this shouldn't happen
 		}
 		r1 = find_root( deltaE, r1, r1 + d, 1e-12 );
 
@@ -304,16 +327,16 @@ void Obs_JWKB_Tunnel::observe( Module* state )
 		}
 		d = dr;
 		a = deltaE( r2 );
-		if ( a > 0 ) { d = -dr; } 							// r1 already outside barrier --> direction backwards
+		if ( a > 0 ) { d = -dr; } 							// r2 already outside barrier --> direction backwards
 		while ( deltaE( r2 + d ) * a > 0 ) {
 			if ( r2 + d > r_end ) {
 				j.push_back( 0.0 );							// barrier extends farther than simulation range --> j=0
 				rt.push_back( Point(0,0) );
 				A.push_back( 6e66 );
-				goto maybe_write_results;
+				return;
 			}
 			d *= 2;
-			if ( isinf( d ) ) {	throw Except__Too_Far_Out( __LINE__ ); }
+			if ( isinf( d ) ) {	throw Except__Too_Far_Out( __LINE__ ); }	// this shouldn't happen
 		}
 		r2 = find_root( deltaE, r2, r2 + d, 1e-12 );
 		last_r2 = r2;
@@ -336,18 +359,6 @@ void Obs_JWKB_Tunnel::observe( Module* state )
 		rt.push_back( Point( r1, r2 ) );
 		this->A.push_back( A );
 	}
-
-	// save after getting the last sample (again some code duplication with tunnel observer)
-	maybe_write_results:;
-	if ( (int)j.size() >= t_samples ) {
-		sum_j = sum(j);
-    	FILE* f = boinc_fopen( filename.c_str(), "w" );
-    	for ( size_t i = 0; i < j.size(); i++ )	{
-    		fprintf( f, "%1.6g\t%1.10g\t%1.6g\t%1.6g\t%1.8g\n", i * dt , j[i], rt[i].x, rt[i].y, A[i] );
-    	}
-    	fprintf( f, "\n" );
-    	fclose( f );
-    }
 }
 
 } // namespace liee

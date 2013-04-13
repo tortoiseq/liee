@@ -158,6 +158,7 @@ public:
 	int N;				///< number of samples for numerical integration over the barrier
 	double g;			///< JWKB constant
 	double r_end;		///< for r > r_end, the potential stops to be useful (because CAP takes over)
+	bool burst;	///< true if: at least at one sampling time the barrier was pushed bellow the states initial energy
 	int 	step_t;
 	int		t_samples;
 	bool 	is_objective;
@@ -184,6 +185,7 @@ public:
     	ar & N;
     	ar & g;
     	ar & r_end;
+    	ar & burst;
         ar & step_t;
         ar & t_samples;
         ar & is_objective;

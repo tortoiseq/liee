@@ -149,6 +149,7 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	exec_done = false;
 	register_dependencies( dependencies );
 	renormalize();
+	potential->set_grid( potential->get_r_start(), r_range, Nr );
 }
 
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -160,6 +161,7 @@ void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> depende
 	phi.resize(Nr);
 	d.resize(Nr);
 	register_dependencies( dependencies );
+	potential->set_grid( potential->get_r_start(), r_range, Nr );
 }
 
 void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -177,9 +179,7 @@ void Crank_Nicholson::evolve_1step()
 {
 	// update potential and recalculate 'd'
     for (size_t j=0; j < Nr; j++) {
-   		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx(0.0, dt / 4.0) * potential->V( potential->get_r_start() + dr * j, t ); //#(45)
-
-   				//
+   		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
     }
 
     alfa[0] = d[0];

@@ -193,7 +193,6 @@ void Conf_Module::evaluate_expressions()
 					string prefix = p->text.substr( 0, opos );
 					if ( vars.find( key ) == vars.end() ) continue;		// suffix is not a known variable --> ignore
 					p->text = prefix + boost::lexical_cast<string>( (int)vars[key] );
-					DEBUG_SHOW3( prefix, key, p->text );
 				}
 			}
 			break;

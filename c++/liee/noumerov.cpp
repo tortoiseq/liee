@@ -515,7 +515,7 @@ void Noumerov1d::save_results( string & filename )
 	{
 		if ( spectrum[i].num_trial > 0 ) {
 			evaluate_energy( spectrum[i - lvl_lo] );
-			string fi = filename + "_" + boost::lexical_cast<string>( i ) + ".dat";	// (no more leading zeros)
+			string fi = filename + boost::lexical_cast<string>( i );	// (no more leading zeros)
 			files.push_back( fi );
 			save_graph( fi , spectrum[i - lvl_lo].blend );
 			spectrum[i - lvl_lo].clear();

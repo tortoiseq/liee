@@ -232,9 +232,20 @@ public:
 	//! real part of V(r,t)
 	double Vr( double r, double t );
 
+	/*! for repeated evaluations on a fixed grid, performanc is improved by caching the constant
+	 *  portion	of the potential and access the combined potential via indexed.
+	 *  set_grid() has to be called before using V_indexed()!
+	 */
+	dcmplx V_indexed( size_t ri, double t );
+
+	/*! sets the grid transformation and stores the constant potential for repeated usage
+	 *  important! has to be rerun in reinitialize() because the cach is not stored in the
+	 *  checkpoint archive!
+	 */
+	void set_grid( double r_start, double range, size_t N );
+
 	//! grant access to the static potential
 	Pot_const* getPot_const() { return well; }
-
 	//! total range including CAP
 	double get_r_range() { return r_range; }
 	//! at which r to start the simulation
@@ -257,7 +268,9 @@ private:
 	Pot_const* well;
 	vector<Laser_Field*> pulses;
 	vector<int> reg_serials;		///< remember which dependency modules to register
-
+	vector<double> grid;			///< all r-positions of the grid (optional) (!not saved to archive!)
+	vector<double> gridVre;			///< real-part of indexed constant potential (!not saved to archive!)
+	vector<double> gridVim;			///< imaginary-part of indexed constant potential (!not saved to archive!)
 
 	double r_range;
 	double r_start;
