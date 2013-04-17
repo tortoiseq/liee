@@ -493,10 +493,36 @@ double sum( const vector<double> & x )
 	return sum;
 }
 
-//!
 double arithmetic_mean( const vector<double> & x )
 {
 	return sum( x ) / x.size();
+}
+
+size_t max_pos( const vector<double> & x )
+{
+	double max = numeric_limits<double>::min();
+	size_t max_i = 0;
+	for ( size_t i = 0; i < x.size(); i++ ) {
+		if ( x[i] > max ) {
+			max = x[i];
+			max_i = i;
+		}
+	}
+	return max_i;
+}
+
+size_t max_pos( const vector<dcmplx> & x )
+{
+	double max = numeric_limits<double>::min();
+	size_t max_i = 0;
+	for ( size_t i = 0; i < x.size(); i++ ) {
+		double sqr = real( x[i] * conj( x[i] ) );
+		if ( sqr > max ) {
+			max = sqr;
+			max_i = i;
+		}
+	}
+	return max_i;
 }
 
 /*!

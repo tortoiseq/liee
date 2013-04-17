@@ -305,6 +305,8 @@ void parse_datafile( const string filename, vector<double> & data );
 double sum( const vector<double> & x );
 double arithmetic_mean( const vector<double> & x );
 double variance( const vector<double> & x );
+size_t max_pos( const vector<double> & x );
+size_t max_pos( const vector<dcmplx> & x );
 
 /*!
  * Using bisection to find a root between a and b.

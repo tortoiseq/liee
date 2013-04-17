@@ -26,16 +26,19 @@ public:
 	virtual double integrate_psi_sqr( double a, double b);
 
 	Potential* 			potential;
-	vector<dcmplx> 		psi;		///< WF
+	vector<dcmplx> 		psi;		///< wave function
 	vector<Observer*> 	obs;		///< registered observers
 
-	size_t Nr;
-	int Ntp;
-	double r_range;
-	double dr;
-	double t;
-	double t_end;
-	double dt;
+	size_t Nr;						///< number of positions on the grid
+	int Nt_adiab;					///< number of time steps spend on the adiabatic activation
+	double t_adiab;					///< simulation time in a.u. the adiabatic activation evolves. the window [-1..0) is scaled by dt's accordingly
+	double r_range;					///< spatial range
+	double dr;						///< step size for r
+	double t;						///< simulation-time
+	double t_end;					///< the end of simulation-time
+	double dt;						///< step size for t
+	double dt_;						///< backup of the actual dt while changing time-steps for adiabatic activation
+	size_t max_i;					///< for debug, index of initially highest WF^2
 	int count;
 
 	friend class boost::serialization::access;
@@ -47,12 +50,15 @@ public:
     {
         ar & psi;
         ar & Nr;
-        ar & Ntp;
+        ar & Nt_adiab;
+        ar & t_adiab;
         ar & r_range;
         ar & dr;
         ar & t;
         ar & t_end;
         ar & dt;
+        ar & dt_;
+        ar & max_i;
         ar & count;
         ar & exec_done;
     }

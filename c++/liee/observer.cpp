@@ -19,6 +19,9 @@ namespace liee {
 void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Obs_Snapshot_WF" );
+	counter = 0;
+	writtenLns = 0;
+	foundLns = 0;
 	// prepare spatial downsampling
 	double r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double dr = config->getParam("dr")->value / CONV_au_nm;
@@ -29,13 +32,11 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	if ( not config->getParam("obs_r1")->textual ) { r1 = config->getParam("obs_r1")->value / CONV_au_nm; }
 	ir0 = (int) (r0 / dr);
 	ir1 = (int) (r1 / dr);
-	DEBUG_SHOW2(ir0, ir1);
 
 	int Nr = 1.0 + ( r1 - r0 ) / dr;
 	step_r = floor( Nr / config->getParam("r_samples")->value );
 	if ( step_r < 1 ) { step_r = 1; }
 	if ( step_r > Nr ) { step_r = Nr; }
-	config->getParam("r_samples")->value = Nr;	// save the actual number of samples
 
 	// prepare temporal downsampling
 	t_range = config->getParam("t_range")->value / CONV_au_fs;
@@ -44,12 +45,17 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	t1 = t_range;
 	if ( not config->getParam("obs_t0")->textual ) { t0 = config->getParam("obs_t0")->value / CONV_au_fs; }
 	if ( not config->getParam("obs_t1")->textual ) { t1 = config->getParam("obs_t1")->value / CONV_au_fs; }
-	counter = 0;
+
 	int Nt = 1.0 + ( t1 - t0 ) / dt;
 	step_t = floor( Nt / config->getParam("t_samples")->value );
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
-	config->getParam("t_samples")->value = Nt;	// save the actual number of samples
+
+	// save the actual number of samples
+	num_r = 1 + Nr / step_r;
+	num_t = 1 + Nt / step_t;
+	config->getParam("t_samples")->value = num_t;
+	config->getParam("r_samples")->value = num_r;
 
 	do_square = config->getParam("square")->text.compare("true") == 0;
 	stringstream ss;
@@ -63,14 +69,25 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 
 	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	do_normalize = config->getParam("normalize")->text.compare("true") == 0;
-	// delete previous snapshot file
-	FILE* f = boinc_fopen( filename.c_str(), "w" );
+	FILE* f = boinc_fopen( filename.c_str(), "w" );		// delete previous snapshot file
 	fclose( f );
 }
 
 void Obs_Snapshot_WF::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Obs_Snapshot_WF" );
+	// save the actual number of samples again
+	config->getParam("r_samples")->value = num_r;
+	config->getParam("t_samples")->value = num_t;
+
+	// count the lines actually written to outfile (there might have been some appended between checkpoint-writing and program-exit)
+	FILE* f = boinc_fopen( filename.c_str(), "r" );
+	foundLns = 0;
+	int ch;
+	while ( EOF != ( ch = fgetc(f) ) ) {
+	    if ( ch == '\n' ) { ++foundLns; }
+	}
+	fclose( f );
 }
 
 void Obs_Snapshot_WF::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -92,7 +109,10 @@ void Obs_Snapshot_WF::observe( Module* state )
 {
 	Solver* s = dynamic_cast<Solver*>( state );
 	if ( s->t < t0  ||  s->t > t1 ) return;		// not in observation window
-	if ( counter++ % step_t != 0 ) return;		// downsample
+	if ( counter++ % step_t != 0 ) return;		// down-sample
+
+	writtenLns++;
+	if ( foundLns >= writtenLns ) return;
 
    	double fac = 1.0;
    	if ( do_normalize ) {
@@ -177,7 +197,7 @@ void Obs_Tunnel_Ratio::summarize( map<string, string> & results )
    	{
    		double j = ( last - psi_sqr[i] ) / dt;
    		last = psi_sqr[i];
-   		fprintf( f, "%1.6g\t%1.15g\t%1.10g\n", i * dt , psi_sqr[i], j );
+   		fprintf( f, "%1.6g\t%1.16g\t%1.16g\n", i * dt , psi_sqr[i], j );
    	}
    	fprintf( f, "\n" );
    	fclose( f );
@@ -245,6 +265,7 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 void Obs_JWKB_Tunnel::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Obs_JWKB_Tunnel" );
+	config->getParam("t_samples")->value = t_samples;	// save the actual number of samples again
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
 			V = dynamic_cast<Potential*>( dependencies[i] );
@@ -281,7 +302,7 @@ void Obs_JWKB_Tunnel::summarize( map<string, string> & results )
    	fclose( f );
 
    	results["jwkb_J"] = doub2str( sum_j ); //TODO boost conversion
-	results["jwkb_burst"] = burst==true ? 1.0 : 0.0;
+	results["jwkb_burst"] = burst==true ? "true" : "false";
 	if ( is_objective ) {
 		results["objective"] = doub2str( sum_j );
 	}

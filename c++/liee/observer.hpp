@@ -31,7 +31,6 @@ public:
 	int 	N;			///< total number of observations
 	double 	t_range;	///< simulation end-time
 	string 	filename;	///< write the result to file
-
 	double 	t_last;		///< time of last measurement
 	int		counter;
 	double 	dt;			///< time resolution of experiment
@@ -63,15 +62,19 @@ public:
 class Obs_Snapshot_WF : public Observer
 {
 public:
-	int 	step_r;		///< number of spatial samples to skip over between those being saved
-	int 	step_t;		///< number of temporal samples to skip over between the saved ones
+	size_t	num_r;		///< number of spatial samples to produce
+	size_t	num_t;		///< number of temporal samples to produce
+	size_t 	step_r;		///< number of spatial samples to skip over between those being saved
+	size_t 	step_t;		///< number of temporal samples to skip over between the saved ones
 	string	format;		///< cache format string for fprintf
 	bool 	do_square;	///< only save the square of the complex wf
 	bool	do_normalize;///< if true, normalise integral to Psi Psi* == 1
-	int		ir0;		///< index of start-pos of recording window
-	int		ir1;		///< index of end-pos of recording window
+	size_t	ir0;		///< index of start-pos of recording window
+	size_t	ir1;		///< index of end-pos of recording window
 	double	t0;			///< start-time of recording window
 	double	t1;			///< end-time of recording window
+	size_t  writtenLns;	///< number of lines written to the outfile
+	size_t	foundLns;	///< number of lines found in outfile (can be bigger than writtenLns after load from checkpoint)
 
     virtual void observe( Module* state );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
@@ -87,14 +90,18 @@ public:
     void serialize( Archive & ar, const unsigned int version )
     {
     	ar & boost::serialization::base_object<Observer>( *this );
+    	ar & num_r;
+    	ar & num_t;
         ar & step_r;
         ar & step_t;
+        ar & format;
         ar & do_square;
         ar & do_normalize;
         ar & ir0;
         ar & ir1;
         ar & t0;
         ar & t1;
+        ar & writtenLns;
     }
 };
 
@@ -158,7 +165,7 @@ public:
 	int N;				///< number of samples for numerical integration over the barrier
 	double g;			///< JWKB constant
 	double r_end;		///< for r > r_end, the potential stops to be useful (because CAP takes over)
-	bool burst;	///< true if: at least at one sampling time the barrier was pushed bellow the states initial energy
+	bool burst;			///< true if: at least at one sampling time the barrier was pushed bellow the states initial energy
 	int 	step_t;
 	int		t_samples;
 	bool 	is_objective;

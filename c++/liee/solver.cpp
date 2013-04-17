@@ -2,6 +2,8 @@
 
 #include "boinc_api.h"
 
+#include <boost/math/special_functions/erf.hpp>
+
 #include "potential.hpp"
 #include "wave_function.hpp"
 #include "solver.hpp"
@@ -48,19 +50,40 @@ bool Solver::execute()
 	time_t last_report_time = start_time;
 	time_t last_checkpoint_time = start_time;
 	double last_progress = t / t_end;
+	int count_tic = 100;
 
 	while ( t < t_end )
 	{
-		// first observe (to catch the starting condition as well)
-        boinc_begin_critical_section();
-		for( size_t i = 0; i < obs.size(); i++ ) {
-			obs[i]->observe( this );
+		if ( t >= 0 ) {
+			boinc_begin_critical_section();
+			for( size_t i = 0; i < obs.size(); i++ ) {
+				obs[i]->observe( this );
+			}
+			boinc_end_critical_section();
 		}
-        boinc_end_critical_section();
 
-        evolve_1step();
+        evolve_1step();			//<<<<<<<<<<<<<<< this is where the action is
 
-		if ( ++count % 1 == 0 ) { //TODO hmm??
+    	// debug: check wobble
+    	//double sqrPsiM = real( psi[max_i] * conj( psi[max_i] ) );
+    	//DEBUG_SHOW2( t, sqrPsiM );
+
+        if ( t >= 0 ) {
+        	t += dt;
+        } else {
+        	// adiabatic activation
+        	//dt = dt_ * ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * t + exp(1.0) ) ) / 2.0;	// activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
+        	dt = t_adiab / Nt_adiab;
+        	t += 1.0 / Nt_adiab;	// t runs steadily from -1 to 0 in Nt_adiab steps, despite twisted dt
+        	//DEBUG_SHOW2( t, dt );
+        	if ( t >= 0) {
+        		LOG_INFO("done with adiabatic activation.");
+        		renormalize();
+        		dt = dt_;
+        	}
+        }
+
+		if ( t >= 0  &&  ++count % count_tic == 0 ) {
 			time_t now = time(0);
 			boinc_fraction_done( t / t_end );
 			//if ( t / t_end > 0.5 ) return false; //TODO: test if a resumed computation yields the same result
@@ -79,6 +102,7 @@ bool Solver::execute()
 				double current_speed = leap / wait;
 				double samples_per_s = current_speed * WORK;
 				double hours_remain = (1.0 - last_progress) / current_speed / 3600;
+				count_tic = 1 + (int)abs( 10.0 * samples_per_s / Nr );	// check progress about once in 10s
 				INFO_SHOW4( count, last_progress, samples_per_s, hours_remain );
 			}
 		}
@@ -100,14 +124,14 @@ bool Solver::execute()
 
 void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 {
-	//TODO when we have more than just the Crank-Nicholson, this code needs to move to Solver::register_dependencies
+	//TODO when we have more than just the Crank-Nicholson, this code should move to Solver::register_dependencies
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare("potential") == 0 ) {
-			LOG_INFO( "found potential to use")
+			LOG_DEBUG( "found potential to use: " << dependencies[i]->name );
 			potential = dynamic_cast<Potential*>( dependencies[i] );
 		}
 		else if ( count == 0  &&  dependencies[i]->type.compare("initial_wf") == 0 ) {
-			LOG_INFO( "found initial WV to use")
+			LOG_DEBUG( "found initial WV to use: " << dependencies[i]->name );
 			Wave_Function* wf = dynamic_cast<Wave_Function*>( dependencies[i] );
 
 			this->psi.resize( Nr );
@@ -119,10 +143,11 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 					psi[i] = dcmplx( 0, 0 );
 				}
 			}
+			max_i = max_pos( psi );
 		}
 		else if ( dependencies[i]->type.compare("observer") == 0 ) {
 			//TODO check, if observer's->target matches this->serial
-			LOG_INFO( "found an observer to use")
+			LOG_DEBUG( "registered observer: " << dependencies[i]->name );
 			obs.push_back( dynamic_cast<Observer*>( dependencies[i] ) );
 		}
 	}
@@ -132,12 +157,13 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Crank_Nicholson" );
-	dr = config->getParam("dr")->value * 1e-9 / CONV_au_m;
-	t_end = config->getParam("t_range")->value * 1e-15 / CONV_au_s;
-	r_range = config->getParam("r_range")->value * 1e-9 / CONV_au_m;
-	dt = config->getParam("dt")->value * 1e-15 / CONV_au_s;
+	dr = config->getParam("dr")->value / CONV_au_nm;
+	t_end = config->getParam("t_range")->value / CONV_au_fs;
+	r_range = config->getParam("r_range")->value / CONV_au_nm;
+	dt = config->getParam("dt")->value / CONV_au_fs;
+	dt_ = dt;
 	Nr = 1 + r_range / dr;
-	DEBUG_SHOW2( Nr, t_end/dt );
+	LOG_INFO( "Problem size (Nr x Nt): " << Nr << " x " << (int)(t_end / dt) << " = " << (Nr * t_end / dt) );
 	jb = Nr - 1;
 	c = dcmplx( 0.0, -dt / ( 8.0 * dr*dr ) );   //(44)
 	alfa.resize(Nr);
@@ -146,10 +172,14 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	phi.resize(Nr);
 	d.resize(Nr);
 	count = 0;
+	t_adiab = (int)config->getParam("adiab_T")->value / CONV_au_fs;
+	double dt_adiab = config->getParam("adiab_dt")->value / CONV_au_fs;
+	Nt_adiab = (int)( t_adiab / dt_adiab );
+	t = ( Nt_adiab > 1)  ?  -1.0  :  0.0;		// t in (-1..0) indicates the adiabatic activation
 	exec_done = false;
 	register_dependencies( dependencies );
 	renormalize();
-	potential->set_grid( potential->get_r_start(), r_range, Nr );
+	potential->set_grid( dr, Nr );
 }
 
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -161,7 +191,7 @@ void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> depende
 	phi.resize(Nr);
 	d.resize(Nr);
 	register_dependencies( dependencies );
-	potential->set_grid( potential->get_r_start(), r_range, Nr );
+	potential->set_grid( dr, Nr );
 }
 
 void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -177,10 +207,19 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 
 void Crank_Nicholson::evolve_1step()
 {
-	// update potential and recalculate 'd'
-    for (size_t j=0; j < Nr; j++) {
-   		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
-    }
+	if ( t >= 0 ) {
+		for (size_t j=0; j < Nr; j++) {
+			d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
+		}
+	}
+	else {
+		// in adiabatic activation territory V_const is time dependent due to ramping of voltage --> have to use general V(r,t)
+    	c = dcmplx( 0.0, -dt / ( 8.0 * dr*dr ) );   //(44)
+		for (size_t j=0; j < Nr; j++) {
+			double r = potential->get_r_start() + j * dr;
+			d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V(r, t); //#(45)
+		}
+	}
 
     alfa[0] = d[0];
     gamma[0] = c / alfa[0];
@@ -202,9 +241,6 @@ void Crank_Nicholson::evolve_1step()
     for (int j=0; j <= jb; j++) {
     	psi[j] = phi[j] - psi[j]; //#(39)
     }
-
-    t += dt;
-    count++;
 }
 
 } //namespace

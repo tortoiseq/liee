@@ -1,6 +1,7 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <time.h>
 
 #include "filesys.h"
 
@@ -314,6 +315,12 @@ void Config::save_file( string & filename )
 void Config::save_text( string filename, map<string, string> & results )
 {
 	FILE* f = boinc_fopen( filename.c_str(), "w" );
+	fprintf( f, "%s\n", "Info" );	//TODO stop using c-style printf
+	fprintf( f, "%20s\t%s\n", "version", this->version.c_str() );
+	fprintf( f, "%20s\t%s\n", "project", this->project.c_str() );
+	fprintf( f, "%20s\t%s\n", "experiment", this->experiment.c_str() );
+	fprintf( f, "%20s\t%s\n", "workunit", this->wu.c_str() );
+	fprintf( f, "%20s\t%g\n", "completed", (double)(time(0)/3600.0/24.0) );
 
 	// write results
 	fprintf( f, "%s\n", "Results" );
@@ -337,7 +344,7 @@ void Config::save_text( string filename, map<string, string> & results )
 	// write modules in chain
 	for ( size_t i = 0; i < chain.size(); i++ )
 	{
-		fprintf( f, "\n%s\n", chain[i]->name.c_str() );
+		fprintf( f, "\n%d::%s\n", chain[i]->serial, chain[i]->name.c_str() );
 
 		map<string, Conf_Param*>::iterator iter_param;
 		for ( iter_param = chain[i]->param.begin(); iter_param != chain[i]->param.end(); ++iter_param )

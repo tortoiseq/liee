@@ -33,6 +33,8 @@
 using namespace std;
 using namespace liee;
 
+string VERSION = "1.21";	///< the parameter file is required to have the same version identifier
+
 
 #ifdef LOG_ENABLED
 static log4cxx::LoggerPtr init_logger_config( string & resolved_name )
@@ -66,16 +68,6 @@ int main( int argc, char* argv[] )
 	log4cxx::LoggerPtr logger = init_logger_config( resolved_outfile_name );
 #endif
 	LOG_INFO( "Starting liee_worker");
-
-	/*--------------------------------------- test on
-	map<string, double> dict;
-	dict["PI"] = CONST_PI;
-	dict["ten"] = 10.0;
-	BracketedInfixParser parser( &dict );
-	cout << "result = " << parser.evaluate( "( 10.001e-1 * ( exp($ten/10) ) )" )  << "\n"; //(sin (0.5 * $PI) )
-	exit( 0 );
-	//--------------------------------------- test off */
-
 	srand( time(0) );
 	//srand( 100 );
     boinc_init();
@@ -84,7 +76,11 @@ int main( int argc, char* argv[] )
     string resolved_param_name;
     boinc_resolve_filename_s( "liee_parameter.xml", resolved_param_name );
     Config cnf( resolved_param_name );
-    LOG_INFO( "Config done");
+    if ( cnf.version.compare( VERSION ) != 0 ) {
+    	LOG_ERROR( "Version of config-file is incompatible. " << VERSION << " required!" );
+    	//exit(1);
+    }
+    LOG_INFO( "Config done" );
     vector<Module*> deps;
     int last_i_stored = -1;
     map<string, string> results;

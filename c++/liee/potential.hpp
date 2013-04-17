@@ -232,17 +232,17 @@ public:
 	//! real part of V(r,t)
 	double Vr( double r, double t );
 
-	/*! for repeated evaluations on a fixed grid, performanc is improved by caching the constant
+	/*! for repeated evaluations on a fixed grid, performance is improved by caching the constant
 	 *  portion	of the potential and access the combined potential via indexed.
 	 *  set_grid() has to be called before using V_indexed()!
 	 */
 	dcmplx V_indexed( size_t ri, double t );
 
 	/*! sets the grid transformation and stores the constant potential for repeated usage
-	 *  important! has to be rerun in reinitialize() because the cach is not stored in the
+	 *  important! has to be rerun in reinitialize() because the cache is not stored in the
 	 *  checkpoint archive!
 	 */
-	void set_grid( double r_start, double range, size_t N );
+	void set_grid( double dr, size_t N );
 
 	//! grant access to the static potential
 	Pot_const* getPot_const() { return well; }
@@ -257,10 +257,7 @@ public:
 
 	void register_dependencies( vector<Module*> dependencies );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
-	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
-		GET_LOGGER( "liee.Module.Pot_Gauss" );
-		register_dependencies( dependencies );
-	}
+	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results );
 
@@ -278,10 +275,10 @@ private:
 	double F_dc;
 	double r0;
 	double k_geom;
-	double t_charge;
 	double gamma;
 	double s2;
 	double t_current;
+	//following members are not saved to checkpoint archive!
 	double dx_sample;
 	size_t int_samples;
 	vector<Point> Pulse_samples;
@@ -304,7 +301,6 @@ protected:
         ar & F_dc;
         ar & r0;
         ar & k_geom;
-        ar & t_charge;
         ar & gamma;
         ar & s2;
     	ar & int_samples;

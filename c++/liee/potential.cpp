@@ -252,13 +252,10 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	double inner_cutoff = config->getParam("inner_cutoff")->value / CONV_au_eV;
 	double dummy;
 	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );	// set r_start where the inner_cutoff-Energy is reached
-	//r_start = -60.0 / CONV_au_nm;
-	DEBUG_SHOW( r_start );
 
 	r0 = config->getParam("r0")->value / CONV_au_nm;
 	k_geom = config->getParam("k_geom")->value;
 	F_dc = -1 * config->getParam("U_dc")->value / CONV_au_V / k_geom / r0;
-	t_charge = 10.0 / CONV_au_fs;	//TODO redo all adiabatic activation //config->getParam("t_charge")->value / CONV_au_fs;
 	gamma = config->getParam("near_amplf")->value;
 	double s = config->getParam("near_width")->value / CONV_au_nm;
 	s2 = pow( s , 2.0);
@@ -272,6 +269,21 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	for( size_t i = 0; i < int_samples; i++ ) {
 		Pulse_samples[i] = Point( i * dx_sample, 0.0 );
 	}
+	t_current = -1;
+}
+
+void Potential::reinitialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Module.Pot_Gauss" );
+	register_dependencies( dependencies );
+	// set spatial positions for the evaluation of the laser-pulse-field.
+	Pulse_samples.resize( int_samples );
+	double pos_range = r_start + r_range;
+	dx_sample = pos_range / (int_samples - 1);
+	for( size_t i = 0; i < int_samples; i++ ) {
+		Pulse_samples[i] = Point( i * dx_sample, 0.0 );
+	}
+	t_current = -1;
 }
 
 void Potential::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -305,12 +317,11 @@ dcmplx Potential::V_indexed( size_t ri, double t )
 	return dcmplx( gridVre[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
 }
 
-void Potential::set_grid( double r_start, double range, size_t N )
+void Potential::set_grid( double dr, size_t N )
 {
 	grid.clear();
 	gridVre.clear();
 	gridVim.clear();
-	double dr = range / (N - 1);
 
 	for ( size_t i = 0; i < N; i++ ) {
 		double r = r_start + i * dr;
@@ -320,11 +331,11 @@ void Potential::set_grid( double r_start, double range, size_t N )
 		if (z > 0.0 && z <= 1.0) 								// r is in CAP territory
 		{
 			double r_ = r_start + r_range - wcap;
-			gridVre.push_back( well->V( r_ ) +  V_Fdc( r_, t_charge ) );
+			gridVre.push_back( well->V( r_ ) +  V_Fdc( r_, 0.0 ) );
 			gridVim.push_back( V_cap( z ) );
 		}
 		else {
-			gridVre.push_back( well->V( r ) +  V_Fdc( r, t_charge ) );
+			gridVre.push_back( well->V( r ) +  V_Fdc( r, 0.0 ) );
 			gridVim.push_back( 0.0 );
 		}
 	}
@@ -359,8 +370,16 @@ inline double Potential::V_Fdc( double r, double t )
 {
 	if ( r < 0 ) return 0; // inside the metal, the external electric field is shielded
 	double V = F_dc * r;
-	if ( t < t_charge ) { return t / t_charge * V; }
-		else			{ return V; }
+	if ( t >= 0 ) {
+		return V;
+	} else {
+    	// adiabatic activation
+		if ( r < 0.03 ) {
+			double fac = ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * t + exp(1.0) ) ) / 2.0;
+			//DEBUG_SHOW4( t, fac, fac*V );
+		}
+    	return V * ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * t + exp(1.0) ) ) / 2.0;	// activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
+	}
 }
 
 inline double Potential::F_pulse( double r, double t )
