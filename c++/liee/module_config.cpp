@@ -181,6 +181,7 @@ void Conf_Module::evaluate_expressions()
 			}
 		}
 
+
 		// check end conditions
 		if ( num_unresolved == 0 ) {
 			// done with numeric evaluations, now lastly check for strings with variable suffix, for e.g. numbered filenames
@@ -244,8 +245,6 @@ Config::Config( string filename )
 		if ( strcmp( pModuleNode->Value(), "module" ) == 0 )
 		{
 			Conf_Module* m = new Conf_Module( pModuleNode );
-			LOG_INFO( "found module " << m->serial << ": " << m->name );
-
 			if ( m->serial == 0 && m->type.compare("global") == 0 ) {
 				globals = m->param;
 

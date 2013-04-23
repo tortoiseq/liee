@@ -33,7 +33,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	ir0 = (int) (r0 / dr);
 	ir1 = (int) (r1 / dr);
 
-	int Nr = 1.0 + ( r1 - r0 ) / dr;
+	size_t Nr = 1.0 + ( r1 - r0 ) / dr;
 	step_r = floor( Nr / config->getParam("r_samples")->value );
 	if ( step_r < 1 ) { step_r = 1; }
 	if ( step_r > Nr ) { step_r = Nr; }
@@ -45,15 +45,25 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	t1 = t_range;
 	if ( not config->getParam("obs_t0")->textual ) { t0 = config->getParam("obs_t0")->value / CONV_au_fs; }
 	if ( not config->getParam("obs_t1")->textual ) { t1 = config->getParam("obs_t1")->value / CONV_au_fs; }
-
-	int Nt = 1.0 + ( t1 - t0 ) / dt;
+	size_t Nt = 1.0 + ( t1 - t0 ) / dt;
 	step_t = floor( Nt / config->getParam("t_samples")->value );
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
 
+	if ( t0 < 0 || t1 < 0 ) {
+		// this is a quick complication in order to peep at the initialisation.
+		LOG_INFO("Found negative observation times --> will only observe the initialisation period [-1..0]");
+		LOG_INFO("Make sure the parameters solver::adiab_T and solver::adiab_dt have been moved to the global scope in the parameter file!");
+		t0 = -1;
+		t1 = 0;
+		double aT = config->getParam("adiab_T")->value / CONV_au_fs;
+		double adt = config->getParam("adiab_dt")->value / CONV_au_fs;
+		size_t Nt = 1.0 + aT / adt;
+		step_t = floor( Nt / config->getParam("t_samples")->value );
+	}
+
 	// save the actual number of samples
 	num_r = 1 + Nr / step_r;
-	num_t = 1 + Nt / step_t;
 	config->getParam("t_samples")->value = num_t;
 	config->getParam("r_samples")->value = num_r;
 
@@ -210,8 +220,8 @@ void Obs_Tunnel_Ratio::summarize( map<string, string> & results )
 
 void Obs_Tunnel_Ratio::observe( Module* state )
 {
-	if ( counter++ % step_t != 0 ) return;
 	Solver* s = dynamic_cast<Solver*>( state );
+	if ( counter++ % step_t != 0 ) return;
 	psi_sqr.push_back( s->integrate_psi_sqr( ra, rb ) );
 }
 
@@ -310,8 +320,9 @@ void Obs_JWKB_Tunnel::summarize( map<string, string> & results )
 
 void Obs_JWKB_Tunnel::observe( Module* state )
 {
-	if ( counter++ % step_t != 0 ) return;
 	Solver* s = dynamic_cast<Solver*>( state );
+	if ( counter++ % step_t != 0 ) return;
+
 	boost::function<double(double)> deltaE;
 	deltaE = boost::bind( &Potential::deltaV, V, _1, s->t, E );	// deltaE(r) is mapped to deltaV(r, s->t, E)
 

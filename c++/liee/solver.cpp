@@ -54,39 +54,18 @@ bool Solver::execute()
 
 	while ( t < t_end )
 	{
-		if ( t >= 0 ) {
-			boinc_begin_critical_section();
-			for( size_t i = 0; i < obs.size(); i++ ) {
-				obs[i]->observe( this );
-			}
-			boinc_end_critical_section();
+		boinc_begin_critical_section();
+		for( size_t i = 0; i < obs.size(); i++ ) {
+			obs[i]->observe( this );
 		}
+		boinc_end_critical_section();
 
         evolve_1step();			//<<<<<<<<<<<<<<< this is where the action is
+       	t += dt;
 
-    	// debug: check wobble
-    	//double sqrPsiM = real( psi[max_i] * conj( psi[max_i] ) );
-    	//DEBUG_SHOW2( t, sqrPsiM );
-
-        if ( t >= 0 ) {
-        	t += dt;
-        } else {
-        	// adiabatic activation
-        	//dt = dt_ * ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * t + exp(1.0) ) ) / 2.0;	// activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
-        	dt = t_adiab / Nt_adiab;
-        	t += 1.0 / Nt_adiab;	// t runs steadily from -1 to 0 in Nt_adiab steps, despite twisted dt
-        	//DEBUG_SHOW2( t, dt );
-        	if ( t >= 0) {
-        		LOG_INFO("done with adiabatic activation.");
-        		renormalize();
-        		dt = dt_;
-        	}
-        }
-
-		if ( t >= 0  &&  ++count % count_tic == 0 ) {
+		if ( ++count % count_tic == 0 ) {
 			time_t now = time(0);
 			boinc_fraction_done( t / t_end );
-			//if ( t / t_end > 0.5 ) return false; //TODO: test if a resumed computation yields the same result
 			if ( boinc_time_to_checkpoint() || ( now - last_checkpoint_time > 300 ) ) { 	// in any case checkpoint every 5 min
 				last_checkpoint_time = now;
 				return false;
@@ -143,7 +122,6 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 					psi[i] = dcmplx( 0, 0 );
 				}
 			}
-			max_i = max_pos( psi );
 		}
 		else if ( dependencies[i]->type.compare("observer") == 0 ) {
 			//TODO check, if observer's->target matches this->serial
@@ -172,10 +150,6 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	phi.resize(Nr);
 	d.resize(Nr);
 	count = 0;
-	t_adiab = (int)config->getParam("adiab_T")->value / CONV_au_fs;
-	double dt_adiab = config->getParam("adiab_dt")->value / CONV_au_fs;
-	Nt_adiab = (int)( t_adiab / dt_adiab );
-	t = ( Nt_adiab > 1)  ?  -1.0  :  0.0;		// t in (-1..0) indicates the adiabatic activation
 	exec_done = false;
 	register_dependencies( dependencies );
 	renormalize();

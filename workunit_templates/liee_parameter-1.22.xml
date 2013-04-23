@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Available Modules:
+     ^^^^^^^^^^^^^^^^^^
+POTENTIALs	10::main_pot		11::round_well		12::harmonic_osci
+LASER PULSEs	110::gaussian		120::SLM
+INITIAL WFs	20::noumerov		21::wf_reader
+OBSERVERs	30::wf_snapshots	31::tunnel_ratio	32::JWKB_tunnel
+SOLVERs		40::crank_nicholson
+OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::shot_gun
+-->
+
+<plan version="1.22" project="liee" experiment="template" wu="WU" exec_chain="{11,110,10,21,30,31,40,500}">
+
+  <module serial="0" type="global" name="global"><!--Global parameters (required serial==0)-->
+    <param name="dr" 			value="3.00e-3" 	variable="no" lower="" upper=""/> 	<!--space resolution (in nm)-->
+    <param name="dt" 			value="1.00e-3" 	variable="no" lower="" upper=""/>	<!--time resolution (in fs)-->
+    <param name="r_range" 		value="100" 		variable="no" lower="" upper=""/>	<!--end of simulation range (in nm) (the complex absorbing potential is part of this range)-->
+    <param name="t_range" 		value="200" 		variable="no" lower="" upper=""/>	<!--simulation end-time (in fs), also determines FFT time window, i.e. pulse length-->
+  </module>
+  
+  <!-- ================================  POTENTIALs  ================================================-->
+
+  <module serial="10" type="potential" name="main_pot" stage="1"><!--general experimental parameters determining the final potential shape-->
+    <param name="inner_cutoff" 		value="1e3" 		variable="no" lower="" upper=""/>	<!--highest potential energy allowed on the exponentially rising inner wall (in eV)-->
+    <param name="F_dc" 			value="0.01" 		variable="no" lower="" upper=""/>	<!--(-)electric field strength from constant voltage at tip apex (in V/nm)-->
+    <param name="t_DC_on" 		value="10" 		variable="no" lower="" upper=""/>	<!--activation start-time of the constant field, F_dc(t < t_DC_on) = 0  (in fs)-->
+    <param name="t_DC_full" 		value="20" 		variable="no" lower="" upper=""/>	<!--time when activation of the constant field is completed. (in fs)-->
+    <param name="ini_erf_DC" 		value="false" 		variable="no" lower="" upper=""/>	<!--if "true", the activation follows an erf()-like smooth swing, linear otherwise-->
+    <param name="delta_DC" 		value="0.05" 		variable="no" lower="" upper=""/>	<!--distance in nm at which the static field has decreased to 1/e inside the tip (r<0)-->
+    <param name="delta_AC" 		value="25" 		variable="no" lower="" upper=""/>	<!--distance in nm at which the Laser field has decreased to 1/e inside the tip (r<0)-->
+    <param name="near_amplf" 		value="0" 		variable="no" lower="" upper=""/>	<!--maximum resonant amplification, off if zero-->
+    <param name="near_width" 		value="20" 		variable="no" lower="" upper=""/>	<!--range (decay-length) for resonant amplification-->
+    <param name="int_samples" 		value="10000" 		variable="no" lower="" upper=""/>	<!--number of samples for numerical integration of the Laser field-->
+    <param name="wcap" 			value="10" 		variable="no" lower="" upper=""/>	<!--width of CAP (in nm) (has to fit into global.r_range)-->
+    <param name="my_pot_const" 		value="11" 		variable="no" lower="" upper=""/>	<!--serial number of a pot_const module (needs to be declared in exec_chain prior to #main_pot)-->
+    <param name="my_pulses" 		value="{110}" 		variable="no" lower="" upper=""/>	<!--serial numbers for the applied laser pulses (those need to be declared in exec_chain prior to #main_pot)-->
+  </module>
+
+  <module serial="11" type="pot_const" name="round_well" stage="1"><!--a rounded potential well with electron-image charge interaction-->
+    <param name="width" 		value="25.0" 		variable="no" lower="" upper=""/> 	<!--full width of potential well at E=0 (in nm)-->
+    <param name="depth" 		value="15.0" 		variable="no" lower="" upper=""/>	<!--depth of potential well (in eV)-->
+    <param name="boxness" 		value="25" 		variable="no" lower="" upper=""/>	<!--lower values make the well rounder: cosh( boxness * r ) -->
+  </module>
+
+  <module serial="12" type="pot_const" name="harmonic_osci" stage="1">
+    <param name="k" 			value="0.25" 		variable="no" lower="" upper=""/>	<!--force constant. equals omega^2, since m==1 -->
+    <param name="shift" 		value="25.0" 		variable="no" lower="" upper=""/>	<!--shift parabola by this amount to the right (to be able to stay in the positive domain for moderate quantum numbers) (in nm)-->
+  </module>
+
+  <!-- ================================ LASER PULSEs  ================================================-->
+
+  <module serial="110" type="pulse" name="gaussian" stage="1"><!--Gauss-shaped envelope-->
+    <param name="t_center" 		value="30" 		variable="no" lower="" upper=""/>	<!--arrival-time of the centre of the laser pulse envelope (in fs)-->
+    <param name="FWHM" 			value="10" 		variable="no" lower="" upper=""/>	<!--full width at half maximum of the electric field (envelope) in the time domain (in fs)-->
+    <param name="amplitude" 		value="1e9"		variable="no" lower="" upper=""/>	<!--maximum electrical field strength at tip appex (excluding Fdc) (in V/m)-->
+    <param name="wavelength" 		value="800" 		variable="no" lower="" upper=""/>	<!--central wavelength of the laser light (in nm)-->
+    <param name="ce_phase" 		value="3.14" 		variable="no" lower="" upper=""/>	<!--carrier envelope phase (at centre)-->
+    <param name="chirp" 		value="0.0" 		variable="no" lower="" upper=""/>	<!--chirp rate, e.g. rate of frequency shift dw/dt (in fs^-2)-->
+  </module>
+
+  <module serial="120" type="pulse" name="SLM" stage="1"><!--Pulse shaping with Spatial Light Modulators-->
+    <!--TODO flesh out-->
+    <param name="orig_pulses" 		value="{110}" 		variable="no" lower="" upper=""/>	<!--serial numbers for the original laser pulse to go through this shaping-->
+  </module>
+
+  <!-- ================================  INITIAL WFs  ===============================================-->
+
+ <module serial="20" type="executable" name="noumerov" stage="1"><!--Initial Wavefunction from integrating time independent Schroedinger equation, (If used as WF-provider on the client, must include the wf_reader after noumerov in the chain to read the file "OUTFILE_0000.dat)"-->
+    <param name="n_eps"			value="1e-10" 		variable="no" lower="" upper=""/>	<!--maximum accumulated error term in noumerov integration (unless max_samples reached) -->
+    <param name="tail_tiny_range"	value="{1e-20, 1e-25}" 	variable="no" lower="" upper=""/>	<!--first value corresponds to minimum penetration depth into barrier: dont stop before tail is this insignificant. second ~~ maximum penetration: reduce computational effort and prevent numeric overflow.-->
+    <param name="num_sample_range"	value="{1000, 1e7}" 	variable="no" lower="" upper=""/>	<!--range for number of samples per integration-->
+    <param name="energy_levels" 	value="{0,0}" 		variable="no" lower="" upper=""/>	<!--the interval of states which shall be computed (groundstate at 0). array of two positive integers expected.-->
+    <param name="max_iterations" 	value="10000" 		variable="no" lower="" upper=""/>	<!--program stops as soon as this maximum number of iterations is reached, even if other objectives are not met -->
+    <param name="num_retries" 		value="100" 		variable="no" lower="" upper=""/>	<!--slight stochastic behaviour yields varying errors per try. eliminating bad results with this many retries for each level-->
+    <param name="search_range" 		value="{-100,0.0}" 	variable="no" lower="" upper=""/>	<!--the energy interval in which the above enery_levels are expected !!if too small, the requested levels cant be found!!-->
+    <param name="OUTFILE" 		value="wf_" 		variable="no" lower="" upper=""/>	<!--where to write the result to. empty string "" for disables write-->
+    <param name="is_objective" 		value="false" 		variable="no" lower="" upper=""/>	<!--if 'true': adds the Energy of the lowest found state as 'objective' to the summary, in order to supply the optimizer with an objective function-->
+    <param name="target_E"		value="5.0"		variable="no" lower="" upper=""/>	<!--(in eV) if not empty, altering objective (see above). Then objective = abs( target_E - E[ energy_levels[0] ] ) -->
+  </module>
+
+  <module serial="21" type="initial_wf" name="wf_reader" stage="1"><!--Initial Wavefunction from file-->
+    <param name="fidx" 			value="109" 		variable="no" lower="" upper=""/>	<!--index for fabricating the INFILE name-->
+    <param name="INFILE" 		value="wf__$fidx" 	variable="no" lower="" upper=""/>	<!--filename to read the WF from-->
+    <param name="complex" 		value="false" 		variable="no" lower="" upper=""/>	<!--(boolean) true: file contains complex data, false: imaginary part set to zero-->
+  </module>
+  
+  <!-- ================================  OBSERVERs =================================================-->
+
+  <module serial="30" type="observer" name="wf_snapshots" stage="1"><!--Records snapshots of the wave function in regular intervals over the simulated time-->
+    <param name="target" 		value="40" 		variable="no" lower="" upper=""/>	<!--serial of the observation-target, e.g. the module whose state gets observed-->
+    <param name="OUTFILE" 		value="wf_evolution.dat" variable="no" lower="" upper=""/>	<!--name for the output file-->
+    <param name="t_samples" 		value="800" 		variable="no" lower="" upper=""/>	<!--number of recordings of the wave-function-->
+    <param name="r_samples" 		value="800" 		variable="no" lower="" upper=""/>	<!--number of spacial samples for each recorded time-->
+    <param name="precision"		value="4"		variable="no" lower="" upper=""/>	<!--number of significant digits to round (reduce file size)-->
+    <param name="square" 		value="true" 		variable="no" lower="" upper=""/>	<!--dont save complex wf but merely  the square, if 'true'-->
+    <param name="normalize" 		value="false" 		variable="no" lower="" upper=""/>	<!--normalize every snapshot to a total probability==1 if 'true'-->
+    <param name="obs_t0"		value=""		variable="no" lower="" upper=""/>	<!--time to start the recording (for all 4 obs_window-parameters: empty string means maximum observation region)-->
+    <param name="obs_t1"		value=""		variable="no" lower="" upper=""/>	<!--time to end the recording -->
+    <param name="obs_r0"		value=""		variable="no" lower="" upper=""/>	<!--start-position of recording range (left-most pos is 0)-->
+    <param name="obs_r1"		value=""		variable="no" lower="" upper=""/>	<!--end-position of recording range (left-most pos is 0)-->
+  </module>
+
+  <module serial="31" type="observer" name="tunnel_ratio" stage="1"><!--Measures the relative portion of the tunnelled (electron) density and calculates the current as the time drivative-->
+    <param name="target" 		value="40" 		variable="no" lower="" upper=""/>	<!--serial of the observation-target, e.g. the module whose state gets observed-->
+    <param name="t_samples" 		value="1000" 		variable="no" lower="" upper=""/>	<!--number of recordings of the current-->
+    <param name="r_a" 			value="0" 		variable="no" lower="" upper=""/>	<!--start of integration region (in nm) !Here r-coordinates in the range [0..r_range] are used!-->
+    <param name="r_b" 			value="(r_range-10)" 	variable="no" lower="" upper=""/>	<!--end of integration region (in nm) !Here r-coordinates in the range [0..r_range] are used! (auto-capped at r_end if too big)-->
+    <param name="OUTFILE" 		value="current.dat" 	variable="no" lower="" upper=""/>	<!--name for the output file-->
+    <param name="is_objective" 		value="true" 		variable="no" lower="" upper=""/>	<!--if 'true': adds the "lost" electron probability as 'objective' to the summary, in order to supply the optimizer with an objective function-->
+  </module>
+
+  <module serial="32" type="observer" name="JWKB_tunnel" stage="1"><!--the time-dependent potential is used for the JWKB approximation of the quasi-stationary tunnel rate by integrating over the barrier-->
+    <param name="target" 		value="40" 		variable="no" lower="" upper=""/>	<!--serial of the observation-target, e.g. the module whose state gets observed-->
+    <param name="t_samples" 		value="1000" 		variable="no" lower="" upper=""/>	<!--number of recordings of the current-->
+    <param name="int_samples" 		value="10000" 		variable="no" lower="" upper=""/>	<!--number of samples for numerical integration over the barrier potenial hill-->
+    <param name="OUTFILE" 		value="jwkb.dat" 	variable="no" lower="" upper=""/>	<!--name for the output file-->
+    <param name="is_objective" 		value="false" 		variable="no" lower="" upper=""/>	<!--if 'true': adds the "lost" electron probability as 'objective' to the summary, in order to supply the optimizer with an objective function-->
+  </module>
+
+  <!-- ================================  SOLVERs  ++=================================================-->
+
+  <module serial="40" type="solver" name="crank_nicholson" stage="1"><!--Schroedinger Solver-->
+  </module>
+  
+  <!-- ================================  OPTIMIZERs =================================================-->
+
+  <module serial="500" type="scheduler" name="BOINC" stage="0"><!--Parameters for scheduling jobs to the BOINC distributed computation network, (if the serial is not in the chain, BOINC will work with defaults) see: https://boinc.berkeley.edu/trac/wiki/JobIn -->
+    <param name="priority" 		value="0" 		variable="no" lower="" upper=""/>	<!--Higher-priority work is dispatched first -->
+    <param name="delay_bound"		value="86400" 		variable="no" lower="" upper=""/> 	<!--time-limit (in seconds) between sending a result to a client and receiving a reply-->
+    <param name="min_quorum" 		value="1" 		variable="no" lower="" upper=""/>	<!--The validator is run when there are this many successful results. If a strict majority agree, they are considered correct. Set this to two or more if you want redundant computing.-->
+    <param name="target_nresults" 	value="1" 		variable="no" lower="" upper=""/>	<!--How many results to create initially. This must be at least min_quorum. It may be more, to reflect the ratio of result loss, or to get a quorum more quickly.-->
+    <param name="max_error_results" 	value="4" 		variable="no" lower="" upper=""/>	<!--If the number of client error results exceeds this, the work unit is declared to have an error; no further results are issued, and the assimilator is triggered. This safeguards against workunits that cause the application to crash.-->
+    <param name="max_total_results" 	value="8" 		variable="no" lower="" upper=""/>	<!--If the total number of results for this workunit would exceed this, the workunit is declared to be in error. This safeguards against workunits that are never reported (e.g. because they crash the core client).-->
+    <param name="max_success_results" 	value="4" 		variable="no" lower="" upper=""/>	<!--If the number of success results for this workunit exceeds this, and a consensus has not been reached, the workunit is declared to be in error. This safeguards against workunits that produce nondeterministic results.-->
+    <param name="rsc_bandwidth_bound" 	value="0" 		variable="no" lower="" upper=""/>	<!--If nonzero, this job will be sent only to hosts with at least this much download bandwidth. Use for jobs with very large input files.-->
+  </module>
+
+  <module serial="50" type="optimizer" name="down_simplex" stage="0"><!--Downhill Simplex Optimizer with simulated annealing-->
+    <param name="max_eval" 		value="1e9" 		variable="no" lower="" upper=""/>	<!--maximum number of function evaluations aka simulations-->
+    <param name="conv_tol" 		value="1e-9" 		variable="no" lower="" upper=""/>	<!--end condition convergence tolerance: relative difference between worst and best vertex in simplex-->
+  </module>
+
+  <module serial="51" type="optimizer" name="particle_swarm" stage="0"><!--Particle Swarm Optimizer (experimental)-->
+    <param name="max_eval" 		value="1e9" 		variable="no" lower="" upper=""/>	<!--maximum number of function evaluations aka simulations-->
+    <param name="conv_tol" 		value="1e-9" 		variable="no" lower="" upper=""/>	<!--end condition convergence tolerance-->
+    <param name="population" 		value="25" 		variable="no" lower="" upper=""/>	<!--number of particles in the swarm-->
+    <param name="neighbours" 		value="2" 		variable="no" lower="" upper=""/>	<!--communication-range towards each side where particles follow the locally best-->
+  </module>
+
+  <module serial="52" type="optimizer" name="rasterizer" stage="0"><!--Evaluates sample points of the search space in a regular grid-->
+    <param name="uniform_num_samples" 	value="100" 		variable="no" lower="" upper=""/>	<!--each dimension is sliced into the same number of samples-->
+    <param name="vector_num_samples" 	value="{100}" 		variable="no" lower="" upper=""/>	<!--the number of samples in each dimension specifically (if empty use uniform_num_samples)-->
+    <param name="max_eval" 		value="0" 		variable="no" lower="" upper=""/>	<!--not used by this module (required by optimizer intgerface)-->
+    <param name="conv_tol" 		value="0" 		variable="no" lower="" upper=""/>	<!--not used by this module (required by optimizer intgerface)-->
+  </module>
+
+  <module serial="53" type="optimizer" name="shot_gun" stage="0"><!--Evaluates sample points of the search space randomly-->
+    <param name="num_bullets" 		value="25" 		variable="no" lower="" upper=""/>	<!--number of simultaneously requested evaluations-->
+    <param name="max_eval" 		value="1e9" 		variable="no" lower="" upper=""/>	<!--not used by this module (required by optimizer intgerface)-->
+    <param name="conv_tol" 		value="0" 		variable="no" lower="" upper=""/>	<!--not used by this module (required by optimizer intgerface)-->
+  </module>
+</plan>

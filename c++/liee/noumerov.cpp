@@ -500,7 +500,6 @@ size_t Noumerov1d::count_nodes( vector<Point> & wf )
 
 void Noumerov1d::save_graph( string & filename, vector<Point>& data )
 {
-	DEBUG_SHOW( "in save graph" );
 	FILE* f = boinc_fopen( filename.c_str(), "w" );
 	BOOST_FOREACH( Point p, data ) {
 		fprintf( f, "%1.16g\t%1.16g\n", p.x, p.y );
@@ -513,7 +512,7 @@ void Noumerov1d::save_results( string & filename )
 	vector<string> files;
 	for ( size_t i = lvl_lo; i <= lvl_up; i++ )
 	{
-		if ( spectrum[i].num_trial > 0 ) {
+		if ( spectrum[i - lvl_lo].num_trial > 0 ) {
 			evaluate_energy( spectrum[i - lvl_lo] );
 			string fi = filename + boost::lexical_cast<string>( i );	// (no more leading zeros)
 			files.push_back( fi );

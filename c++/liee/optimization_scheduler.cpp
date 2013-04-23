@@ -71,8 +71,6 @@ Opti_Scheduler::~Opti_Scheduler() {}
 
 void Opti_Scheduler::load()
 {
-	cout << "...in Opti_Scheduler::load() \n";
-
 	try // to obtain a lock on the state-file
 	{
 		boost::interprocess::file_lock flock( state_file_name.c_str() );
@@ -86,12 +84,10 @@ void Opti_Scheduler::load()
 		// read optimiser state using serialisation
 		ifstream ifs( state_file_name.c_str() );	//TODO handle more IO errors
 		boost::archive::binary_iarchive iarch( ifs );
-		cout << "\t iarch opened \n";
 
 	    { // issues with abstract types and serialisation
 			string type_name;
 			iarch >> type_name;
-			cout << "\t name: " << type_name << " \n";
 
 		    if ( type_name.compare( "down_simplex" ) == 0 ) {
 				liee::opti::Downhill_Simplex* o;
@@ -134,8 +130,6 @@ void Opti_Scheduler::load()
 
 void Opti_Scheduler::store( bool do_lock )
 {
-	cout << "...in Opti_Scheduler::store() \n";
-
 	if ( opti == NULL ) return; //TODO error handling
 
 	try // to obtain a lock on the state-file
@@ -180,9 +174,7 @@ void Opti_Scheduler::store( bool do_lock )
 				log_messages.printf( MSG_CRITICAL, "Unknown type of optimizer, don't know how to store! \n" );
 			}
 	    }
-
 	    ofs.close();
-	    cout << "\t storing done. \n";
 
 	    // release lock
 	    if ( do_lock ) {
@@ -202,7 +194,6 @@ void Opti_Scheduler::write_template( string & filename, vector<string> & infiles
 
 void Opti_Scheduler::initialize( int & flag )
 {
-	cout << "...in Opti_Scheduler::initialize() \n";
 	ifstream test_exist( state_file_name.c_str() );
 	if ( test_exist ) {
 		cout << "Error: The state-file " << state_file_name << " already exists! Won't overwrite.\n";
@@ -381,7 +372,7 @@ void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job,
     	Module* m = Module_Factory::assemble( cm->type, cm->name, cm->serial );
     	m->estimate_effort( cm, flops, ram, disk );
     }
-    cout << "flops/ram/disk:" << flops << "\t" << ram << "\t" << disk << "\n";
+    //cout << "flops/ram/disk:" << flops << "\t" << ram << "\t" << disk << "\n";
 
 	// write work unit
     string path_ = string( path );
@@ -407,7 +398,6 @@ void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job,
 
 void Opti_Scheduler::make_jobs( vector<DB_WORKUNIT> & jobs, int & flag )
 {
-	cout << "...in Opti_Scheduler::make_jobs \n";
 	load();
 
 	if ( opti == NULL ) {

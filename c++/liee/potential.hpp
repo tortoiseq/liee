@@ -269,16 +269,19 @@ private:
 	vector<double> gridVre;			///< real-part of indexed constant potential (!not saved to archive!)
 	vector<double> gridVim;			///< imaginary-part of indexed constant potential (!not saved to archive!)
 
-	double r_range;
-	double r_start;
-	double wcap;
-	double F_dc;
-	double r0;
-	double k_geom;
-	double gamma;
-	double s2;
-	double t_current;
+	double t_on;					///< activation start-time of the constant field, F_dc(t < t_on) = 0
+	double t_full;					///< time when activation of the constant field is completed
+	bool ini_erf;					///< if "true", the activation follows an erf()-like smooth swing, linear otherwise
+	double deltaDC;					///< distance at which the static field has decreased to 1/e inside the tip (r<0)
+	double deltaAC;					///< distance at which the Laser field has decreased to 1/e inside the tip (r<0)
+	double r_range;					///< spatial range of simulation
+	double r_start;					///< start position defined by where the negative-side repulsion potential reaches a certain threshold
+	double wcap;					///< width of complex absorbing potential at the right side of the simulation range
+	double F_dc;					///< electric field at tip apex from applying a constant voltage
+	double gamma;					///< resonant amplification factor
+	double s2;						///< resonant amplification range
 	//following members are not saved to checkpoint archive!
+	double t_now;					///< as long as t==t_current the cache is valid
 	double dx_sample;
 	size_t int_samples;
 	vector<Point> Pulse_samples;
@@ -295,12 +298,15 @@ protected:
     void serialize( Archive & ar, const unsigned int version )
     {
     	ar & reg_serials;
+    	ar & t_on;
+    	ar & t_full;
+    	ar & ini_erf;
+    	ar & deltaDC;
+    	ar & deltaAC;
     	ar & r_range;
     	ar & r_start;
         ar & wcap;
         ar & F_dc;
-        ar & r0;
-        ar & k_geom;
         ar & gamma;
         ar & s2;
     	ar & int_samples;

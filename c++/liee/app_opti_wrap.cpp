@@ -33,7 +33,7 @@
 using namespace std;
 using namespace liee;
 
-string VERSION = "1.21";	///< the parameter file is required to have the same version identifier
+string VERSION = "1.22";	///< the parameter file is required to have the same version identifier
 
 
 #ifdef LOG_ENABLED
@@ -78,7 +78,7 @@ int main( int argc, char* argv[] )
     Config cnf( resolved_param_name );
     if ( cnf.version.compare( VERSION ) != 0 ) {
     	LOG_ERROR( "Version of config-file is incompatible. " << VERSION << " required!" );
-    	//exit(1);
+    	exit(1);
     }
     LOG_INFO( "Config done" );
     vector<Module*> deps;

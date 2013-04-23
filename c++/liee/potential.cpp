@@ -201,7 +201,11 @@ inline double Pot_Experimental::V( double r )
 
 void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
-	t_ofs = config->getParam("t_centre")->value / CONV_au_fs;
+	try{
+		t_ofs = config->getParam("t_center")->value / CONV_au_fs;
+	} catch ( Except__Preconditions_Fail & e ) {
+		t_ofs = config->getParam("t_centre")->value / CONV_au_fs;	// suddenly found Br. and Am. English mixed... accept both for a while
+	}
 	fwhm = config->getParam("FWHM")->value / CONV_au_fs;
 	ga = 2.0 * log( 2.0 ) / pow( this->fwhm, 2.0 );
 	F0 = config->getParam("amplitude")->value / CONV_au_V * CONV_au_m ;
@@ -253,23 +257,25 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	double dummy;
 	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );	// set r_start where the inner_cutoff-Energy is reached
 
-	r0 = config->getParam("r0")->value / CONV_au_nm;
-	k_geom = config->getParam("k_geom")->value;
-	F_dc = -1 * config->getParam("U_dc")->value / CONV_au_V / k_geom / r0;
+	F_dc = -1 * config->getParam("F_dc")->value / (CONV_au_V / CONV_au_nm);
 	gamma = config->getParam("near_amplf")->value;
 	double s = config->getParam("near_width")->value / CONV_au_nm;
 	s2 = pow( s , 2.0);
 	wcap  = config->getParam("wcap")->value / CONV_au_nm;
 	int_samples  = (int) config->getParam("int_samples")->value;
+	t_on = config->getParam("t_DC_on")->value / CONV_au_fs;
+	t_full = config->getParam("t_DC_full")->value / CONV_au_fs;
+	ini_erf = config->getParam("ini_erf_DC")->text.compare("true") == 0;
+	deltaDC = config->getParam("delta_DC")->value / CONV_au_nm;
+	deltaAC = config->getParam("delta_AC")->value / CONV_au_nm;
 
 	// set spatial positions for the evaluation of the laser-pulse-field.
 	Pulse_samples.resize( int_samples );
-	double pos_range = r_start + r_range;
-	dx_sample = pos_range / (int_samples - 1);
+	dx_sample = r_range / (int_samples - 1);
 	for( size_t i = 0; i < int_samples; i++ ) {
-		Pulse_samples[i] = Point( i * dx_sample, 0.0 );
+		Pulse_samples[i] = Point( r_start + i * dx_sample, 0.0 );
 	}
-	t_current = -1;
+	t_now = -1;
 }
 
 void Potential::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -278,12 +284,11 @@ void Potential::reinitialize( Conf_Module* config, vector<Module*> dependencies 
 	register_dependencies( dependencies );
 	// set spatial positions for the evaluation of the laser-pulse-field.
 	Pulse_samples.resize( int_samples );
-	double pos_range = r_start + r_range;
-	dx_sample = pos_range / (int_samples - 1);
+	dx_sample = r_range / (int_samples - 1);
 	for( size_t i = 0; i < int_samples; i++ ) {
-		Pulse_samples[i] = Point( i * dx_sample, 0.0 );
+		Pulse_samples[i] = Point( r_start + i * dx_sample, 0.0 );
 	}
-	t_current = -1;
+	t_now = -1;
 }
 
 void Potential::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -365,37 +370,40 @@ inline double Potential::V_cap( double z )
 /*!
  * old version: V = int( dr' U / (k  r') = U / k * ln r', r' = r + r0
  * new version: constant F, linear V
+ * new new version: exponential decay into negative range, adiabatic activation redux
  */
 inline double Potential::V_Fdc( double r, double t )
 {
-	if ( r < 0 ) return 0; // inside the metal, the external electric field is shielded
-	double V = F_dc * r;
-	if ( t >= 0 ) {
-		return V;
-	} else {
+	if ( t < t_on ) return 0;
+
+	double V = ( r < 0 )  ?  F_dc * deltaDC * exp( r / deltaDC )  :  F_dc * ( deltaDC + r );	// exponential raise till r=0 then linear with r
+
+	if ( t < t_full ) {
     	// adiabatic activation
-		if ( r < 0.03 ) {
-			double fac = ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * t + exp(1.0) ) ) / 2.0;
-			//DEBUG_SHOW4( t, fac, fac*V );
+		double amp = (t - t_on) / (t_full - t_on);
+		if ( ini_erf ) {
+			amp = ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * (amp - 1.0) + exp(1.0) ) ) / 2.0;	// activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
 		}
-    	return V * ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * t + exp(1.0) ) ) / 2.0;	// activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
+		return amp * V;
 	}
+	return V;
 }
 
 inline double Potential::F_pulse( double r, double t )
 {
 	double F = 0;
 	double t_ = t + r / 137.0;
-	BOOST_FOREACH( Laser_Field* p, pulses ) {
-		F += p->electric_field( t_ );
+	for ( size_t i = 0; i < pulses.size(); i++ ) {
+		F += pulses[i]->electric_field( t_ );
 	}
-	double resonant_amplify = 1.0 + gamma * s2 / ( s2 + pow(r, 2.0) );
-	return resonant_amplify * F;
+	double amp = ( gamma > 0 )  ?  1.0 + gamma * s2 / (s2 + pow(r, 2.0))  :  1.0;
+	if ( r >= 0 ) return amp * F;
+	return amp * F * exp( r * deltaAC );
 }
 
 inline double Potential::V_pulse( double r, double t )
 {
-	if ( t != t_current ) {
+	if ( t != t_now ) {
 		// new time-step -> need to recalculate the integral samples using Simpson's rule
 		Pulse_samples[0].y = 0;
 		double fa = F_pulse( Pulse_samples[0].x, t );
@@ -408,18 +416,16 @@ inline double Potential::V_pulse( double r, double t )
 			Pulse_samples[i].y = Pulse_samples[i-1].y + fac * (fa + 4*fm + fb);
 			fa = fb;
 		}
-		t_current = t;
+		t_now = t;
 	}
 
-	if (r <= 0) {
-		return 0;
-	}
-	size_t i = floor( r / dx_sample );
+	double r_ = r - r_start;
+	size_t i = floor( r_ / dx_sample );
 	if (i >= int_samples) {
 		return Pulse_samples[int_samples-1].y;
 	}
-	// linear interpolate
-	float weight = r / dx_sample - i;
+	// linear interpolation
+	float weight = r_ / dx_sample - i;
 	return (1 - weight) * Pulse_samples[i].y  +  weight * Pulse_samples[i+1].y;
 }
 
