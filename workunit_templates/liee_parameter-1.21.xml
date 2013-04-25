@@ -29,7 +29,7 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
     <param name="near_amplf" 		value="10" 		variable="no" lower="" upper=""/>	<!--maximum resonant amplification-->
     <param name="near_width" 		value="20" 		variable="no" lower="" upper=""/>	<!--decay-length of resonant amplification-->
     <param name="int_samples" 		value="10000" 		variable="no" lower="" upper=""/>	<!--number of samples for numerical integration of the Laser field-->
-    <param name="wcap" 			value="5" 		variable="no" lower="" upper=""/>	<!--width of CAP (in nm) (has to fit into global.r_range)-->
+    <param name="wcap" 			value="10" 		variable="no" lower="" upper=""/>	<!--width of CAP (in nm) (has to fit into global.r_range)-->
     <param name="my_pot_const" 		value="11" 		variable="no" lower="" upper=""/>	<!--serial number of a pot_const module (needs to be declared in exec_chain prior to #main_pot)-->
     <param name="my_pulses" 		value="{110}" 		variable="no" lower="" upper=""/>	<!--serial numbers for the applied laser pulses (those need to be declared in exec_chain prior to #main_pot)-->
   </module>
@@ -102,7 +102,7 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
     <param name="target" 		value="40" 		variable="no" lower="" upper=""/>	<!--serial of the observation-target, e.g. the module whose state gets observed-->
     <param name="t_samples" 		value="1000" 		variable="no" lower="" upper=""/>	<!--number of recordings of the current-->
     <param name="r_a" 			value="0" 		variable="no" lower="" upper=""/>	<!--start of integration region (in nm) !Here r-coordinates in the range [0..r_range] are used!-->
-    <param name="r_b" 			value="10" 		variable="no" lower="" upper=""/>	<!--end of integration region (in nm) !Here r-coordinates in the range [0..r_range] are used! (auto-capped at r_end if too big)-->
+    <param name="r_b" 			value="($r_range-10)" 	variable="no" lower="" upper=""/>	<!--end of integration region (in nm) !Here r-coordinates in the range [0..r_range] are used! (auto-capped at r_end if too big)-->
     <param name="OUTFILE" 		value="current.dat" 	variable="no" lower="" upper=""/>	<!--name for the output file-->
     <param name="is_objective" 		value="true" 		variable="no" lower="" upper=""/>	<!--if 'true': adds the "lost" electron probability as 'objective' to the summary, in order to supply the optimizer with an objective function-->
   </module>

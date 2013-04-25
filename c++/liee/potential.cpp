@@ -201,11 +201,7 @@ inline double Pot_Experimental::V( double r )
 
 void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
-	try{
-		t_ofs = config->getParam("t_center")->value / CONV_au_fs;
-	} catch ( Except__Preconditions_Fail & e ) {
-		t_ofs = config->getParam("t_centre")->value / CONV_au_fs;	// suddenly found Br. and Am. English mixed... accept both for a while
-	}
+	t_ofs = config->getParam("t_center")->value / CONV_au_fs;
 	fwhm = config->getParam("FWHM")->value / CONV_au_fs;
 	ga = 2.0 * log( 2.0 ) / pow( this->fwhm, 2.0 );
 	F0 = config->getParam("amplitude")->value / CONV_au_V * CONV_au_m ;
@@ -319,28 +315,54 @@ dcmplx Potential::V( double r, double t )
 
 dcmplx Potential::V_indexed( size_t ri, double t )
 {
-	return dcmplx( gridVre[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
+	if ( t < t_on ) {
+		// return without Vdc before it is switched on
+		return dcmplx( gridVre[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
+	}
+
+	// while ramping up V_dc, it has to be re-calculated for each time-step
+	if ( t != t_now ) {		// t_now is updated by V_pulse() later on, so here it also flags the first occurrence of a new time-step
+		if ( t <= t_full ) {	// Vdc still booting
+			for ( size_t i = 0; i < grid.size(); i++ ) {
+				if ( gridVre[ri] > r_start + r_range - wcap ) // CAP territory
+				{
+					// inside the CAP, V_dc has the constant value from the left side of it --> filling the vector up
+					double Vdc_cap = V_Fdc( r_start + r_range - wcap, t );
+					for ( size_t j = i; j < grid.size(); j++ ) {
+						gridVdc[j] = Vdc_cap;
+					}
+					break;	// nothing left beyond the CAP
+				}
+				gridVdc[i] = V_Fdc( gridVre[ri], t );
+			}
+		}
+	}
+	return dcmplx( gridVre[ri] + gridVdc[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
 }
 
 void Potential::set_grid( double dr, size_t N )
 {
+	grid_dr = dr;
 	grid.clear();
 	gridVre.clear();
+	gridVdc.clear();
 	gridVim.clear();
+	double r_cap = r_start + r_range - wcap;
 
 	for ( size_t i = 0; i < N; i++ ) {
 		double r = r_start + i * dr;
 		grid.push_back( r );
 
-		double z = (r - (r_start + r_range - wcap) ) / wcap;	// CAP coordinate
-		if (z > 0.0 && z <= 1.0) 								// r is in CAP territory
+		double z = ( r - r_cap ) / wcap;
+		if (z > 0.0  &&  z <= 1.0) 			// r is in CAP territory
 		{
-			double r_ = r_start + r_range - wcap;
-			gridVre.push_back( well->V( r_ ) +  V_Fdc( r_, 0.0 ) );
+			gridVdc.push_back( V_Fdc( r_cap, t_full ) );
+			gridVre.push_back( well->V( r_cap ) );
 			gridVim.push_back( V_cap( z ) );
 		}
 		else {
-			gridVre.push_back( well->V( r ) +  V_Fdc( r, 0.0 ) );
+			gridVdc.push_back( V_Fdc( r, t_full ) );
+			gridVre.push_back( well->V( r ) );
 			gridVim.push_back( 0.0 );
 		}
 	}
@@ -398,7 +420,7 @@ inline double Potential::F_pulse( double r, double t )
 	}
 	double amp = ( gamma > 0 )  ?  1.0 + gamma * s2 / (s2 + pow(r, 2.0))  :  1.0;
 	if ( r >= 0 ) return amp * F;
-	return amp * F * exp( r * deltaAC );
+	return amp * F * exp( r / deltaAC );
 }
 
 inline double Potential::V_pulse( double r, double t )

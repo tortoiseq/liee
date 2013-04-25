@@ -181,18 +181,8 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 
 void Crank_Nicholson::evolve_1step()
 {
-	if ( t >= 0 ) {
-		for (size_t j=0; j < Nr; j++) {
-			d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
-		}
-	}
-	else {
-		// in adiabatic activation territory V_const is time dependent due to ramping of voltage --> have to use general V(r,t)
-    	c = dcmplx( 0.0, -dt / ( 8.0 * dr*dr ) );   //(44)
-		for (size_t j=0; j < Nr; j++) {
-			double r = potential->get_r_start() + j * dr;
-			d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V(r, t); //#(45)
-		}
+	for (size_t j=0; j < Nr; j++) {
+		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
 	}
 
     alfa[0] = d[0];

@@ -266,8 +266,10 @@ private:
 	vector<Laser_Field*> pulses;
 	vector<int> reg_serials;		///< remember which dependency modules to register
 	vector<double> grid;			///< all r-positions of the grid (optional) (!not saved to archive!)
+	vector<double> gridVdc;			///< portion from the constant voltage of indexed potential. its split from gridVre, because of the non-constant ramping up period (!not saved to archive!)
 	vector<double> gridVre;			///< real-part of indexed constant potential (!not saved to archive!)
 	vector<double> gridVim;			///< imaginary-part of indexed constant potential (!not saved to archive!)
+	double grid_dr;					///< spacing of the requested grid
 
 	double t_on;					///< activation start-time of the constant field, F_dc(t < t_on) = 0
 	double t_full;					///< time when activation of the constant field is completed
