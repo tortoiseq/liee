@@ -68,6 +68,8 @@ public:
 	bool 	do_square;	///< only save the square of the complex wf
 	bool	do_normalize;///< if true, normalise integral to Psi Psi* == 1
 	bool	rel_change;	///< show relative(!) deviation compared to previous time steps if 'true'
+	bool	rel_change_ready;	///< in case of observing relative changes, this is a two-step process. this flag indicates readiness for the second step (false after checkpoint)
+	vector<dcmplx> psi_; ///< backup WF-state t-1, in order to be able to calculate relative changes (not saved to checkpoint!)
 	size_t	ir0;		///< index of start-pos of recording window
 	size_t	ir1;		///< index of end-pos of recording window
 	double	t0;			///< start-time of recording window

@@ -37,7 +37,7 @@ public:
 	double dt;						///< step size for t
 	double dt_;						///< backup of the actual dt while changing time-steps for adiabatic activation
 	int count;
-	bool dbg_flag;
+	string outfile;					///< optionally write final state to this file
 
 	friend class boost::serialization::access;
     /*! When the class Archive corresponds to an output archive, the
@@ -46,7 +46,6 @@ public:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-    	ar & dbg_flag;
         ar & psi;
         ar & Nr;
         ar & r_range;
@@ -57,6 +56,7 @@ public:
         ar & dt_;
         ar & count;
         ar & exec_done;
+        ar & outfile;
     }
 };
 

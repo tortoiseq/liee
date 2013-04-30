@@ -67,6 +67,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	format = ss.str();
 
 	rel_change = config->getParam("rel_change")->text.compare("true") == 0;
+	rel_change_ready = false;
 
 	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	do_normalize = config->getParam("normalize")->text.compare("true") == 0;
@@ -80,6 +81,7 @@ void Obs_Snapshot_WF::reinitialize( Conf_Module* config, vector<Module*> depende
 	// save the actual number of samples again
 	config->getParam("r_samples")->value = num_r;
 	config->getParam("t_samples")->value = num_t;
+	rel_change_ready = false;
 
 	// count the lines actually written to outfile (there might have been some appended between checkpoint-writing and program-exit)
 	FILE* f = boinc_fopen( filename.c_str(), "r" );
@@ -110,13 +112,20 @@ void Obs_Snapshot_WF::observe( Module* state )
 {
 	Solver* s = dynamic_cast<Solver*>( state );
 	if ( s->t < t0  ||  s->t > t1 ) return;		// not in observation window
-	if ( counter++ % step_t != 0 ) return;		// down-sample
+
+	if ( counter++ % step_t != 0  &&  !rel_change_ready ) return;		// down-sample
+	if ( rel_change &&  !rel_change_ready ) {
+		// remember last state for calculation of deviation
+		psi_ = s->psi;
+		rel_change_ready = true;
+		return;
+	}
 
 	writtenLns++;
 	if ( foundLns >= writtenLns ) return;
 
    	double fac = 1.0;
-   	if ( do_normalize ) {
+   	if ( do_normalize  &&  !rel_change ) {
    		fac = 1.0 / s->integrate_psi_sqr();
    	}
 
@@ -124,19 +133,27 @@ void Obs_Snapshot_WF::observe( Module* state )
 	file = boinc_fopen( filename.c_str(), "a" );
 
    	for ( size_t i = ir0; i <= ir1 && i < s->Nr; i += step_r ) {
-		double re, im;
-    	if ( do_square ) {
-    		re = fac * real( s->psi[i] * conj( s->psi[i] ) );
-    		fprintf( file, format.c_str(), re );
+		dcmplx value;
+		if ( rel_change ) {
+			double R1 = real( s->psi[i] * conj( s->psi[i] ) );
+			double R2 = real( psi_[i] * conj( psi_[i] ) );
+			double Ravg = 0.5 * ( sqrt( R1 ) + sqrt( R2 ) );
+			value = ( Ravg == 0.0 )  ?   0.0  :  ( s->psi[i] - psi_[i] ) / Ravg;
+		} else {
+			value = fac * s->psi[i];
+		}
+
+		if ( do_square ) {
+			value = value * conj( value );
+    		fprintf( file, format.c_str(), real( value ) );
     	}
     	else {
-    		re = fac * real( s->psi[i] );
-    		im = fac * imag( s->psi[i] );
-    		fprintf( file, format.c_str(), re, im );
+    		fprintf( file, format.c_str(), real( value ), imag( value ) );
     	}
 	}
 	fprintf( file, "\n" );
    	fclose( file );
+   	if ( rel_change ) { rel_change_ready = false; }
 }
 
 //-------------------------------------------------------------------------------------------------------------

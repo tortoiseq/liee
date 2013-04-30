@@ -122,6 +122,7 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
   <!-- ================================  SOLVERs  ++=================================================-->
 
   <module serial="40" type="solver" name="crank_nicholson" stage="1"><!--Schroedinger Solver-->
+    <param name="OUTFILE" 		value="final_state.dat" variable="no" lower="" upper=""/>	<!--name for the file to write the last state of the WF with full resolution-->
   </module>
   
   <!-- ================================  OPTIMIZERs =================================================-->

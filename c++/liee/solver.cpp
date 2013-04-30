@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "filesys.h"
 #include "boinc_api.h"
 
 #include <boost/math/special_functions/erf.hpp>
@@ -94,6 +95,15 @@ bool Solver::execute()
 	for( size_t i = 0; i < obs.size(); i++ ) {
 		obs[i]->observe( this );
 	}
+	// optionally save final state
+	if ( outfile.length() > 0 ) {
+	   	FILE* f = boinc_fopen( outfile.c_str(), "w" );
+	   	double r_start = potential->get_r_start();
+	   	for ( size_t i = 0; i < psi.size(); i++ ) {
+	   		fprintf( f, "%1.16g\t%1.16g\t%1.16g\n", r_start + i * dr , real( psi[i] ), imag( psi[i] ) );
+	   	}
+	   	fclose( f );
+	}
     boinc_end_critical_section();
 
     return exec_done;
@@ -154,7 +164,7 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	register_dependencies( dependencies );
 	renormalize();
 	potential->set_grid( dr, Nr );
-	dbg_flag = true;
+	outfile = config->getParam("OUTFILE")->textual;
 }
 
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -184,21 +194,6 @@ void Crank_Nicholson::evolve_1step()
 {
 	for (size_t j=0; j < Nr; j++) {
 		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
-
-		//double r = potential->get_r_start() + j * dr;
-		//d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V(r, t); //#(45)
-
-		/*
-		if ( dbg_flag && t > 189 ) {
-			dcmplx Vi = potential->V_indexed( j, t );
-			dcmplx Vo = potential->V(r, t);
-			dcmplx dV = Vo - Vi;
-			if ( real( dV * conj(dV) ) > 1e-12 ) {
-				DEBUG_SHOW4( r, t, potential->V(r, t), potential->V_indexed( j, t ) );
-				if ( j == Nr - 1 ) dbg_flag = false;
-			}
-		}
-		*/
 	}
 
     alfa[0] = d[0];
