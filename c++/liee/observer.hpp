@@ -56,8 +56,6 @@ public:
  * It records the whole wave function (WV) N times during the course of the simulation and writes it
  * to a text file. The file contains the WV-samples as rows, with spatial samples in tab-separated columns.
  * If complex values are stored, real and imaginary part are separated by a comma. //TODO better interlaced: row-a real, row-b imag, ...
- * To reduce the size of the output the user can decrease the spatial resolution by the factor
- * downsample (//TODO downsample is obsolete)or ignore the complex nature of the WV by setting do_square to true.
  */
 class Obs_Snapshot_WF : public Observer
 {
@@ -69,6 +67,7 @@ public:
 	string	format;		///< cache format string for fprintf
 	bool 	do_square;	///< only save the square of the complex wf
 	bool	do_normalize;///< if true, normalise integral to Psi Psi* == 1
+	bool	rel_change;	///< show relative(!) deviation compared to previous time steps if 'true'
 	size_t	ir0;		///< index of start-pos of recording window
 	size_t	ir1;		///< index of end-pos of recording window
 	double	t0;			///< start-time of recording window

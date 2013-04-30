@@ -62,9 +62,11 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	if (do_square) {
 		ss << "%1." << digits << "g\t";
 	} else {
-		ss << "%1." << digits << "g,%1." << digits << "g\t";
+		ss << "%1." << digits << "g;%1." << digits << "g\t";
 	}
 	format = ss.str();
+
+	rel_change = config->getParam("rel_change")->text.compare("true") == 0;
 
 	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	do_normalize = config->getParam("normalize")->text.compare("true") == 0;

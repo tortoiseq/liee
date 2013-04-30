@@ -265,10 +265,9 @@ private:
 	Pot_const* well;
 	vector<Laser_Field*> pulses;
 	vector<int> reg_serials;		///< remember which dependency modules to register
-	vector<double> grid;			///< all r-positions of the grid (optional) (!not saved to archive!)
-	vector<double> gridVdc;			///< portion from the constant voltage of indexed potential. its split from gridVre, because of the non-constant ramping up period (!not saved to archive!)
-	vector<double> gridVre;			///< real-part of indexed constant potential (!not saved to archive!)
-	vector<double> gridVim;			///< imaginary-part of indexed constant potential (!not saved to archive!)
+	vector<double> grid_r;			///< all r-positions of the grid (optional) (!not saved to archive!)
+	vector<dcmplx> cache_Vconst;	///< indexed constant potential (V_well+V_dc+V_cap) (!not saved to archive!) (!not saved to archive!)
+	vector<dcmplx> cache_Vwell;		///< indexed constant potential without V_dc, needed for the non-constant ramping-up period (!not saved to archive!)
 	double grid_dr;					///< spacing of the requested grid
 
 	double t_on;					///< activation start-time of the constant field, F_dc(t < t_on) = 0
@@ -279,6 +278,7 @@ private:
 	double r_range;					///< spatial range of simulation
 	double r_start;					///< start position defined by where the negative-side repulsion potential reaches a certain threshold
 	double wcap;					///< width of complex absorbing potential at the right side of the simulation range
+	double r_cap;					///< start of complex absorbing potential, short for r_start + r_range - wcap
 	double F_dc;					///< electric field at tip apex from applying a constant voltage
 	double gamma;					///< resonant amplification factor
 	double s2;						///< resonant amplification range
@@ -308,6 +308,7 @@ protected:
     	ar & r_range;
     	ar & r_start;
         ar & wcap;
+        ar & r_cap;
         ar & F_dc;
         ar & gamma;
         ar & s2;

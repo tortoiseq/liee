@@ -258,6 +258,7 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	double s = config->getParam("near_width")->value / CONV_au_nm;
 	s2 = pow( s , 2.0);
 	wcap  = config->getParam("wcap")->value / CONV_au_nm;
+	r_cap = r_start + r_range - wcap;
 	int_samples  = (int) config->getParam("int_samples")->value;
 	t_on = config->getParam("t_DC_on")->value / CONV_au_fs;
 	t_full = config->getParam("t_DC_full")->value / CONV_au_fs;
@@ -315,55 +316,40 @@ dcmplx Potential::V( double r, double t )
 
 dcmplx Potential::V_indexed( size_t ri, double t )
 {
-	if ( t < t_on ) {
-		// return without Vdc before it is switched on
-		return dcmplx( gridVre[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
-	}
+	// return without Vdc before it is switched on
+	if ( t < t_on ) { return cache_Vwell[ri] + V_pulse( grid_r[ri], t ); }
 
 	// while ramping up V_dc, it has to be re-calculated for each time-step
-	if ( t != t_now ) {		// t_now is updated by V_pulse() later on, so here it also flags the first occurrence of a new time-step
-		if ( t <= t_full ) {	// Vdc still booting
-			for ( size_t i = 0; i < grid.size(); i++ ) {
-				if ( gridVre[ri] > r_start + r_range - wcap ) // CAP territory
-				{
-					// inside the CAP, V_dc has the constant value from the left side of it --> filling the vector up
-					double Vdc_cap = V_Fdc( r_start + r_range - wcap, t );
-					for ( size_t j = i; j < grid.size(); j++ ) {
-						gridVdc[j] = Vdc_cap;
-					}
-					break;	// nothing left beyond the CAP
-				}
-				gridVdc[i] = V_Fdc( gridVre[ri], t );
-			}
+	if ( t <= t_full ) {
+		if ( grid_r[ri] > r_cap ) {
+			return cache_Vwell[ri] + V_Fdc( r_cap, t ) + V_pulse( r_cap, t );	// inside the CAP, V_dc has the constant value from the left side of it
 		}
+		return cache_Vwell[ri] + V_Fdc( grid_r[ri], t ) + V_pulse( grid_r[ri], t );
 	}
-	return dcmplx( gridVre[ri] + gridVdc[ri] + V_pulse( grid[ri], t ), gridVim[ri] );
+
+	// otherwise use fully charged constant potential from cache
+	return cache_Vconst[ri] + V_pulse( grid_r[ri], t );
 }
 
 void Potential::set_grid( double dr, size_t N )
 {
 	grid_dr = dr;
-	grid.clear();
-	gridVre.clear();
-	gridVdc.clear();
-	gridVim.clear();
-	double r_cap = r_start + r_range - wcap;
-
+	grid_r.clear();
+	cache_Vwell.clear();
+	cache_Vconst.clear();
 	for ( size_t i = 0; i < N; i++ ) {
 		double r = r_start + i * dr;
-		grid.push_back( r );
+		grid_r.push_back( r );
 
 		double z = ( r - r_cap ) / wcap;
 		if (z > 0.0  &&  z <= 1.0) 			// r is in CAP territory
 		{
-			gridVdc.push_back( V_Fdc( r_cap, t_full ) );
-			gridVre.push_back( well->V( r_cap ) );
-			gridVim.push_back( V_cap( z ) );
+			cache_Vconst.push_back( dcmplx( well->V( r_cap ) + V_Fdc( r_cap, t_full ), V_cap(z) ) );
+			cache_Vwell.push_back( dcmplx( well->V( r_cap ), V_cap(z) ) );
 		}
 		else {
-			gridVdc.push_back( V_Fdc( r, t_full ) );
-			gridVre.push_back( well->V( r ) );
-			gridVim.push_back( 0.0 );
+			cache_Vconst.push_back( dcmplx( well->V(r) + V_Fdc( r, t_full ), 0.0 ) );
+			cache_Vwell.push_back( dcmplx( well->V(r), 0.0 ) );
 		}
 	}
 }

@@ -94,6 +94,7 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
     <param name="r_samples" 		value="800" 		variable="no" lower="" upper=""/>	<!--number of spacial samples for each recorded time-->
     <param name="precision"		value="4"		variable="no" lower="" upper=""/>	<!--number of significant digits to round (reduce file size)-->
     <param name="square" 		value="true" 		variable="no" lower="" upper=""/>	<!--dont save complex wf but merely  the square, if 'true'-->
+    <param name="rel_change" 		value="false" 		variable="no" lower="" upper=""/>	<!--show relative(!) deviation compared to previous time steps if 'true'-->
     <param name="normalize" 		value="false" 		variable="no" lower="" upper=""/>	<!--normalize every snapshot to a total probability==1 if 'true'-->
     <param name="obs_t0"		value=""		variable="no" lower="" upper=""/>	<!--time to start the recording (for all 4 obs_window-parameters: empty string means maximum observation region)-->
     <param name="obs_t1"		value=""		variable="no" lower="" upper=""/>	<!--time to end the recording -->

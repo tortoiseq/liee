@@ -154,6 +154,7 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	register_dependencies( dependencies );
 	renormalize();
 	potential->set_grid( dr, Nr );
+	dbg_flag = true;
 }
 
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -183,6 +184,21 @@ void Crank_Nicholson::evolve_1step()
 {
 	for (size_t j=0; j < Nr; j++) {
 		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
+
+		//double r = potential->get_r_start() + j * dr;
+		//d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V(r, t); //#(45)
+
+		/*
+		if ( dbg_flag && t > 189 ) {
+			dcmplx Vi = potential->V_indexed( j, t );
+			dcmplx Vo = potential->V(r, t);
+			dcmplx dV = Vo - Vi;
+			if ( real( dV * conj(dV) ) > 1e-12 ) {
+				DEBUG_SHOW4( r, t, potential->V(r, t), potential->V_indexed( j, t ) );
+				if ( j == Nr - 1 ) dbg_flag = false;
+			}
+		}
+		*/
 	}
 
     alfa[0] = d[0];
