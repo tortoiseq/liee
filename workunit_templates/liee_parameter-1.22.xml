@@ -3,11 +3,11 @@
 <!-- Available Modules:
      ^^^^^^^^^^^^^^^^^^
 POTENTIALs	10::main_pot		11::round_well		12::harmonic_osci
-LASER PULSEs	110::gaussian		120::SLM
-INITIAL WFs	20::noumerov		21::wf_reader
-OBSERVERs	30::wf_snapshots	31::tunnel_ratio	32::JWKB_tunnel
+LASER PULSEs	110::gaussian		120::slm
+INITIAL WFs	20::numerov		21::wf_reader
+OBSERVERs	30::wf_snapshots	31::tunnel_ratio	32::jwkb_tunnel		33::wigner_phasespace
 SOLVERs		40::crank_nicholson
-OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::shot_gun
+OPTIMIZERs	500::boinc		50::down_simplex	51::particle_swarm	52::rasterizer		53::shot_gun
 -->
 
 <plan version="1.22" project="liee" experiment="template" wu="WU" exec_chain="{11,110,10,21,30,31,40,500}">
@@ -59,14 +59,14 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
     <param name="chirp" 		value="0.0" 		variable="no" lower="" upper=""/>	<!--chirp rate, e.g. rate of frequency shift dw/dt (in fs^-2)-->
   </module>
 
-  <module serial="120" type="pulse" name="SLM" stage="1"><!--Pulse shaping with Spatial Light Modulators-->
+  <module serial="120" type="pulse" name="slm" stage="1"><!--Pulse shaping with Spatial Light Modulators-->
     <!--TODO flesh out-->
     <param name="orig_pulses" 		value="{110}" 		variable="no" lower="" upper=""/>	<!--serial numbers for the original laser pulse to go through this shaping-->
   </module>
 
   <!-- ================================  INITIAL WFs  ===============================================-->
 
- <module serial="20" type="executable" name="noumerov" stage="1"><!--Initial Wavefunction from integrating time independent Schroedinger equation, (If used as WF-provider on the client, must include the wf_reader after noumerov in the chain to read the file "OUTFILE_0000.dat)"-->
+ <module serial="20" type="executable" name="numerov" stage="1"><!--Initial Wavefunction from integrating time independent Schroedinger equation, (If used as WF-provider on the client, must include the wf_reader after noumerov in the chain to read the file "OUTFILE_0000.dat)"-->
     <param name="n_eps"			value="1e-10" 		variable="no" lower="" upper=""/>	<!--maximum accumulated error term in noumerov integration (unless max_samples reached) -->
     <param name="tail_tiny_range"	value="{1e-20, 1e-25}" 	variable="no" lower="" upper=""/>	<!--first value corresponds to minimum penetration depth into barrier: dont stop before tail is this insignificant. second ~~ maximum penetration: reduce computational effort and prevent numeric overflow.-->
     <param name="num_sample_range"	value="{1000, 1e7}" 	variable="no" lower="" upper=""/>	<!--range for number of samples per integration-->
@@ -111,12 +111,28 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
     <param name="is_objective" 		value="true" 		variable="no" lower="" upper=""/>	<!--if 'true': adds the "lost" electron probability as 'objective' to the summary, in order to supply the optimizer with an objective function-->
   </module>
 
-  <module serial="32" type="observer" name="JWKB_tunnel" stage="1"><!--the time-dependent potential is used for the JWKB approximation of the quasi-stationary tunnel rate by integrating over the barrier-->
+  <module serial="32" type="observer" name="jwkb_tunnel" stage="1"><!--the time-dependent potential is used for the JWKB approximation of the quasi-stationary tunnel rate by integrating over the barrier-->
     <param name="target" 		value="40" 		variable="no" lower="" upper=""/>	<!--serial of the observation-target, e.g. the module whose state gets observed-->
     <param name="t_samples" 		value="1000" 		variable="no" lower="" upper=""/>	<!--number of recordings of the current-->
     <param name="int_samples" 		value="10000" 		variable="no" lower="" upper=""/>	<!--number of samples for numerical integration over the barrier potenial hill-->
     <param name="OUTFILE" 		value="jwkb.dat" 	variable="no" lower="" upper=""/>	<!--name for the output file-->
     <param name="is_objective" 		value="false" 		variable="no" lower="" upper=""/>	<!--if 'true': adds the "lost" electron probability as 'objective' to the summary, in order to supply the optimizer with an objective function-->
+  </module>
+
+  <module serial="33" type="observer" name="wigner_phasespace" stage="1"><!---->
+    <param name="target" 		value="40" 		variable="no" lower="" upper=""/>	<!--serial of the observation-target, e.g. the module whose state gets observed-->
+    <param name="OUTFILE" 		value="phasespace.dat" 	variable="no" lower="" upper=""/>	<!--name for the output file-->
+    <param name="t_samples" 		value="100" 		variable="no" lower="" upper=""/>	<!--number of recordings of the wave-function-->
+    <param name="r_samples" 		value="100" 		variable="no" lower="" upper=""/>	<!--number of position-samples for each recorded time-->
+    <param name="k_samples" 		value="100" 		variable="no" lower="" upper=""/>	<!--number of momenta-samples for each recorded time-->
+    <param name="precision"		value="4"		variable="no" lower="" upper=""/>	<!--number of significant digits to round (reduce file size)-->
+    <param name="normalize" 		value="false" 		variable="no" lower="" upper=""/>	<!--normalize every snapshot to a total probability==1 if 'true'-->
+    <param name="obs_t0"		value=""		variable="no" lower="" upper=""/>	<!--time to start the recording (for all 4 obs_window-parameters: empty string means maximum observation region)-->
+    <param name="obs_t1"		value=""		variable="no" lower="" upper=""/>	<!--time to end the recording -->
+    <param name="obs_r0"		value=""		variable="no" lower="" upper=""/>	<!--start-position of recording range (left-most pos is 0)-->
+    <param name="obs_r1"		value=""		variable="no" lower="" upper=""/>	<!--end-position of recording range (left-most pos is 0)-->
+    <param name="obs_k0"		value=""		variable="no" lower="" upper=""/>	<!--smallest momentum of recording range (default: -pi/dr )-->
+    <param name="obs_k1"		value=""		variable="no" lower="" upper=""/>	<!--largest momentum of recording range (default: +pi/dr )-->
   </module>
 
   <!-- ================================  SOLVERs  ++=================================================-->
@@ -127,7 +143,7 @@ OPTIMIZERs	500::BOINC		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
   
   <!-- ================================  OPTIMIZERs =================================================-->
 
-  <module serial="500" type="scheduler" name="BOINC" stage="0"><!--Parameters for scheduling jobs to the BOINC distributed computation network, (if the serial is not in the chain, BOINC will work with defaults) see: https://boinc.berkeley.edu/trac/wiki/JobIn -->
+  <module serial="500" type="scheduler" name="boinc" stage="0"><!--Parameters for scheduling jobs to the BOINC distributed computation network, (if the serial is not in the chain, BOINC will work with defaults) see: https://boinc.berkeley.edu/trac/wiki/JobIn -->
     <param name="priority" 		value="0" 		variable="no" lower="" upper=""/>	<!--Higher-priority work is dispatched first -->
     <param name="delay_bound"		value="86400" 		variable="no" lower="" upper=""/> 	<!--time-limit (in seconds) between sending a result to a client and receiving a reply-->
     <param name="min_quorum" 		value="1" 		variable="no" lower="" upper=""/>	<!--The validator is run when there are this many successful results. If a strict majority agree, they are considered correct. Set this to two or more if you want redundant computing.-->
