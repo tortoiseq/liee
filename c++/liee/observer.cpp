@@ -26,10 +26,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	double r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double dr = config->getParam("dr")->value / CONV_au_nm;
 
-	double r0 = 0.0;
-	double r1 = r_range;
-	if ( not config->getParam("obs_r0")->textual ) { r0 = config->getParam("obs_r0")->value / CONV_au_nm; }
-	if ( not config->getParam("obs_r1")->textual ) { r1 = config->getParam("obs_r1")->value / CONV_au_nm; }
+	double r0 = ( config->getParam("obs_r0")->textual )  ?  0		:  config->getParam("obs_r0")->value / CONV_au_nm;
+	double r1 = ( config->getParam("obs_r1")->textual )  ?  r_range	:  config->getParam("obs_r1")->value / CONV_au_nm;
 	ir0 = (int) (r0 / dr);
 	ir1 = (int) (r1 / dr);
 
@@ -41,10 +39,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	// prepare temporal downsampling
 	t_range = config->getParam("t_range")->value / CONV_au_fs;
 	dt = config->getParam("dt")->value / CONV_au_fs;
-	t0 = 0.0;
-	t1 = t_range;
-	if ( not config->getParam("obs_t0")->textual ) { t0 = config->getParam("obs_t0")->value / CONV_au_fs; }
-	if ( not config->getParam("obs_t1")->textual ) { t1 = config->getParam("obs_t1")->value / CONV_au_fs; }
+	t0 = ( config->getParam("obs_t0")->textual )  ?  0			:  config->getParam("obs_t0")->value / CONV_au_nm;
+	t1 = ( config->getParam("obs_t1")->textual )  ?  t_range	:  config->getParam("obs_t1")->value / CONV_au_nm;
 	size_t Nt = 1.0 + ( t1 - t0 ) / dt;
 	step_t = floor( Nt / config->getParam("t_samples")->value );
 	if ( step_t < 1 ) { step_t = 1; }
@@ -112,17 +108,15 @@ void Obs_Snapshot_WF::observe( Module* state )
 {
 	Solver* s = dynamic_cast<Solver*>( state );
 	if ( s->t < t0  ||  s->t > t1 ) return;		// not in observation window
+	if ( counter++ % step_t != 0  &&  !rel_change_ready ) return;	// down-sample
+	if ( foundLns >= ++writtenLns ) return;	// already written previously
 
-	if ( counter++ % step_t != 0  &&  !rel_change_ready ) return;		// down-sample
 	if ( rel_change &&  !rel_change_ready ) {
 		// remember last state for calculation of deviation
 		psi_ = s->psi;
 		rel_change_ready = true;
 		return;
 	}
-
-	writtenLns++;
-	if ( foundLns >= writtenLns ) return;
 
    	double fac = 1.0;
    	if ( do_normalize  &&  !rel_change ) {
@@ -154,6 +148,121 @@ void Obs_Snapshot_WF::observe( Module* state )
 	fprintf( file, "\n" );
    	fclose( file );
    	if ( rel_change ) { rel_change_ready = false; }
+}
+
+//-------------------------------------------------------------------------------------------------------------
+
+void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Obs_Wigner_Distribution" );
+	counter = 0;
+	writtenFrames = 0;
+	foundFrames = 0;
+
+	// prepare temporal downsampling
+	t_range = config->getParam("t_range")->value / CONV_au_fs;
+	dt = config->getParam("dt")->value / CONV_au_fs;
+	t0 = ( config->getParam("obs_t0")->textual )  ?  0			:  config->getParam("obs_t0")->value / CONV_au_nm;
+	t1 = ( config->getParam("obs_t1")->textual )  ?  t_range	:  config->getParam("obs_t1")->value / CONV_au_nm;
+	size_t Nt = 1.0 + ( t1 - t0 ) / dt;
+	step_t = floor( Nt / config->getParam("t_samples")->value );
+	if ( step_t < 1 ) { step_t = 1; }
+	if ( step_t > Nt ) { step_t = Nt; }
+	// save the actual number of samples
+	num_t = 1 + Nt / step_t;
+	config->getParam("t_samples")->value = num_t;
+
+	double r_range = config->getParam("r_range")->value / CONV_au_nm;
+	double dr = config->getParam("dr")->value / CONV_au_nm;
+	double kmax = CONST_PI / dr;
+	r0 = ( config->getParam("obs_r0")->textual )  ?  0			:  config->getParam("obs_r0")->value / CONV_au_nm;
+	r1 = ( config->getParam("obs_r1")->textual )  ?  r_range	:  config->getParam("obs_r1")->value / CONV_au_nm;
+	k0 = ( config->getParam("obs_k0")->textual )  ?  -kmax		:  config->getParam("obs_k0")->value / CONV_au_nm;
+	k1 = ( config->getParam("obs_k1")->textual )  ?  +kmax		:  config->getParam("obs_k1")->value / CONV_au_nm;
+
+	num_r = (int)config->getParam("r_samples")->value;
+	num_k = (int)config->getParam("k_samples")->value;
+
+	stringstream ss;
+	int digits = int( config->getParam("precision")->value );
+	ss << "%1." << digits << "g\t";
+	format = ss.str();
+
+	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
+	FILE* f = boinc_fopen( filename.c_str(), "w" );		// delete previous snapshot file
+	fclose( f );
+}
+
+void Obs_Wigner_Distribution::reinitialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Obs_Wigner_Distribution" );
+	// save the actual number of samples again
+	config->getParam("t_samples")->value = num_t;
+
+	// count the frames actually written to outfile (there might have been some appended between checkpoint-writing and program-exit)
+	foundFrames = 0;
+	FILE* f = boinc_fopen( filename.c_str(), "r" );
+	int ch;
+	while ( EOF != ( ch = fgetc(f) ) ) {
+	    if ( ch == '#' ) { ++foundFrames; }
+	}
+	fclose( f );
+}
+
+void Obs_Wigner_Distribution::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
+{
+	int Nrr = (int) round( config->getParam("r_range")->value / config->getParam("dr")->value );
+	int Ntt = (int) round( config->getParam("t_range")->value / config->getParam("dt")->value );
+	int Nr = (int)config->getParam("r_samples")->value;
+	int Nk = (int)config->getParam("k_samples")->value;
+	int Nt = (int)config->getParam("t_samples")->value;
+	//TODO estimate
+}
+
+void Obs_Wigner_Distribution::observe( Module* state )
+{
+	Solver* s = dynamic_cast<Solver*>( state );
+	if ( s->t < t0  ||  s->t > t1 ) return;		// not in observation window
+	if ( counter++ % step_t != 0 ) return;		// down-sample
+	if ( foundFrames >= ++writtenFrames ) return;	// already written previously
+
+    FILE *file;
+	file = boinc_fopen( filename.c_str(), "a" );
+	fprintf( file, "#\t%d\n", (int)( counter / step_t ) );
+
+	double r_start = s->potential->get_r_start();
+	double dr = ( r1 - r0 ) / ( num_r - 1 );
+	double dk = ( k1 - k0 ) / ( num_k - 1 );
+	dcmplx two_i = dcmplx( 0, 2 );
+
+	for ( size_t ki = 0; ki < num_k; ki++ )
+	{
+		dcmplx kx2i = two_i * ( k0 + ki * dk );
+
+		for ( size_t ri = 0; ri < num_r; ri++ )
+		{
+			double r = r0 + ri * dr;
+			size_t rii = (size_t) round( (r - r_start) / s->dr );
+			size_t delta_max = min( rii, s->Nr - 1 - rii );
+			//vector<dcmplx> to_sum;
+			//to_sum.resize( delta_max + 1 );
+			dcmplx sum = 0;
+
+			for ( size_t delta_i = 0; delta_i <= delta_max; delta_i++ ) {
+				double delta_r = s->dr * delta_i;
+				sum += conj( s->psi[rii + delta_i] ) * s->psi[rii - delta_i] * exp( kx2i * delta_r );
+			}
+			//std::sort( to_sum.begin(), to_sum.end() );	// sort to reduce numeric errors from adding small and large values
+			//for ( size_t i = 0; i < to_sum.size(); i++ ) {
+			//	sum += to_sum[i];
+			//}
+			fprintf( file, format.c_str(), real( sum / CONST_PI ) );
+		}
+		fprintf( file, "\n" );
+	}
+
+	fprintf( file, "\n" );
+   	fclose( file );
 }
 
 //-------------------------------------------------------------------------------------------------------------

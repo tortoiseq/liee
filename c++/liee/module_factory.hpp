@@ -24,6 +24,64 @@
 using namespace std;
 namespace liee {
 
+#define STORE_MODULE( _class )	\
+		_class* p = dynamic_cast<_class*>( m ); \
+		if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED"); \
+		*oarch << p;
+
+#define LOAD_MODULE( _class ) \
+		_class* p = new _class(); \
+		if ( iarch != NULL ) \
+		*iarch >> p; \
+		m = p;
+
+#define SWITCH_MODULES( _load_or_store, _type, _name ) \
+		if ( _type.compare( "potential" ) == 0 ) \
+		{ \
+			if ( _name.compare( "main_pot" ) == 0 ) 			{ _load_or_store( Potential ); } \
+		} \
+		else if ( _type.compare( "pulse" ) == 0 ) \
+		{ \
+			if 		( _name.compare( "gaussian" ) == 0 )		{ _load_or_store( Gaussian_Pulse ); } \
+			else if	( _name.compare( "slm" ) == 0 ) 			{ _load_or_store( Spatial_Light_Modificator ); } \
+		} \
+		else if ( _type.compare( "pot_const" ) == 0 ) \
+		{ \
+			if 		( _name.compare( "round_well" ) == 0 ) 		{ _load_or_store( Pot_Round_Well_wImage ); } \
+			else if	( _name.compare( "pot_lol" ) == 0 ) 		{ _load_or_store( Pot_Experimental ); } \
+			else if	( _name.compare( "harmonic_osci" ) == 0 ) 	{ _load_or_store( Pot_Harm_Oscillator ); } \
+			else if	( _name.compare( "metal_surface" ) == 0 ) 	{ _load_or_store( Chulkov_Image_Potential ); } \
+			else if	( _name.compare( "zero_pot" ) == 0 ) 		{ _load_or_store( Zero_Pot ); } \
+		} \
+		else if ( _type.compare( "initial_wf" ) == 0 ) \
+		{ \
+			if 		( _name.compare( "wf_reader" ) == 0 ) 		{ _load_or_store( WF_Reader ); } \
+		} \
+		else if ( _type.compare( "executable" ) == 0 ) \
+		{ \
+			if 		( _name.compare( "numerov" ) == 0 ) 		{ _load_or_store( Noumerov1d ); } \
+		} \
+		else if ( _type.compare( "observer" ) == 0 ) \
+		{ \
+			if 		( _name.compare( "wf_snapshots" ) == 0 )	{ _load_or_store( Obs_Snapshot_WF ); } \
+			else if	( _name.compare( "tunnel_ratio" ) == 0 )	{ _load_or_store( Obs_Tunnel_Ratio ); } \
+			else if	( _name.compare( "jwkb_tunnel" ) == 0 ) 	{ _load_or_store( Obs_JWKB_Tunnel ); } \
+			else if	( _name.compare( "wigner_phasespace" ) == 0 ){ _load_or_store( Obs_Wigner_Distribution ); } \
+		} \
+		else if ( _type.compare( "solver" ) == 0 ) \
+		{ \
+			if 		( _name.compare( "crank_nicholson" ) == 0 )	{ _load_or_store( Crank_Nicholson ); } \
+		} \
+		else { \
+			throw Except__Wrong_Module_Type( __LINE__ ); \
+		}
+
+
+struct Except__Wrong_Module_Type {
+	int specification_code;
+	Except__Wrong_Module_Type( int c ) : specification_code( c ) {}
+};
+
 /*!
  *
  */
@@ -35,7 +93,7 @@ public:
 	Module_Factory() {
 		EXECUTION_REQUIRED["main_pot"] 			= false;
 		EXECUTION_REQUIRED["gaussian"]			= false;
-		EXECUTION_REQUIRED["SLM"] 				= false;
+		EXECUTION_REQUIRED["slm"] 				= false;
 		EXECUTION_REQUIRED["round_well"] 		= false;
 		EXECUTION_REQUIRED["pot_lol"] 			= false;
 		EXECUTION_REQUIRED["harmonic_osci"] 	= false;
@@ -45,9 +103,10 @@ public:
 		EXECUTION_REQUIRED["wf_reader"] 		= false;
 		EXECUTION_REQUIRED["wf_snapshots"] 		= false;
 		EXECUTION_REQUIRED["tunnel_ratio"] 		= false;
-		EXECUTION_REQUIRED["JWKB_tunnel"] 		= false;
+		EXECUTION_REQUIRED["jwkb_tunnel"] 		= false;
+		EXECUTION_REQUIRED["wigner_phasespace"]	= false;
 		EXECUTION_REQUIRED["crank_nicholson"] 	= true;
-		EXECUTION_REQUIRED["noumerov"] 			= true;
+		EXECUTION_REQUIRED["numerov"] 			= true;
 	}
 
 	static Module* assemble( string & type, string & name, int serial )
@@ -57,92 +116,9 @@ public:
 
 	static void store( Module*  m, boost::archive::binary_oarchive* oarch )
 	{
-		DECLARE_LOGGER
+		DECLARE_LOGGER;
 		GET_LOGGER( "liee.Module_Factory" );
-		if ( m->type.compare( "potential" ) == 0 && m->name.compare( "main_pot" ) == 0 ) {
-			Potential* p = dynamic_cast<Potential*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Potential");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pulse" ) == 0 && m->name.compare( "gaussian" ) == 0 ) {
-			Gaussian_Pulse* p = dynamic_cast<Gaussian_Pulse*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Gaussian_Pulse");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pulse" ) == 0 && m->name.compare( "SLM" ) == 0 ) {
-			Spatial_Light_Modificator* p = dynamic_cast<Spatial_Light_Modificator*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "Spatial_Light_Modificator");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "round_well" ) == 0 ) {
-			Pot_Round_Well_wImage* p = dynamic_cast<Pot_Round_Well_wImage*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "Pot_Round_Well_wImage");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "pot_lol" ) == 0 ) {
-			Pot_Experimental* p = dynamic_cast<Pot_Experimental*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "Pot_Round_Well_wImage");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "harmonic_osci" ) == 0 ) {
-			Pot_Harm_Oscillator* p = dynamic_cast<Pot_Harm_Oscillator*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Pot_Harm_Oscillator");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "metal_surface" ) == 0 ) {
-			Chulkov_Image_Potential* p = dynamic_cast<Chulkov_Image_Potential*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Chulkov_Image_Potential");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "pot_const" ) == 0 && m->name.compare( "zero_pot" ) == 0 ) {
-			Zero_Pot* p = dynamic_cast<Zero_Pot*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Zero_Potential");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "initial_wf" ) == 0 && m->name.compare( "wf_reader" ) == 0 ) {
-			WF_Reader* p = dynamic_cast<WF_Reader*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as WF_Reader");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "executable" ) == 0 && m->name.compare( "noumerov" ) == 0 ) {
-			Noumerov1d* p = dynamic_cast<Noumerov1d*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Noumerov");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "observer" ) == 0 && m->name.compare( "wf_snapshots" ) == 0 ) {
-			Obs_Snapshot_WF* p = dynamic_cast<Obs_Snapshot_WF*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Snapshot_WF");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "observer" ) == 0 && m->name.compare( "tunnel_ratio" ) == 0 ) {
-			Obs_Tunnel_Ratio* p = dynamic_cast<Obs_Tunnel_Ratio*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Obs_Tunnel_Ratio");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "observer" ) == 0 && m->name.compare( "JWKB_tunnel" ) == 0 ) {
-			Obs_JWKB_Tunnel* p = dynamic_cast<Obs_JWKB_Tunnel*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Obs_JWKB_Tunnel");
-			*oarch << p;
-		}
-		else if ( m->type.compare( "solver" ) == 0 && m->name.compare( "crank_nicholson" ) == 0 ) {
-			Crank_Nicholson* p = dynamic_cast<Crank_Nicholson*>( m );
-			if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED");
-			LOG_DEBUG( "writing as Crank_Nicholson");
-			*oarch << p;
-		}
+		SWITCH_MODULES( STORE_MODULE, m->type, m->name );
 	}
 
 
@@ -151,78 +127,7 @@ public:
 		DECLARE_LOGGER
 		GET_LOGGER( "liee.Module_Factory" );
 		Module* m;
-
-		if ( type.compare( "potential" ) == 0 && name.compare( "main_pot" ) == 0 ) {
-			Potential* p = new Potential();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pulse" ) == 0 && name.compare( "gaussian" ) == 0 ) {
-			Gaussian_Pulse* p = new Gaussian_Pulse();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pulse" ) == 0 && name.compare( "SLM" ) == 0 ) {
-			Spatial_Light_Modificator* p = new Spatial_Light_Modificator();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pot_const" ) == 0 && name.compare( "round_well" ) == 0 ) {
-			Pot_Round_Well_wImage* p = new Pot_Round_Well_wImage;
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pot_const" ) == 0 && name.compare( "pot_lol" ) == 0 ) {
-			Pot_Experimental* p = new Pot_Experimental;
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pot_const" ) == 0 && name.compare( "harmonic_osci" ) == 0 ) {
-			Pot_Harm_Oscillator* p = new Pot_Harm_Oscillator();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pot_const" ) == 0 && name.compare( "metal_surface" ) == 0 ) {
-			Chulkov_Image_Potential* p = new Chulkov_Image_Potential();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "pot_const" ) == 0 && name.compare( "zero_pot" ) == 0 ) {
-			Zero_Pot* p = new Zero_Pot();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "initial_wf" ) == 0 && name.compare( "wf_reader" ) == 0 ) {
-			WF_Reader* p = new WF_Reader();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "executable" ) == 0 && name.compare( "noumerov" ) == 0 ) {
-			Noumerov1d* p = new Noumerov1d();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "observer" ) == 0 && name.compare( "wf_snapshots" ) == 0 ) {
-			Obs_Snapshot_WF* p = new Obs_Snapshot_WF();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "observer" ) == 0 && name.compare( "tunnel_ratio" ) == 0 ) {
-			Obs_Tunnel_Ratio* p = new Obs_Tunnel_Ratio();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "observer" ) == 0 && name.compare( "JWKB_tunnel" ) == 0 ) {
-			Obs_JWKB_Tunnel* p = new Obs_JWKB_Tunnel();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-		else if ( type.compare( "solver" ) == 0 && name.compare( "crank_nicholson" ) == 0 ) {
-			Crank_Nicholson* p = new Crank_Nicholson();
-			if ( iarch != NULL ) *iarch >> p;
-			m = p;
-		}
-
+		SWITCH_MODULES( LOAD_MODULE, type, name );
 		m->type = type;
 		m->name = name;
 		m->serial = serial;

@@ -106,6 +106,45 @@ public:
     }
 };
 
+/*!
+ */
+class Obs_Wigner_Distribution : public Observer
+{
+public:
+	size_t	num_r;		///< image resolution r-axis
+	size_t	num_k;		///< image resolution k-axis
+	size_t	num_t;		///< number of frames to record
+	size_t 	step_t;		///< number of temporal samples to skip over between the saved ones
+	double	t0;			///< start-time of recording window
+	double	t1;			///< end-time of recording window
+	double	k0;			///< start-wave number of recording window
+	double	k1;			///< end-wave number of recording window
+	double	r0;			///< start-wave number of recording window
+	double	r1;			///< end-wave number of recording window
+	size_t  writtenFrames;///< number of frames written
+	size_t	foundFrames; ///< number of frames found (can be bigger than writtenFrames after load from checkpoint)
+	string	format;		///< cache format string for fprintf
+
+    virtual void observe( Module* state );
+	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
+	virtual void summarize( map<string, string> & results ){}
+
+	friend class boost::serialization::access;
+    /*! When the class Archive corresponds to an output archive, the
+     *  & operator is defined similar to <<.  Likewise, when the class Archive
+     *  is a type of input archive the & operator is defined similar to >>. */
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int version )
+    {
+    	ar & boost::serialization::base_object<Observer>( *this );
+    	ar & num_r & num_k & num_t & step_t
+    		& t0 & t1 & k0 & k1 & r0 & r1
+    		& writtenFrames & format;
+    }
+};
+
 
 /*!
  * This Observer can be used together with a Solver of time-dependent Schroedinger equation.

@@ -52,7 +52,7 @@ Opti_Scheduler::Opti_Scheduler( string exp, int app_id )
 	string conf_filename = "/var/www/boinc/liee/workspace/" + experiment + "_conf.xml";	//TODO get project root from boinc config
     Config cnf( conf_filename );
 	for ( size_t i = 0; i < cnf.chain.size(); i++ ) {
-		if ( cnf.chain[i]->type.compare( "scheduler" ) == 0  &&  cnf.chain[i]->name.compare( "BOINC" ) == 0  )
+		if ( cnf.chain[i]->type.compare( "scheduler" ) == 0  &&  cnf.chain[i]->name.compare( "boinc" ) == 0  )
 		{
 			Conf_Module* boinc_param = cnf.chain[i];
 		    priority = (int)boinc_param->getParam("priority")->value;

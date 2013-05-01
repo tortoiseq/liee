@@ -96,6 +96,7 @@ bool Solver::execute()
 		obs[i]->observe( this );
 	}
 	// optionally save final state
+	DEBUG_SHOW( outfile );
 	if ( outfile.length() > 0 ) {
 	   	FILE* f = boinc_fopen( outfile.c_str(), "w" );
 	   	double r_start = potential->get_r_start();
