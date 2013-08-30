@@ -25,15 +25,15 @@ using namespace std;
 namespace liee {
 
 #define STORE_MODULE( _class )	\
-		_class* p = dynamic_cast<_class*>( m ); \
-		if ( p == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED"); \
-		*oarch << p;
+		_class* instance = dynamic_cast<_class*>( module ); \
+		if ( instance == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED"); \
+		*oarch << instance;
 
 #define LOAD_MODULE( _class ) \
-		_class* p = new _class(); \
+		_class* instance = new _class(); \
 		if ( iarch != NULL ) \
-		*iarch >> p; \
-		m = p;
+		*iarch >> instance; \
+		module = instance;
 
 #define SWITCH_MODULES( _load_or_store, _type, _name ) \
 		if ( _type.compare( "potential" ) == 0 ) \
@@ -51,11 +51,12 @@ namespace liee {
 			else if	( _name.compare( "pot_lol" ) == 0 ) 		{ _load_or_store( Pot_Experimental ); } \
 			else if	( _name.compare( "harmonic_osci" ) == 0 ) 	{ _load_or_store( Pot_Harm_Oscillator ); } \
 			else if	( _name.compare( "metal_surface" ) == 0 ) 	{ _load_or_store( Chulkov_Image_Potential ); } \
-			else if	( _name.compare( "zero_pot" ) == 0 ) 		{ _load_or_store( Zero_Pot ); } \
+			else if	( _name.compare( "piecewise_linear" ) == 0 ){ _load_or_store( Pot_Piecewise ); } \
 		} \
 		else if ( _type.compare( "initial_wf" ) == 0 ) \
 		{ \
 			if 		( _name.compare( "wf_reader" ) == 0 ) 		{ _load_or_store( WF_Reader ); } \
+			else if	( _name.compare( "wave_packet" ) == 0 )		{ _load_or_store( WF_Gauss_Packet); } \
 		} \
 		else if ( _type.compare( "executable" ) == 0 ) \
 		{ \
@@ -98,9 +99,9 @@ public:
 		EXECUTION_REQUIRED["pot_lol"] 			= false;
 		EXECUTION_REQUIRED["harmonic_osci"] 	= false;
 		EXECUTION_REQUIRED["metal_surface"] 	= false;
-		EXECUTION_REQUIRED["zero_pot"] 			= false;
-
+		EXECUTION_REQUIRED["piecewise_linear"]	= false;
 		EXECUTION_REQUIRED["wf_reader"] 		= false;
+		EXECUTION_REQUIRED["wave_packet"] 		= false;
 		EXECUTION_REQUIRED["wf_snapshots"] 		= false;
 		EXECUTION_REQUIRED["tunnel_ratio"] 		= false;
 		EXECUTION_REQUIRED["jwkb_tunnel"] 		= false;
@@ -114,11 +115,11 @@ public:
 		return load( type, name, serial, NULL );
 	}
 
-	static void store( Module*  m, boost::archive::binary_oarchive* oarch )
+	static void store( Module*  module, boost::archive::binary_oarchive* oarch )
 	{
 		DECLARE_LOGGER;
 		GET_LOGGER( "liee.Module_Factory" );
-		SWITCH_MODULES( STORE_MODULE, m->type, m->name );
+		SWITCH_MODULES( STORE_MODULE, module->type, module->name );
 	}
 
 
@@ -126,12 +127,12 @@ public:
 	{
 		DECLARE_LOGGER
 		GET_LOGGER( "liee.Module_Factory" );
-		Module* m;
+		Module* module;
 		SWITCH_MODULES( LOAD_MODULE, type, name );
-		m->type = type;
-		m->name = name;
-		m->serial = serial;
-		return m;
+		module->type = type;
+		module->name = name;
+		module->serial = serial;
+		return module;
 	}
 
 };

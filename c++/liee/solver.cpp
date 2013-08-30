@@ -61,8 +61,8 @@ bool Solver::execute()
 		}
 		boinc_end_critical_section();
 
-        evolve_1step();			//<<<<<<<<<<<<<<< this is where the action is
-       	t += dt;
+		evolve_1step();			//<<<<<<<<<<<<<<< this is where the action is
+		t += dt;
 
 		if ( ++count % count_tic == 0 ) {
 			time_t now = time(0);
@@ -91,23 +91,22 @@ bool Solver::execute()
 	t = t_end;
 	exec_done = true;
 
-    boinc_begin_critical_section();
+	boinc_begin_critical_section();
 	for( size_t i = 0; i < obs.size(); i++ ) {
 		obs[i]->observe( this );
 	}
 	// optionally save final state
-	DEBUG_SHOW( outfile );
 	if ( outfile.length() > 0 ) {
-	   	FILE* f = boinc_fopen( outfile.c_str(), "w" );
-	   	double r_start = potential->get_r_start();
-	   	for ( size_t i = 0; i < psi.size(); i++ ) {
-	   		fprintf( f, "%1.16g\t%1.16g\t%1.16g\n", r_start + i * dr , real( psi[i] ), imag( psi[i] ) );
-	   	}
-	   	fclose( f );
+		FILE* f = boinc_fopen( outfile.c_str(), "w" );
+		double r_start = potential->get_r_start();
+		for ( size_t i = 0; i < psi.size(); i++ ) {
+			fprintf( f, "%1.16g\t%1.16g\t%1.16g\n", r_start + i * dr , real( psi[i] ), imag( psi[i] ) );
+		}
+		fclose( f );
 	}
-    boinc_end_critical_section();
+	boinc_end_critical_section();
 
-    return exec_done;
+	return exec_done;
 }
 
 //--------------------------------------------------------------------------------------------
@@ -165,7 +164,7 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	register_dependencies( dependencies );
 	renormalize();
 	potential->set_grid( dr, Nr );
-	outfile = config->getParam("OUTFILE")->textual;
+	outfile = config->getParam("OUTFILE")->text;
 }
 
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -193,30 +192,39 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 
 void Crank_Nicholson::evolve_1step()
 {
+	//FILE *file;
+	//string filename = "pot_debug-" + boost::lexical_cast<string>( count );
+	//file = boinc_fopen( filename.c_str(), "a" );
+
 	for (size_t j=0; j < Nr; j++) {
 		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
+		//fprintf( file, "%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t )*CONV_au_eV );
+	}
+	//fclose( file );
+	//if ( count > 10 ) {
+	//	exit(0);
+	//}
+
+	alfa[0] = d[0];
+	gamma[0] = c / alfa[0];
+	for (int j=1; j < jb+1; j++) {
+		alfa[j] = d[j] - c * gamma[j-1]; //#(50)
+		gamma[j] = c / alfa[j]; //#(49)
 	}
 
-    alfa[0] = d[0];
-    gamma[0] = c / alfa[0];
-    for (int j=1; j < jb+1; j++) {
-    	alfa[j] = d[j] - c * gamma[j-1]; //#(50)
-		gamma[j] = c / alfa[j]; //#(49)
-    }
+	g[0] = psi[0] / alfa[0]; //#(52)
+	for (int j=1; j < jb+1; j++) {
+		g[j] = ( psi[j] - c * g[j-1] ) / alfa[j]; //#(53)
+	}
 
-    g[0] = psi[0] / alfa[0]; //#(52)
-    for (int j=1; j < jb+1; j++) {
-    	g[j] = ( psi[j] - c * g[j-1] ) / alfa[j]; //#(53)
-    }
+	phi[jb] = g[jb]; //#(55)
+	for (int j=jb-1; j > -1; j--) {
+		phi[j] = g[j] - gamma[j] * phi[j+1]; //#(56)
+	}
 
-    phi[jb] = g[jb]; //#(55)
-    for (int j=jb-1; j > -1; j--) {
-    	phi[j] = g[j] - gamma[j] * phi[j+1]; //#(56)
-    }
-
-    for (int j=0; j <= jb; j++) {
-    	psi[j] = phi[j] - psi[j]; //#(39)
-    }
+	for (int j=0; j <= jb; j++) {
+		psi[j] = phi[j] - psi[j]; //#(39)
+	}
 }
 
 } //namespace

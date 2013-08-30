@@ -19,13 +19,13 @@ def main():
         sys.exit(2)
         
     #defaults
-    x = 0
-    y = 1
-    z = 2
-    N = 10
-    M = 10
-    ipr = 2     #interpolation range
-    fname = "data" 
+    x = 1
+    y = 2
+    z = 3
+    N = 100
+    M = 100
+    ipr = 25     #interpolation range
+    fname = "scatter.dat"
                 
     for o, a in opts:
         if o in ("-f", "--file"):
@@ -101,6 +101,8 @@ def main():
     #third pass: weight and print out
     print("# xmin=" + str(xmin) )
     print("# ymin=" + str(ymin) )
+    print("# xmax=" + str(xmax) )
+    print("# ymax=" + str(ymax) )
     print("# dx=" + str(dx) )
     print("# dy=" + str(dy) )
     for i in range( N ):

@@ -164,7 +164,7 @@ int main( int argc, char* argv[] )
     		// continue with execution
     		while ( not me->exec_done )
     		{
-            	LOG_DEBUG( "In (run - checkpoint ..) -loop" );
+            	//LOG_DEBUG( "In (run - checkpoint ..) -loop" );
     			bool done = me->execute();
     			me->exec_done = done;		// just in case the module forgot to set this flag
 
@@ -179,7 +179,6 @@ int main( int argc, char* argv[] )
     			    oarch << i; //save last_i_stored
 
     			    for ( size_t j = 0; j < deps.size(); j++ ) {
-    			    	LOG_DEBUG( "SAVING " << j << "..." )
    			    		factory.store( deps[j], &oarch );	// let the factory store the module, because only there the exact type is known
     			    }
     			    ofstream.close();

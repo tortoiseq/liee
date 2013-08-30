@@ -122,6 +122,13 @@ int sgn(T val)
     return (val > T(0)) - (val < T(0));
 }
 
+template <typename T>
+int sign(T val)
+{
+    if ( val >= T(0) ) return T(1);
+    return T(-1);
+}
+
 using std::vector;
 using std::string;
 

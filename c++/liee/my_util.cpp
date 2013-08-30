@@ -347,7 +347,8 @@ void tar_gz_files( const string& dir_prefix, const vector<string>& files, const 
 	int fd;
 
 	a = archive_write_new();
-	archive_write_set_compression_gzip( a );
+	//archive_write_set_compression_gzip( a );
+	archive_write_set_compression_lzma( a );
 	archive_write_set_format_pax_restricted( a );
 	archive_write_open_filename( a, archive_name.c_str() );
 

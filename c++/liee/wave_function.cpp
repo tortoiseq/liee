@@ -24,8 +24,8 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
     string resolved_name;
     boinc_resolve_filename_s( config->getParam("INFILE")->text.c_str(), resolved_name );
 
-	double dr = config->getParam("dr")->value * 1e-9 / CONV_au_m;
-	double r_range = config->getParam("r_range")->value * 1e-9 / CONV_au_m;
+	double dr = config->getParam("dr")->value / CONV_au_nm;
+	double r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double r_start = pot->get_r_start();
 	int Nr = 1 + r_range / dr;
 
@@ -121,5 +121,44 @@ void WF_Reader::estimate_effort( Conf_Module* config, double & flops, double & r
 	ram += abs( sizeof( dcmplx ) * N );
 	disk += abs( sizeof( dcmplx ) * N );
 }
+
+//-------------------------------------------------------------------------------------------------------------
+
+void WF_Gauss_Packet::initialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Module.WF_Gauss_Packet" );
+	r0 = config->getParam("r0")->value / CONV_au_nm;
+	double E0 = config->getParam("E0")->value / CONV_au_eV;
+	k0 = sign(E0) * 2.0 * CONST_PI * sqrt( 2.0 * abs(E0) );
+	sigma = config->getParam("sigma")->value / CONV_au_nm;
+	dr = config->getParam("dr")->value / CONV_au_nm;
+	N = 1 + (int)( config->getParam("r_range")->value / config->getParam("dr")->value );
+	compute_wf();
+}
+
+void WF_Gauss_Packet::reinitialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Module.WF_Reader" );
+	compute_wf();
+}
+
+void WF_Gauss_Packet::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
+{
+	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
+	flops += 50 * N;
+	ram += abs( sizeof( dcmplx ) * N );
+	disk += abs( sizeof( dcmplx ) * N );
+}
+
+void WF_Gauss_Packet::compute_wf()
+{
+	psi.resize( N );
+	double normfac = 1.0 / sqrt( sigma * sqrt( CONST_PI ) );
+
+	for ( size_t i = 0; i < N; i++ ) {
+		psi[i] = normfac * exp( -0.5 * pow( (i*dr - r0) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k0 * i*dr ) );
+	}
+}
+
 
 }//namespace liee

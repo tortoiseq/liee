@@ -245,6 +245,7 @@ Config::Config( string filename )
 		if ( strcmp( pModuleNode->Value(), "module" ) == 0 )
 		{
 			Conf_Module* m = new Conf_Module( pModuleNode );
+			LOG_INFO( "Processing config-parameters of #" << m->serial );
 			if ( m->serial == 0 && m->type.compare("global") == 0 ) {
 				globals = m->param;
 

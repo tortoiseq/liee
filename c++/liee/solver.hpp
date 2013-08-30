@@ -80,17 +80,17 @@ private:
 	dcmplx c;
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	// serialize base class information
-    	ar & boost::serialization::base_object<Solver>( *this );
-    	ar & jb;
-    	ar & c;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		// serialize base class information
+		ar & boost::serialization::base_object<Solver>( *this );
+		ar & jb;
+		ar & c;
+	}
 };
 
 

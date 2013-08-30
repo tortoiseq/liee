@@ -252,6 +252,7 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	double inner_cutoff = config->getParam("inner_cutoff")->value / CONV_au_eV;
 	double dummy;
 	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );	// set r_start where the inner_cutoff-Energy is reached
+	LOG_INFO( "rstart: " << r_start << "  " << dummy << "\t" << inner_cutoff );
 
 	F_dc = -1 * config->getParam("F_dc")->value / (CONV_au_V / CONV_au_nm);
 	gamma = config->getParam("near_amplf")->value;
@@ -316,6 +317,8 @@ dcmplx Potential::V( double r, double t )
 
 dcmplx Potential::V_indexed( size_t ri, double t )
 {
+	return cache_Vwell[ri]; //TODO remove this debug
+
 	// return without Vdc before it is switched on
 	if ( t < t_on ) { return cache_Vwell[ri] + V_pulse( grid_r[ri], t ); }
 
@@ -593,7 +596,7 @@ void Pot_Harm_Oscillator::initialize( Conf_Module* config, vector<Module*> depen
 	been_there = false;
 	this->k = config->getParam("k")->value / 1e-30 * CONV_au_s * CONV_au_s;
 	this->w = sqrt( k );
-	this->shift = config->getParam("shift")->value  * 1e-9 / CONV_au_m;
+	this->shift = config->getParam("shift")->value / CONV_au_nm;
 }
 
 /*!
@@ -605,6 +608,84 @@ double Pot_Harm_Oscillator::analytic_eigenfunction( int n, double x )
 	double expo = exp( -0.5 * w * pow( x - shift, 2.0 ) );
 	//double F0 = pow( w / PI, 0.25 ) / sqrt( pow( 2, n ) / n! );
 	return H * expo;
+}
+
+//------------------------------------------------------------------------------------------------------------
+inline double Pot_Piecewise::V( double r )
+{
+	if ( r <= r_[0] ) {
+		return V_[0];
+	}
+	for ( size_t i = 0; i < r_.size()-1; i++ ) {
+		if ( r > r_[i]  &&  r <= r_[i+1] ) {
+			return V_[i] + ( V_[i+1] - V_[i] ) * ( r - r_[i] ) / ( r_[i+1] - r_[i] );
+		}
+	}
+	//else: r is larger than the defined range -> set to last V-value
+	return V_.back();
+}
+
+void Pot_Piecewise::get_outer_turningpoints( const double E, double & leftmost, double & rightmost )
+{
+	leftmost  = numeric_limits<double>::quiet_NaN();
+	rightmost = numeric_limits<double>::quiet_NaN();
+
+	for ( size_t i = 0; i < r_.size()-1; i++ ) {
+		if ( (E >= V_[i] && E < V_[i+1]) || (E <= V_[i] && E > V_[i+1]) )
+		{
+			double turningpoint = r_[i] + ( E - V_[i] ) / ( V_[i+1] - V_[i] ) * ( r_[i+1] - r_[i] );
+
+			if ( isnan( leftmost ) ) {
+				leftmost = turningpoint;
+			}
+			rightmost = turningpoint;
+		}
+	}
+}
+
+double Pot_Piecewise::get_Vmin_pos()
+{
+	size_t i_min = 0;
+	for ( size_t i = 1; i < r_.size(); i++ ) {
+		if ( V_[i] < V_[i_min] ) {
+			i_min = i;
+		}
+	}
+	return r_[i_min];
+}
+
+void Pot_Piecewise::initialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Module.Pot_Piecewise" );
+	double epsilon = config->getParam("epsilon")->value / CONV_au_nm;
+	r_ = config->getParam("r_list")->values;
+	V_ = config->getParam("V_list")->values;
+	if ( r_.size() != V_.size() ) {
+		LOG_ERROR( "r_list and V_list are required to have the same number of elements. exiting" )
+		exit(1);
+	}
+
+	for ( size_t i = 0; i < r_.size(); i++ )
+	{
+		r_[i] /= CONV_au_nm;
+
+		int count = 0;
+		while ( i > 0  &&  r_[i-1] >= r_[i] ) {
+			r_[i] += epsilon;
+			count++;
+			if ( count > 10 ) {
+				LOG_ERROR( "r_list is required to be sorted in ascending order. exiting." )
+				exit(1);
+			}
+		}
+
+		V_[i] /= CONV_au_eV;
+	}
+}
+
+void Pot_Piecewise::reinitialize( Conf_Module* config, vector<Module*> dependencies )
+{
+	GET_LOGGER( "liee.Module.Pot_Piecewise" );
 }
 
 //------------------------------------------------------------------------------------------------------------

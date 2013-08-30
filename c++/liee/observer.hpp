@@ -8,6 +8,8 @@
 #ifndef OBSERVER_HPP_
 #define OBSERVER_HPP_
 
+#include <fftw3.h>
+
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
@@ -55,27 +57,33 @@ public:
  * This Observer can be used together with a Solver of time-dependent Schroedinger equation.
  * It records the whole wave function (WV) N times during the course of the simulation and writes it
  * to a text file. The file contains the WV-samples as rows, with spatial samples in tab-separated columns.
- * If complex values are stored, real and imaginary part are separated by a comma. //TODO better interlaced: row-a real, row-b imag, ...
+ * If complex values are stored, real and imaginary part are separated by a comma.
+ * TODO better interlaced: row-a real, row-b imag, ...
  */
 class Obs_Snapshot_WF : public Observer
 {
 public:
+	size_t	N;			///< total number of WF-samples
 	size_t	num_r;		///< number of spatial samples to produce
 	size_t	num_t;		///< number of temporal samples to produce
 	size_t 	step_r;		///< number of spatial samples to skip over between those being saved
 	size_t 	step_t;		///< number of temporal samples to skip over between the saved ones
 	string	format;		///< cache format string for fprintf
 	bool 	do_square;	///< only save the square of the complex wf
+	bool	do_fourier; ///< save the FFT-transformed
 	bool	do_normalize;///< if true, normalise integral to Psi Psi* == 1
 	bool	rel_change;	///< show relative(!) deviation compared to previous time steps if 'true'
 	bool	rel_change_ready;	///< in case of observing relative changes, this is a two-step process. this flag indicates readiness for the second step (false after checkpoint)
-	vector<dcmplx> psi_; ///< backup WF-state t-1, in order to be able to calculate relative changes (not saved to checkpoint!)
+	vector<dcmplx> valrec; 		///< sub-sampled values prepared for saving (not saved to checkpoint!)
+	vector<dcmplx> valrec_prev; ///< backup of valrec from t-1, to be able to calculate relative changes (not saved to checkpoint!)
 	size_t	ir0;		///< index of start-pos of recording window
 	size_t	ir1;		///< index of end-pos of recording window
 	double	t0;			///< start-time of recording window
 	double	t1;			///< end-time of recording window
 	size_t  writtenLns;	///< number of lines written to the outfile
 	size_t	foundLns;	///< number of lines found in outfile (can be bigger than writtenLns after load from checkpoint)
+	fftw_plan plan;		///< prepared fftw plan
+	fftw_complex *psi_fft;	///< array for the fftw in-place transform
 
     virtual void observe( Module* state );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
@@ -91,13 +99,16 @@ public:
     void serialize( Archive & ar, const unsigned int version )
     {
     	ar & boost::serialization::base_object<Observer>( *this );
+    	ar & N;
     	ar & num_r;
     	ar & num_t;
         ar & step_r;
         ar & step_t;
         ar & format;
         ar & do_square;
+        ar & do_fourier;
         ar & do_normalize;
+        ar & rel_change;
         ar & ir0;
         ar & ir1;
         ar & t0;

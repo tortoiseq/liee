@@ -297,9 +297,7 @@ plot \"matrix.dat\" matrix with image\n"
         x_split = 8.2 + ( r_split - r_0 * CONV_au_nm ) * x_range / r_range
 
         stretch = abs( Vmin_l )
-        if abs( Vmax_l ) > stretch:
-            stretch = abs( Vmax_l )
-        stretch *= CONV_au_eV * 1.05
+        stretch *= CONV_au_eV * 1.07
 
         # Potential-Well
         gp += "set style line 1 linetype  1 linewidth 4 linecolor rgb \"blue\" \n"

@@ -388,35 +388,37 @@ private:
 
 	friend class boost::serialization::access;
     template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    void serialize( Archive & ar, const unsigned int version ) //TODO
     {
     }
 };
 
 /*!
- * For testing purpose. V(r):=0 for all r.
+ * A potential composed of concatenated linear sections
  */
-class Zero_Pot : public Pot_const
+class Pot_Piecewise : public Pot_const
 {
 public:
-	virtual inline double V( double r ) { return 0; }
-	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost ) {
-		leftmost = rightmost = std::numeric_limits<double>::quiet_NaN();
-	}
-	virtual double get_Vmin_pos() { return 0; }
-	// empty interface declarations
-	virtual void initialize( Conf_Module* config, vector<Module*> dependencies ) {
-		GET_LOGGER( "liee.Module.Zero_Pot" );
-	}
-	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
-		GET_LOGGER( "liee.Module.Zero_Pot" );
-	}
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {} // whatever
-	virtual void summarize( map<string, string> & results ) {}
+	virtual inline double V( double r );
+	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
+	virtual double get_Vmin_pos();
+
+	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {} // TODO
+	virtual void summarize( map<string, string> & results ) {}// TODO
 
 	friend class boost::serialization::access;
     template<class Archive>
-    void serialize( Archive & ar, const unsigned int version ) {}
+    void serialize( Archive & ar, const unsigned int version )
+    {
+    	ar & r_;
+    	ar & V_;
+    }
+
+private:
+    vector<double>	r_;		///< list of r-coordinates
+    vector<double>	V_;		///< V_list[ r_list[i] {+epsilon} ]: list of potential energies at the positions in r_list
 };
 } //namespace liee
 
