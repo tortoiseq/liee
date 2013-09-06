@@ -32,25 +32,25 @@ namespace opti {
  */
 class Request {
 public:
-	vector<double> x;		///< coordinate in the optimisation domain
-	vector<double> x_new;	///< the new position for which an evaluation was requested but no result has yet arrived
-	double	y;				///< value of objective function at x
-	int		id;				///< unique identifier of the request made
-	int		flag;			///< indicates success: 0 or fail: otherwise
+	vector<double> x;     ///< coordinate in the optimisation domain
+	vector<double> x_new; ///< the new position for which an evaluation was requested but no result has yet arrived
+	double y;             ///< value of objective function at x
+	int id;               ///< unique identifier of the request made
+	int flag;             ///< indicates success: 0 or fail: otherwise
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & id;
-        ar & flag;
-        ar & x;
-        ar & x_new;
-        ar & y;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & id;
+		ar & flag;
+		ar & x;
+		ar & x_new;
+		ar & y;
+	}
 };
 
 /*!
@@ -59,67 +59,67 @@ public:
 class Asynch_Optimizer
 {
 public:
-	int 				dim;			///< number of dimensions
-	vector<double> 		lower_bounds;	///< lower limits indexed by dimension
-	vector<double> 		upper_bounds;	///< upper limits indexed by dimension
-	int					evaluations;	///< umber of _requested_ evaluations
-	int					max_eval;		///< end condition if not converging
-	int					next_id;		///< next id (serial to match request and results) to send out
+	int             dim;            ///< number of dimensions
+	vector<double>  lower_bounds;   ///< lower limits indexed by dimension
+	vector<double>  upper_bounds;   ///< upper limits indexed by dimension
+	int             evaluations;    ///< umber of _requested_ evaluations
+	int             max_eval;       ///< end condition if not converging
+	int             next_id;        ///< next id (serial to match request and results) to send out
 
-	double				global_min;		///< the so-far lowest value found
-	double				current_min;	///< lowest value in current set
-	vector<double> 		global_min_pos;	///< domain vector for global_min
-	vector<double> 		current_min_pos;///< domain vector for current_min
-	vector<double>		history;
-	int					history_sz;
-	int					history_i;
+	double          global_min;     ///< the so-far lowest value found
+	double          current_min;    ///< lowest value in current set
+	vector<double>  global_min_pos; ///< domain vector for global_min
+	vector<double>  current_min_pos;///< domain vector for current_min
+	vector<double>  history;
+	int             history_sz;
+	int             history_i;
 
-	double				tolerance;		///< convergence tolerance
-	double				histo_var;		///< convergence
-	string				type_name;		///< to identify the specific type
+	double          tolerance;      ///< convergence tolerance
+	double          histo_var;      ///< convergence
+	string          type_name;      ///< to identify the specific type
 
-    friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-      * & operator is defined similar to <<.  Likewise, when the class Archive
-      * is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & dim;
-        ar & lower_bounds;
-        ar & upper_bounds;
-        ar & tolerance;
-        ar & histo_var;
-        ar & evaluations;
-        ar & max_eval;
-        ar & next_id;
-        ar & global_min;
-        ar & current_min;
-        ar & global_min_pos;
-        ar & current_min_pos;
-        ar & history;
-        ar & history_sz;
-        ar & history_i;
-        ar & type_name;
-    }
+	friend class boost::serialization::access;
+	/*! When the class Archive corresponds to an output archive, the
+	 * & operator is defined similar to <<.  Likewise, when the class Archive
+	 * is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & dim;
+		ar & lower_bounds;
+		ar & upper_bounds;
+		ar & tolerance;
+		ar & histo_var;
+		ar & evaluations;
+		ar & max_eval;
+		ar & next_id;
+		ar & global_min;
+		ar & current_min;
+		ar & global_min_pos;
+		ar & current_min_pos;
+		ar & history;
+		ar & history_sz;
+		ar & history_i;
+		ar & type_name;
+	}
 
-    Asynch_Optimizer()
-    {
-    	dim = 1;
-    	tolerance = 1e-10;
-    	histo_var = 6.66e300; //numeric_limits<double>::max();
-    	evaluations = 0;
-    	max_eval = (int) 2e9;
-    	next_id = 1;
-    	global_min = 6.66e300; //numeric_limits<double>::max();
-    	current_min = 6.66e300; //numeric_limits<double>::max();
-    	history_sz = 200;
-    	history.resize( history_sz );
-    	history_i = 0;
-    }
+	Asynch_Optimizer()
+	{
+		dim = 1;
+		tolerance = 1e-10;
+		histo_var = 6.66e300;  //numeric_limits<double>::max();
+		evaluations = 0;
+		max_eval = (int) 2e9;
+		next_id = 1;
+		global_min = 6.66e300;  //numeric_limits<double>::max();
+		current_min = 6.66e300;  //numeric_limits<double>::max();
+		history_sz = 200;
+		history.resize( history_sz );
+		history_i = 0;
+	}
 
-    /*! Always have a virtual destructor in base classes. */
-    virtual ~Asynch_Optimizer() {}
+	/*! Always have a virtual destructor in base classes. */
+	virtual ~Asynch_Optimizer() {}
 
 	/*! Initialises the optimisation problem for the first time.
 	 *  Caller has to specify the bounds. The size of the bounds vectors determines the dimensionality.
@@ -173,9 +173,9 @@ protected:
 class Shot_Gun_Optimizer : public Asynch_Optimizer
 {
 public:
-	int 			num_bullets_per_shot;	///< number of simultaneously requested evaluations
-	vector<Request>	in_flight;				///< evaluations in progress
-	Ranq1 * 		random;					///< random number generator
+	int num_bullets_per_shot;  ///< number of simultaneously requested evaluations
+	vector<Request> in_flight; ///< evaluations in progress
+	Ranq1* random;             ///< random number generator
 
 	/*! Default constructor sets number of parallel requests to 10. */
 	Shot_Gun_Optimizer() : num_bullets_per_shot( 20 )
@@ -185,18 +185,17 @@ public:
 	}
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	// serialize base class information
-    	ar & boost::serialization::base_object<Asynch_Optimizer>( *this );
-        ar & num_bullets_per_shot;
-        ar & random->v;
-        ar & in_flight;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & boost::serialization::base_object<Asynch_Optimizer>( *this );  // serialize base class information
+		ar & num_bullets_per_shot;
+		ar & random->v;
+		ar & in_flight;
+	}
 
 	virtual int initialise( const vector<double> & lower, const vector<double> & upper );
 	virtual int generate_requests( vector<Request> & work );
@@ -207,24 +206,23 @@ public:
 
 class Particle : public Request {
 public:
-	vector<double>	v;			///< velocity of particle
-	vector<double>	x_min;		///< best position of this particle
-	double 			min_value;	///< lowest y on this trajectory
+	vector<double> v;     ///< velocity of particle
+	vector<double> x_min; ///< best position of this particle
+	double  min_value;    ///< lowest y on this trajectory
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	// serialize base class information
-    	ar & boost::serialization::base_object<Request>( *this );
-        ar & v;
-        ar & x_new;
-        ar & x_min;
-        ar & min_value;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & boost::serialization::base_object<Request>( *this );  // serialize base class information
+		ar & v;
+		ar & x_new;
+		ar & x_min;
+		ar & min_value;
+	}
 };
 
 /*!
@@ -233,28 +231,23 @@ public:
 class Particle_Swarm_Optimizer : public Asynch_Optimizer
 {
 public:
-	int 	swarm_sz;	///< population size
-	double 	inertia;	///< inertia weight (> 1: exploration; < 1: local search)
-	double 	cognition;	///< cognition weight (particle memory)
-	double 	coherence;	///< social weight (follow the leader)
-	int		leader;		///< index of momentarily best particle
-
-	int		hood_sz;	/*!< number of hops for which adjacent particles are considered part of the
-	 	 	 	 	 	 *   neighbourhood of the centre particle (in a ring topology) */
-
-	Ranq1 * random;		///< random number generator
-
-	vector<Particle> swarm;	///< particle population
-
+	int     swarm_sz;  ///< population size
+	double  inertia;   ///< inertia weight (> 1: exploration; < 1: local search)
+	double  cognition; ///< cognition weight (particle memory)
+	double  coherence; ///< social weight (follow the leader)
+	int     leader;    ///< index of momentarily best particle
+	int     hood_sz;   ///< number of hops for which adjacent particles are considered part of the neighbourhood of the centre particle (in a ring topology)
+	Ranq1 * random;    ///< random number generator
+	vector<Particle> swarm; ///< particle population
 
 public:
 	/*! Default constructor sets population to 25 and other parameters to their generally recommended values */
 	Particle_Swarm_Optimizer() :
 		swarm_sz ( 25   ),
-		inertia  ( 1.0 ),
+		inertia  ( 1.0  ),
 		cognition( 2.0  ),
 		coherence( 2.0  ),
-		leader 	 ( 0 	),
+		leader   ( 0    ),
 		hood_sz  ( 2    )
 	{
 		random = new Ranq1( 4684 );
@@ -263,33 +256,33 @@ public:
 	/*! Constructor with choice of population size. Change additional parameters (weights) manually! */
 	Particle_Swarm_Optimizer( int population_size ) :
 		swarm_sz ( population_size ),
-		inertia  ( 1.0 ),
+		inertia  ( 1.0  ),
 		cognition( 0.2  ),
 		coherence( 0.3  ),
-		leader 	 ( 0 	),
+		leader   ( 0    ),
 		hood_sz  ( 1    )
 	{
 		random = new Ranq1( 4684 );
 	}
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	// Serialise base class information
-    	ar & boost::serialization::base_object<Asynch_Optimizer>( *this );
-        ar & swarm_sz;
-        ar & inertia;
-        ar & cognition;
-        ar & coherence;
-        ar & leader;
-        ar & hood_sz;
-        ar & random->v;
-        ar & swarm;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		// Serialise base class information
+		ar & boost::serialization::base_object<Asynch_Optimizer>( *this );
+		ar & swarm_sz;
+		ar & inertia;
+		ar & cognition;
+		ar & coherence;
+		ar & leader;
+		ar & hood_sz;
+		ar & random->v;
+		ar & swarm;
+	}
 
 	virtual int initialise( const vector<double> & lower, const vector<double> & upper );
 	virtual int generate_requests( vector<Request> & work );
@@ -313,10 +306,10 @@ public:
 class Rasterizer : public Asynch_Optimizer
 {
 public:
-	vector<int>	num_samples;	///< resolution for each dimension
-	vector<bool>logscale;		///< flag for each dimensions scaling to be logarithmic
-	Ranq1*		random;			///< random number generator
-	bool		discharged;		///< indicates that the one and only job creation was already done
+	vector<int> num_samples; ///< resolution for each dimension
+	vector<bool> logscale;   ///< flag for each dimensions scaling to be logarithmic
+	Ranq1* random;           ///< random number generator
+	bool discharged;         ///< indicates that the one and only job creation was already done
 
 	/*! boost serialization seems to need default constructor */
 	Rasterizer()
@@ -354,22 +347,21 @@ public:
 	}
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	// serialize base class information
-    	ar & boost::serialization::base_object<Asynch_Optimizer>( *this );
-        ar & num_samples;
-        ar & logscale;
-        ar & random->v;
-        ar & discharged;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & boost::serialization::base_object<Asynch_Optimizer>( *this );  // serialize base class information
+		ar & num_samples;
+		ar & logscale;
+		ar & random->v;
+		ar & discharged;
+	}
 
 	virtual int initialise( const vector<double> & lower, const vector<double> & upper );
-	virtual	int	initialise( const vector<Conf_Param*> & params );
+	virtual int initialise( const vector<Conf_Param*> & params );
 	virtual int generate_requests( vector<Request> & work );
 	virtual int assimilate_results( const vector<Request> & result ) { return 0; }
 private:

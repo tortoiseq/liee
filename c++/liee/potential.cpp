@@ -55,9 +55,9 @@ void Pot_const::get_outer_turningpoints( double E, double & leftmost, double & r
 
 	vector<double> result;
 	result.resize(2);
-	for ( int i = 0; i <= 1 ; i++ )	// left and right turning-point
+	for ( int i = 0; i <= 1 ; i++ )  // left and right turning-point
 	{
-		double d = pow( -1, double( i + 1 ) );	// -1 and 1
+		double d = pow( -1, double( i + 1 ) );  // -1 and 1
 
 		while ( deltaE( r_min + d ) * E_V0 > 0 )   {
 			d *= 2;
@@ -104,8 +104,8 @@ void Pot_Experimental::initialize( Conf_Module* config, vector<Module*> dependen
 	b.resize(6);
 
 	b[0] = 2.3 * width;	// left-sigma / left-width
-	b[1] = config->getParam("boxness")->value / ( b[0] / 2.0 );	// left-expo
-	b[2] = depth / cosh( b[1] * b[0] / 2.0 );	//left-a
+	b[1] = config->getParam("boxness")->value / ( b[0] / 2.0 );  // left-expo
+	b[2] = depth / cosh( b[1] * b[0] / 2.0 );  //left-a
 	/*
 	b[0] = -2164.61;
 	b[1] = -422.862;
@@ -143,9 +143,9 @@ inline double Pot_Round_Well_wImage::V( double r )
 {
 	double r_ = r - shift_mirror;
 	if ( r_ < 0 )
-		return -depth + a * cosh( expo * (r_ + shift_cosh) ); // potential well (right)
+		return -depth + a * cosh( expo * (r_ + shift_cosh) );  // potential well (right)
 	else
-		return -0.25 / r ;	// mirror charge
+		return -0.25 / r ;  // mirror charge
 }
 
 inline double Pot_Experimental::V( double r )
@@ -155,19 +155,19 @@ inline double Pot_Experimental::V( double r )
 		double x = r_ + shift_cosh;
 		double wall = -depth + a * cosh( expo * x );
 
-		double a1 = 0.0001;	// vertical scale of ROOT
-		double a2 = 1.0;	// horizontal squeeze of ROOT
-		double a3 = 0.0;	// shift ROOT rightwards (in ratio of width)
-		double a4 = 1.2;	// exponent of r-power
+		double a1 = 0.0001; // vertical scale of ROOT
+		double a2 = 1.0;    // horizontal squeeze of ROOT
+		double a3 = 0.0;    // shift ROOT rightwards (in ratio of width)
+		double a4 = 1.2;    // exponent of r-power
 
 		if ( (-x + a3 * width) < 0 ) {
 			return wall;
 		} else {
 			double root = -depth + a1 * pow( a2 * ( -x + a3 * width ), a4 );
 
-			double a5 = 0.25;	// shift midpoint of weighting Gauss leftwards (in ratio of width) relative to the middle of the well
-			double a6 = 0.1;	// right-sigma of weighting Gauss (in ratio of width)
-			double a7 = 2.3;	// left-sigma of weighting Gauss (in ratio of width)
+			double a5 = 0.25; // shift midpoint of weighting Gauss leftwards (in ratio of width) relative to the middle of the well
+			double a6 = 0.1;  // right-sigma of weighting Gauss (in ratio of width)
+			double a7 = 2.3;  // left-sigma of weighting Gauss (in ratio of width)
 
 
 			double gx = x + a5 * width;
@@ -175,7 +175,7 @@ inline double Pot_Experimental::V( double r )
 				gx = gx / ( a6 * width );
 			} else {
 				gx = gx / ( a7 * width );
-				wall = -depth + b[2] * cosh( b[1] * x );	// use wider left exponential wall to avoid too sudden onset
+				wall = -depth + b[2] * cosh( b[1] * x );  // use wider left exponential wall to avoid too sudden onset
 			}
 			double weight = exp( -pow( gx, 2.0 ) );
 			return ( 1 - weight ) * wall  +  weight * root;
@@ -184,7 +184,7 @@ inline double Pot_Experimental::V( double r )
 		/*
 		double poli = b[0];
 		for ( size_t i = 1; i < b.size(); i++ ) {
-			poli += b[i] * pow( (r * CONV_au_nm)-7.0, (double)i );	// evaluate polynomial well (left)
+			poli += b[i] * pow( (r * CONV_au_nm)-7.0, (double)i );  // evaluate polynomial well (left)
 		}
 		poli =  poli / CONV_au_eV;
 
@@ -194,7 +194,7 @@ inline double Pot_Experimental::V( double r )
 		*/
 	}
 	else
-		return -0.25 / r ;	// mirror charge (right)
+		return -0.25 / r ;  // mirror charge (right)
 }
 
 //----------------------------------------------------------------------------------------------------------
@@ -205,7 +205,7 @@ void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependenci
 	fwhm = config->getParam("FWHM")->value / CONV_au_fs;
 	ga = 2.0 * log( 2.0 ) / pow( this->fwhm, 2.0 );
 	F0 = config->getParam("amplitude")->value / CONV_au_V * CONV_au_m ;
-	omega0 = 2 * PI * 137.0 / ( config->getParam("wavelength")->value / CONV_au_nm ); // 2 pi c / lambda
+	omega0 = 2 * PI * 137.0 / ( config->getParam("wavelength")->value / CONV_au_nm );  // 2 pi c / lambda
 	phi0 = config->getParam("ce_phase")->value;
 	theta0 = config->getParam("chirp")->value * CONV_au_fs * CONV_au_fs;
 }
@@ -251,7 +251,7 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 	r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double inner_cutoff = config->getParam("inner_cutoff")->value / CONV_au_eV;
 	double dummy;
-	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );	// set r_start where the inner_cutoff-Energy is reached
+	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );  // set r_start where the inner_cutoff-Energy is reached
 	LOG_INFO( "rstart: " << r_start << "  " << dummy << "\t" << inner_cutoff );
 
 	F_dc = -1 * config->getParam("F_dc")->value / (CONV_au_V / CONV_au_nm);
@@ -304,8 +304,8 @@ void Potential::summarize( map<string, string> & results )
 
 dcmplx Potential::V( double r, double t )
 {
-    double z = (r - (r_start + r_range - wcap) ) / wcap;	// CAP coordinate
-	if (z > 0.0 && z <= 1.0) 								// r is in CAP territory
+	double z = (r - (r_start + r_range - wcap) ) / wcap;  // CAP coordinate
+	if (z > 0.0 && z <= 1.0)  // r is in CAP territory
 	{
 		double r_ = r_start + r_range - wcap;
 		return dcmplx( well->V( r_ ) +  V_Fdc( r_, t ) + V_pulse( r_, t ), V_cap( z ) );
@@ -317,7 +317,7 @@ dcmplx Potential::V( double r, double t )
 
 dcmplx Potential::V_indexed( size_t ri, double t )
 {
-	return cache_Vwell[ri]; //TODO remove this debug
+	return cache_Vwell[ri];  //TODO remove this debug
 
 	// return without Vdc before it is switched on
 	if ( t < t_on ) { return cache_Vwell[ri] + V_pulse( grid_r[ri], t ); }
@@ -325,7 +325,7 @@ dcmplx Potential::V_indexed( size_t ri, double t )
 	// while ramping up V_dc, it has to be re-calculated for each time-step
 	if ( t <= t_full ) {
 		if ( grid_r[ri] > r_cap ) {
-			return cache_Vwell[ri] + V_Fdc( r_cap, t ) + V_pulse( r_cap, t );	// inside the CAP, V_dc has the constant value from the left side of it
+			return cache_Vwell[ri] + V_Fdc( r_cap, t ) + V_pulse( r_cap, t );  // inside the CAP, V_dc has the constant value from the left side of it
 		}
 		return cache_Vwell[ri] + V_Fdc( grid_r[ri], t ) + V_pulse( grid_r[ri], t );
 	}
@@ -345,7 +345,7 @@ void Potential::set_grid( double dr, size_t N )
 		grid_r.push_back( r );
 
 		double z = ( r - r_cap ) / wcap;
-		if (z > 0.0  &&  z <= 1.0) 			// r is in CAP territory
+		if (z > 0.0  &&  z <= 1.0)  // r is in CAP territory
 		{
 			cache_Vconst.push_back( dcmplx( well->V( r_cap ) + V_Fdc( r_cap, t_full ), V_cap(z) ) );
 			cache_Vwell.push_back( dcmplx( well->V( r_cap ), V_cap(z) ) );
@@ -387,13 +387,13 @@ inline double Potential::V_Fdc( double r, double t )
 {
 	if ( t < t_on ) return 0;
 
-	double V = ( r < 0 )  ?  F_dc * deltaDC * exp( r / deltaDC )  :  F_dc * ( deltaDC + r );	// exponential raise till r=0 then linear with r
+	double V = ( r < 0 )  ?  F_dc * deltaDC * exp( r / deltaDC )  :  F_dc * ( deltaDC + r );  // exponential raise till r=0 then linear with r
 
 	if ( t < t_full ) {
-    	// adiabatic activation
+		// adiabatic activation
 		double amp = (t - t_on) / (t_full - t_on);
 		if ( ini_erf ) {
-			amp = ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * (amp - 1.0) + exp(1.0) ) ) / 2.0;	// activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
+			amp = ( 1.0 + boost::math::erf<double>( 2 * exp(1.0) * (amp - 1.0) + exp(1.0) ) ) / 2.0;  // activation function: (erf(2e*t+e)+1)/2 |(-1 .. 0) --> (6e-5 .. 1 - 6e5)
 		}
 		return amp * V;
 	}
@@ -419,7 +419,7 @@ inline double Potential::V_pulse( double r, double t )
 		Pulse_samples[0].y = 0;
 		double fa = F_pulse( Pulse_samples[0].x, t );
 		double fb, fm;
-		double fac = (Pulse_samples[1].x - Pulse_samples[0].x) / 6.0;	// assume homogeneous grid
+		double fac = (Pulse_samples[1].x - Pulse_samples[0].x) / 6.0;  // assume homogeneous grid
 
 		for ( size_t i = 1; i < int_samples; i++ ) {
 			fb = F_pulse( Pulse_samples[i].x, t );
@@ -481,79 +481,79 @@ void Spatial_Light_Modificator::initialize( Conf_Module* config, vector<Module*>
 	vector<double> slm_Amp( N_slm );
 	vector<double> slm_Phi( N_slm );
 	double T_sqr = 2.5 * th;
-    for ( int k = 0; k < N_slm; k++ ) {
-    	double wk = omega0 - L/2  +  (k + 0.5) * L / N_slm;
-    	slm_Amp[k] = sin( (wk-omega0) * T_sqr ) / ( (wk-omega0) * T_sqr );
-    	slm_Phi[k] = 0;
-    }
+	for ( int k = 0; k < N_slm; k++ ) {
+		double wk = omega0 - L/2  +  (k + 0.5) * L / N_slm;
+		slm_Amp[k] = sin( (wk-omega0) * T_sqr ) / ( (wk-omega0) * T_sqr );
+		slm_Phi[k] = 0;
+	}
 
 	// first we test an empty SLM to see if the FFT transforms the frequency-version of our gaussian pulse to the expected time-version
-    double omegaC = 100.0/2 * omega0;
-    double delta = 1.0 / 2.0 / (omegaC/2/PI);
-    dcmplx z = dcmplx( 1.0/st/st, 2*theta0 );
-    int N = 50 * (int) (ceil( omegaC * th) );	// T = 50 FWHM
-    DEBUG_SHOW3( omegaC, delta, N );
+	double omegaC = 100.0/2 * omega0;
+	double delta = 1.0 / 2.0 / (omegaC/2/PI);
+	dcmplx z = dcmplx( 1.0/st/st, 2*theta0 );
+	int N = 50 * (int) (ceil( omegaC * th) );	// T = 50 FWHM
+	DEBUG_SHOW3( omegaC, delta, N );
 
-    fftw_plan plan8, plan9;
-    fftw_complex *pulse_t = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * N );
-    fftw_complex *pulse_f = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * N );
-    plan8 = fftw_plan_dft_1d( N, pulse_t, pulse_f, FFTW_FORWARD, FFTW_ESTIMATE );
-    plan9 = fftw_plan_dft_1d( N, pulse_f, pulse_t, FFTW_BACKWARD, FFTW_ESTIMATE );
+	fftw_plan plan8, plan9;
+	fftw_complex *pulse_t = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * N );
+	fftw_complex *pulse_f = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * N );
+	plan8 = fftw_plan_dft_1d( N, pulse_t, pulse_f, FFTW_FORWARD, FFTW_ESTIMATE );
+	plan9 = fftw_plan_dft_1d( N, pulse_f, pulse_t, FFTW_BACKWARD, FFTW_ESTIMATE );
 
 	pulse_f[0][0] = 0;
 	pulse_f[0][1] = 0;
 	FILE* f = boinc_fopen( "F_of_w.dat", "w" );
 	fprintf( f, "%1.6g\t%1.6g\t%1.6g\n", 0.0, pulse_f[0][0], pulse_f[0][1] );
-    for ( int i = 1; i <= N/2; i++ ) {
-    	double w = -i * omegaC / (N/2);
-    	int k = (int)floor( (w - (omega0 - L/2))  / (L / N_slm) -0.5);
-    	dcmplx F;
-    	if ( k < 0  ||  k >= N_slm ) {
-    		//transparent
-    		F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
-    	} else {
-    		F = slm_Amp[k] * F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
-    	}
+	for ( int i = 1; i <= N/2; i++ ) {
+		double w = -i * omegaC / (N/2);
+		int k = (int)floor( (w - (omega0 - L/2))  / (L / N_slm) -0.5);
+		dcmplx F;
+		if ( k < 0  ||  k >= N_slm ) {
+			//transparent
+			F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
+		} else {
+			F = slm_Amp[k] * F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
+		}
 		//F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
-    	pulse_f[N-i][0] = real(F);
-    	pulse_f[N-i][1] = imag(F);
-    	//w = w / CONV_au_fs;
-    	if ( k > 0  &&  k < N_slm ) {
-    		fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%1.6g\t%d\n", w, pulse_f[N-i][0], pulse_f[N-i][1], slm_Amp[k], k );
-    	} else {
-    		fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%s\t%d\n", w, pulse_f[N-i][0], pulse_f[N-i][1], "NaN", k );
-    	}
+		pulse_f[N-i][0] = real(F);
+		pulse_f[N-i][1] = imag(F);
+		//w = w / CONV_au_fs;
+		if ( k > 0  &&  k < N_slm ) {
+			fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%1.6g\t%d\n", w, pulse_f[N-i][0], pulse_f[N-i][1], slm_Amp[k], k );
+		} else {
+			fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%s\t%d\n", w, pulse_f[N-i][0], pulse_f[N-i][1], "NaN", k );
+		}
 
-    	w = i * omegaC / (N/2);
-    	k = (int)floor( (w - (omega0 - L/2)) / (L / N_slm) -0.5);
-    	if ( k < 0  ||  k >= N_slm ) {
-    		F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
-    	} else {
-    		F = slm_Amp[k] * F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
-    	}
-    	//F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
-    	pulse_f[i][0] = real(F);
-    	pulse_f[i][1] = imag(F);
-    	//w = w / CONV_au_fs;
-    	if ( k > 0  &&  k < N_slm ) {
-    		fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%1.6g\t%d\n", w, pulse_f[i][0], pulse_f[i][1], slm_Amp[k], k );
-    	} else {
-    		fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%s\t%d\n", w, pulse_f[i][0], pulse_f[i][1], "NaN", k );
-    	}
-    }
+		w = i * omegaC / (N/2);
+		k = (int)floor( (w - (omega0 - L/2)) / (L / N_slm) -0.5);
+		if ( k < 0  ||  k >= N_slm ) {
+			F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
+		} else {
+			F = slm_Amp[k] * F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
+		}
+		//F = F0 / sqrt( z ) * exp( -pow( w - omega0, 2.0 ) / (2.0 * z) - dcmplx(0, phi0) );
+		pulse_f[i][0] = real(F);
+		pulse_f[i][1] = imag(F);
+		//w = w / CONV_au_fs;
+		if ( k > 0  &&  k < N_slm ) {
+			fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%1.6g\t%d\n", w, pulse_f[i][0], pulse_f[i][1], slm_Amp[k], k );
+		} else {
+			fprintf( f, "%1.6g\t%1.6g\t%1.6g\t%s\t%d\n", w, pulse_f[i][0], pulse_f[i][1], "NaN", k );
+		}
+	}
 	fclose( f );
 
 	fftw_execute(plan9);
 
 	f = boinc_fopen( "F_of_t.dat", "w" );
-    for ( int i = 0; i < N; i++ ) {
-    	//double t = ( i - N / 2.0 ) / N * th * 10;
-    	//dcmplx F = F0 * exp( dcmplx( -0.5 * pow( t/st, 2.0 ), -(theta0*t*t + 0*omega0*t + phi0) ) );
-    	//pulse_t[i][0] = real(F);
-    	//pulse_t[i][1] = imag(F);
-    	double t = (i >= N/2) ? (i-N)*delta : i*delta;
+	for ( int i = 0; i < N; i++ ) {
+		//double t = ( i - N / 2.0 ) / N * th * 10;
+		//dcmplx F = F0 * exp( dcmplx( -0.5 * pow( t/st, 2.0 ), -(theta0*t*t + 0*omega0*t + phi0) ) );
+		//pulse_t[i][0] = real(F);
+		//pulse_t[i][1] = imag(F);
+		double t = (i >= N/2) ? (i-N)*delta : i*delta;
 		fprintf( f, "%1.6g\t%1.6g\t%1.6g\n", t, pulse_t[i][0], pulse_t[i][1] );
-    }
+	}
 	fclose( f );
 	exit(0);
 	*/
@@ -707,7 +707,7 @@ inline double Chulkov_Image_Potential::V( double r )
 	else if ( r > z1 && r <= zim ) {
 		V = A3 * exp( -alpha * (r - z1) );
 	}
-	else {		// if ( r > zim )
+	else {  // if ( r > zim )
 		V = ( exp( -lambda * (r - zim) ) - 1.0 ) / ( 4.0 * (r - zim) );
 	}
 
@@ -726,7 +726,7 @@ void Chulkov_Image_Potential::get_outer_turningpoints( const double E, double & 
 			double offset = acos( (E + A20) / A2 );
 			if ( not isnan(offset) ) {
 				double r_last = z1;
-				for ( int k = 0; k < 3 * nlay; k++ ) {	//TODO(perf.) instead of stupid iteration from the beginning, start from the end
+				for ( int k = 0; k < 3 * nlay; k++ ) {  //TODO(perf.) instead of stupid iteration from the beginning, start from the end
 					for ( int sign = -1; sign <= 1; sign += 2 ) {
 						double r = D + ( sign * offset + k * 2 * PI ) / beta;
 						if ( r > z1 ) {
@@ -745,7 +745,7 @@ void Chulkov_Image_Potential::get_outer_turningpoints( const double E, double & 
 				double offset = acos( (E - A10) / A1 );
 				if ( not isnan(offset) ) {
 					double r_last = 0;
-					for ( int k = 0; k < 3 * nlay; k++ ) {	//TODO(perf.) instead of stupid iteration from the beginning, start from the end
+					for ( int k = 0; k < 3 * nlay; k++ ) {  //TODO(perf.) instead of stupid iteration from the beginning, start from the end
 						for ( int sign = -1; sign <= 1; sign += 2 ) {
 							double r = ( sign * offset + k * 2 * PI ) * as /2.0 /PI;
 							if ( r > D ) {
@@ -757,7 +757,7 @@ void Chulkov_Image_Potential::get_outer_turningpoints( const double E, double & 
 							r_last = r;
 						}
 					}
-				} else { /*TODO(errorhandling)*/ }
+				} else {}  //TODO error-handling
 			}
 		}
 	}

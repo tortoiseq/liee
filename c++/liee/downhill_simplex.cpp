@@ -64,7 +64,7 @@ Downhill_Simplex::Downhill_Simplex(int maxEval, double convTol, double temp)
 
 Downhill_Simplex::~Downhill_Simplex() {}
 
-int	Downhill_Simplex::initialise( const vector<double> & lower, const vector<double> & upper )
+int Downhill_Simplex::initialise( const vector<double> & lower, const vector<double> & upper )
 {
 	if ( lower.size() != upper.size() ) return 1;
 	dim = lower.size();
@@ -81,7 +81,7 @@ int	Downhill_Simplex::initialise( const vector<double> & lower, const vector<dou
 		simplex[v].x_new.resize( dim );
 		for ( int d=0; d < dim; d++ ) {
 			if ( d == v ) simplex[v].x[d] = upper_bounds[d];
-			else		  simplex[v].x[d] = lower_bounds[d];
+			else          simplex[v].x[d] = lower_bounds[d];
 		}
 	}
 	trial.flag = -1;
@@ -285,7 +285,7 @@ void Downhill_Simplex::fluctuate_extrema()
 {
 	// the thermal fluctuations only appear in the ylo/yhi/ynhi/ytry variables; simplex[v].y remains unchanged
 	ilo = 0;
-	ylo = simplex[ilo].y - temperature * log( random->doub() );	// adding fluctuation (mind the negative log)
+	ylo = simplex[ilo].y - temperature * log( random->doub() );  // adding fluctuation (mind the negative log)
 	ihi = 1;
 	yhi = simplex[ihi].y - temperature * log( random->doub() );
 	if ( ylo > yhi ) {

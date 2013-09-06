@@ -22,15 +22,15 @@ class Conf_Param
 protected:
 	DECLARE_LOGGER;
 public:
-	string 	name;
-	double 	value;
-	bool 	fixed;
-	double 	min;
-	double 	max;
-	bool 	logscale;
+	string  name;
+	double  value;
+	bool    fixed;
+	double  min;
+	double  max;
+	bool    logscale;
 	vector<double> values;
-	string 	text;
-	bool	textual;
+	string  text;
+	bool    textual;
 
 	/*! Constructor */
 	Conf_Param( TiXmlElement * pParamNode );
@@ -75,17 +75,17 @@ class Config {
 protected:
 	DECLARE_LOGGER;
 public:
-	map<string, Conf_Param*> 	globals;
-	vector<Conf_Param*>			chain_params_merged;
-	vector<Conf_Module*>		chain;
+	map<string, Conf_Param*> globals;
+	vector<Conf_Param*>      chain_params_merged;
+	vector<Conf_Module*>     chain;
 
-	string 						version;
-	string 						project;
-	string 						experiment;
-	string 						wu;
-	string 						exec_chain;
-	vector<string>				infiles;
-	vector<string>				outfiles;
+	string                   version;
+	string                   project;
+	string                   experiment;
+	string                   wu;
+	string                   exec_chain;
+	vector<string>           infiles;
+	vector<string>           outfiles;
 
 
 	/*!
@@ -126,7 +126,7 @@ protected:
 public:
 	string name;
 	string type;
-	int serial;		//< id defined in parameter file
+	int serial;  //< id defined in parameter file
 
 	virtual ~Module() {}
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies ) = 0;
@@ -160,4 +160,3 @@ public:
 } // namespace liee
 
 #endif /* CONFIG_H_ */
-

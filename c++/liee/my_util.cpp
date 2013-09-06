@@ -66,7 +66,7 @@ double BracketedInfixParser::eval( string ex )
 		{
 			bracket_level--;
 			if ( bracket_level < 0 ) {
-				throw new Except__Preconditions_Fail( 101 );	//TODO give it exceptions of its own
+				throw new Except__Preconditions_Fail( 101 );  //TODO give it exceptions of its own
 			}
 
 			if ( bracket_level == 0 ) {
@@ -77,7 +77,7 @@ double BracketedInfixParser::eval( string ex )
 
 				if ( start_pos == 0 ) {
 					operand[0] = x;
-					ex.insert( start_pos, "$1" );	//replace by reference to operand-1
+					ex.insert( start_pos, "$1" );  //replace by reference to operand-1
 				}
 				else {
 					operand[1] = x;
@@ -87,7 +87,7 @@ double BracketedInfixParser::eval( string ex )
 		}
 	}
 	if ( bracket_level != 0 ) { // brackets don't match
-		throw new Except__Preconditions_Fail( 102 );	//TODO give it exceptions of its own
+		throw new Except__Preconditions_Fail( 102 );  //TODO give it exceptions of its own
 	}
 
 	// now, there should be exactly one operator left in the string.
@@ -112,8 +112,8 @@ double BracketedInfixParser::eval( string ex )
 	// must be binary then
 	size_t op_pos = ex.find_first_of("+-*/^");
 	if ( op_pos == ex.npos ) {
-		// did not find any supported operator	//TODO support "(sin(10.3))" where the inside bracket has no operator but obviously can be evaluated
-		throw new Except__Preconditions_Fail( 103 );	//TODO give it exceptions of its own
+		// did not find any supported operator  //TODO support "(sin(10.3))" where the inside bracket has no operator but obviously can be evaluated
+		throw new Except__Preconditions_Fail( 103 );  //TODO give it exceptions of its own
 	}
 	operand[0] = eval( ex.substr( 0, op_pos ), operand );
 	operand[1] = eval( ex.substr( op_pos+1, ex.npos ), operand );
@@ -146,15 +146,15 @@ double BracketedInfixParser::eval( string ex, double* operand )
 	if ( ex[0] == '$' ) {
 		ex.erase( 0, 1 );
 
-		if ( ex[0] == '1' )	return operand[0];
-		if ( ex[0] == '2' )	return operand[1];
+		if ( ex[0] == '1' ) return operand[0];
+		if ( ex[0] == '2' ) return operand[1];
 
 		if ( vars->find( ex ) == vars->end() ) {
 			// undefined variable
-			throw new Except__Preconditions_Fail( 104 );	//TODO give it exceptions of its own
+			throw new Except__Preconditions_Fail( 104 );  //TODO give it exceptions of its own
 		}
 		else {
-		  return vars->operator[]( ex );
+			return vars->operator[]( ex );
 		}
 
 	}
@@ -179,44 +179,44 @@ alglib::spline1dinterpolant to_cubic_spline( vector<Point> & data )
 	alglib_impl::ae_state my_state;
 	alglib_impl::ae_state_init( &my_state );
 	alglib_impl::ae_vector vec_x;
-    alglib_impl::ae_vector vec_y;
+	alglib_impl::ae_vector vec_y;
 	alglib_impl::ae_vector_init( &vec_x, 0, alglib_impl::DT_REAL, &my_state, true );
 	alglib_impl::ae_vector_init( &vec_y, 0, alglib_impl::DT_REAL, &my_state, true );
-    alglib_impl::ae_vector_set_length( &vec_x, data.size(), &my_state);
-    alglib_impl::ae_vector_set_length( &vec_y, data.size(), &my_state );
+	alglib_impl::ae_vector_set_length( &vec_x, data.size(), &my_state);
+	alglib_impl::ae_vector_set_length( &vec_y, data.size(), &my_state );
 
-    //stringstream ss;
-    //ss << "debug-" << time(0) << "-" << clock();
+	//stringstream ss;
+	//ss << "debug-" << time(0) << "-" << clock();
 	//FILE* f = fopen( ss.str().c_str(), "w" );
-    for( size_t i = 0; i < data.size(); i++ ) {
-        vec_x.ptr.p_double[i] = data[i].x;
-        vec_y.ptr.p_double[i] = data[i].y;
+	for( size_t i = 0; i < data.size(); i++ ) {
+		vec_x.ptr.p_double[i] = data[i].x;
+		vec_y.ptr.p_double[i] = data[i].y;
 		//fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
-    	if ( isnan( data[i].x * data[i].y ) || isinf( data[i].y ) || isinf( data[i].x ) ) {
-    		/*debug emergency out
-    	    stringstream ss;
-    	    ss << "debug-" << time(0) << "-" << clock();
-    		FILE* f = fopen( ss.str().c_str(), "w" );
-    	    for( size_t i = 0; i < data.size(); i++ ) {
-    	    	fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
-    	    }
-    	    fclose( f );
-    		//\debug emergency out */
-    		throw Except__Preconditions_Fail( __LINE__ );
-    	}
-    }
+		if ( isnan( data[i].x * data[i].y ) || isinf( data[i].y ) || isinf( data[i].x ) ) {
+			/*debug emergency out
+			stringstream ss;
+			ss << "debug-" << time(0) << "-" << clock();
+			FILE* f = fopen( ss.str().c_str(), "w" );
+			for( size_t i = 0; i < data.size(); i++ ) {
+				fprintf( f, "%1.8g\t%1.8g\n", data[i].x, data[i].y );
+			}
+			fclose( f );
+			//\debug emergency out */
+			throw Except__Preconditions_Fail( __LINE__ );
+		}
+	}
 	//fclose( f );
 
-    alglib::real_1d_array arr_x( &vec_x );
-    alglib::real_1d_array arr_y( &vec_y );
+	alglib::real_1d_array arr_x( &vec_x );
+	alglib::real_1d_array arr_y( &vec_y );
 
-    int _2ND_DERIVATIVE = 2;
-    int N = data.size();
+	int _2ND_DERIVATIVE = 2;
+	int N = data.size();
 
-    alglib::spline1dinterpolant spline;
-    alglib::spline1dbuildcubic( arr_x, arr_y, N, _2ND_DERIVATIVE, 0.0, _2ND_DERIVATIVE, 0.0, spline );
-    alglib_impl::ae_state_clear( &my_state );
-    return spline;
+	alglib::spline1dinterpolant spline;
+	alglib::spline1dbuildcubic( arr_x, arr_y, N, _2ND_DERIVATIVE, 0.0, _2ND_DERIVATIVE, 0.0, spline );
+	alglib_impl::ae_state_clear( &my_state );
+	return spline;
 }
 
 double const PI = 4.0 * atan( 1.0 );
@@ -303,36 +303,36 @@ double lambert_w( double x, bool principal )
 
 void linear_fit( const vector<Point>& data, double& m, double& n, double& dm, double& dn )
 {
-    double x = 0.0;
-    double y = 0.0;
-    double xx = 0.0;
-    double xy = 0.0;
-    int N = data.size();
+	double x = 0.0;
+	double y = 0.0;
+	double xx = 0.0;
+	double xy = 0.0;
+	int N = data.size();
 
-    if (N < 3) {
-    	m = n = dm = dn = 0; //TODO for N=2 can give the line parameters with zero error
-        return;
-    }
+	if (N < 3) {
+		m = n = dm = dn = 0; //TODO for N=2 can give the line parameters with zero error
+		return;
+	}
 
-    // calculate sums
-    BOOST_FOREACH( Point p, data ) {
-        x += p.x;
-        y += p.y;
-        xx += pow( p.x, 2.0 );
-        xy += p.x * p.y;
-    }
+	// calculate sums
+	BOOST_FOREACH( Point p, data ) {
+		x += p.x;
+		y += p.y;
+		xx += pow( p.x, 2.0 );
+		xy += p.x * p.y;
+	}
 
-    m = ( N * xy - x * y ) / ( N * xx - x*x );
-    n = ( xx * y - x * xy ) / ( N * xx - x*x );
+	m = ( N * xy - x * y ) / ( N * xx - x*x );
+	n = ( xx * y - x * xy ) / ( N * xx - x*x );
 
-    // calculate error
-    double sqrErr = 0;
-    BOOST_FOREACH( Point p, data ) {
-        sqrErr += pow( m * p.x + n - p.y, 2.0 );
-    }
+	// calculate error
+	double sqrErr = 0;
+	BOOST_FOREACH( Point p, data ) {
+		sqrErr += pow( m * p.x + n - p.y, 2.0 );
+	}
 
-    dn = sqrt( 1.0 / (N - 2) * sqrErr );
-    dm = sqrt( dn*dn * N / ( N * xx - x*x ) );
+	dn = sqrt( 1.0 / (N - 2) * sqrErr );
+	dm = sqrt( dn*dn * N / ( N * xx - x*x ) );
 }
 
 //-----------------------------------------------------------------------------------
@@ -352,14 +352,14 @@ void tar_gz_files( const string& dir_prefix, const vector<string>& files, const 
 	archive_write_set_format_pax_restricted( a );
 	archive_write_open_filename( a, archive_name.c_str() );
 
-    for ( size_t i = 0; i < files.size(); i++ )
-    {
-    	string fit = dir_prefix + "/" + files[i];
-    	char filename[256];
-    	char file_in_tar[256]; // include the wu-name as encompassing directory
-    	strcpy( filename, files[i].c_str() );
-    	strcpy( file_in_tar, fit.c_str() );
-    	stat( filename, &st );
+	for ( size_t i = 0; i < files.size(); i++ )
+	{
+		string fit = dir_prefix + "/" + files[i];
+		char filename[256];
+		char file_in_tar[256]; // include the wu-name as encompassing directory
+		strcpy( filename, files[i].c_str() );
+		strcpy( file_in_tar, fit.c_str() );
+		stat( filename, &st );
 		entry = archive_entry_new();
 		archive_entry_set_pathname( entry, file_in_tar );
 		archive_entry_set_size( entry, st.st_size );
@@ -417,28 +417,28 @@ string doub2str( double d )
 
 void append_array_literal( const string & str, vector<double> & v_out )
 {
-    size_t last = 0;
-    char * endp;
-    const char * tok;
-    size_t next = str.find_first_of( ",", last+1 );
-    while (next != string::npos)
-    {
-        tok = str.substr( last+1, next-last-1 ).c_str();
-        double value = strtod( tok, &endp );
-        // test validity
-        if (tok != endp && *endp == '\0') {
-            v_out.push_back( value );
-        }
+	size_t last = 0;
+	char * endp;
+	const char * tok;
+	size_t next = str.find_first_of( ",", last+1 );
+	while (next != string::npos)
+	{
+		tok = str.substr( last+1, next-last-1 ).c_str();
+		double value = strtod( tok, &endp );
+		// test validity
+		if (tok != endp && *endp == '\0') {
+			v_out.push_back( value );
+		}
 
-        last = next;
-        next = str.find_first_of( ",", last+1 );
-    }
-    tok = str.substr( last+1, str.length()-last-2 ).c_str();
-    double value = strtod( tok, &endp );
-    // test validity
-    if (tok != endp && *endp == '\0') {
-    	v_out.push_back( value );
-    }
+		last = next;
+		next = str.find_first_of( ",", last+1 );
+	}
+	tok = str.substr( last+1, str.length()-last-2 ).c_str();
+	double value = strtod( tok, &endp );
+	// test validity
+	if (tok != endp && *endp == '\0') {
+		v_out.push_back( value );
+	}
 }
 
 void parse_datafile( const string filename, vector<double> & data )
@@ -479,8 +479,8 @@ void parse_datafile( const string filename, vector<double> & data )
 				// next token
 				tok = strtok( NULL, " ,\t" );
 			}
-	    }
-	    ins.close();
+		}
+		ins.close();
 	}
 }
 
@@ -581,7 +581,7 @@ double simple_integrate( const vector<Point> data, double a, double b )
 	double A = 0;
 	for(size_t i = 1; i < data.size(); i++ ) {
 		if ( data.at(i).x > a && data.at(i).x < b ) {
-			A += 0.5 * ( data.at(i).y + data.at(i-1).y ) * ( data.at(i).x - data.at(i-1).x );	// trapezoid rule
+			A += 0.5 * ( data.at(i).y + data.at(i-1).y ) * ( data.at(i).x - data.at(i-1).x );  // trapezoid rule
 		}
 		else if ( data.at(i).x >= b ) break;
 	}

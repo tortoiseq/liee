@@ -30,69 +30,69 @@ namespace opti {
  */
 class Downhill_Simplex : public Asynch_Optimizer {
 public:
-	int 	mpts;		///< The number of points of the simplex.
-	double 	alfa;		///< reflection coefficient
-	double 	gamma;		///< expansion coefficient
-	double 	roh;		///< contraction coefficient
-	double 	sigma;		///< shrink coefficient
-	double 	temperature;///< Temperature to tune fluctuations for simulated annealing
+	int     mpts;       ///< The number of points of the simplex.
+	double  alfa;       ///< reflection coefficient
+	double  gamma;      ///< expansion coefficient
+	double  roh;        ///< contraction coefficient
+	double  sigma;      ///< shrink coefficient
+	double  temperature;///< Temperature to tune fluctuations for simulated annealing
 
-	vector<Request> simplex;		///< Current simplex
-	Request trial;		///< to try a single reflection point
-	Ranq1 * random;		///< random number generator
+	vector<Request> simplex; ///< Current simplex
+	Request trial;      ///< to try a single reflection point
+	Ranq1 * random;     ///< random number generator
 
-	int 	ihi;		///< index of highest (worst) vertex
-	int 	inhi;		///< index of next-highest vertex
-	int 	ilo;		///< index of lowest (best) vertex
+	int     ihi;        ///< index of highest (worst) vertex
+	int     inhi;       ///< index of next-highest vertex
+	int     ilo;        ///< index of lowest (best) vertex
 
-	double 	ylo;		///< lowest function value incl. fluctuation)
-	double 	yhi;		///< highest function value incl. fluctuation)
-	double 	ynhi;		///< 2nd-highest function value incl. fluctuation)
-	double 	ysave;		///< to remember a temporary result between calls
+	double  ylo;        ///< lowest function value incl. fluctuation)
+	double  yhi;        ///< highest function value incl. fluctuation)
+	double  ynhi;       ///< 2nd-highest function value incl. fluctuation)
+	double  ysave;      ///< to remember a temporary result between calls
 
-	vector<double>	psum;	///< interim result: psum[d] = sum of x[d] over all vertices, needed for every reflection.
+	vector<double> psum; ///< interim result: psum[d] = sum of x[d] over all vertices, needed for every reflection.
 
-	bool 	checkReflection;///< This flag is set after reflection-request to ensure possible swapping of high-value after the new point got evaluated.
-	int 	returnAddr;		///< Indicates where to continue after return for the next request.
+	bool    checkReflection; ///< This flag is set after reflection-request to ensure possible swapping of high-value after the new point got evaluated.
+	int     returnAddr; ///< Indicates where to continue after return for the next request.
 
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	// serialize base class information
-    	ar & boost::serialization::base_object<Asynch_Optimizer>( *this );
-        ar & mpts;
-        ar & alfa;
-        ar & gamma;
-        ar & roh;
-        ar & sigma;
-        ar & temperature;
-        ar & simplex;
-        ar & trial;
-        ar & random->v;
-        ar & ihi;
-        ar & inhi;
-        ar & ilo;
-        ar & ylo;
-        ar & yhi;
-        ar & ynhi;
-        ar & ysave;
-        ar & psum;
-        ar & checkReflection;
-        ar & returnAddr;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		// serialize base class information
+		ar & boost::serialization::base_object<Asynch_Optimizer>( *this );
+		ar & mpts;
+		ar & alfa;
+		ar & gamma;
+		ar & roh;
+		ar & sigma;
+		ar & temperature;
+		ar & simplex;
+		ar & trial;
+		ar & random->v;
+		ar & ihi;
+		ar & inhi;
+		ar & ilo;
+		ar & ylo;
+		ar & yhi;
+		ar & ynhi;
+		ar & ysave;
+		ar & psum;
+		ar & checkReflection;
+		ar & returnAddr;
+	}
 
-    //! Default constructor
+	//! Default constructor
 	Downhill_Simplex();
 
 	/*! Constructor
-	*   @param maxEval	The maximum number of function evaluations before giving up
-	*   @param convTol 	The fractional convergence tolerance to be achieved in the function value.
-	*   @param temp		The temperature to start with; leads to limited upphill movement due to fluctuations.
+	*   @param maxEval  The maximum number of function evaluations before giving up
+	*   @param convTol  The fractional convergence tolerance to be achieved in the function value.
+	*   @param temp     The temperature to start with; leads to limited upphill movement due to fluctuations.
 	*/
 	Downhill_Simplex( int maxEval, double convTol, double temp );
 

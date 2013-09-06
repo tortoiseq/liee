@@ -16,7 +16,7 @@ namespace liee {
 /*!
 * Just the square of x. (for readability)
 */
-inline double sqr( double x ) { return x * x; } //TODO why not use a macro?
+inline double sqr( double x ) { return x * x; }  //TODO why not use a macro?
 
 /*!
 * The generalised Rosenbrock's Function is a test for multivariant optimisation.
@@ -27,11 +27,11 @@ inline double sqr( double x ) { return x * x; } //TODO why not use a macro?
 */
 inline double rosenbrock( const vector<double> & x )
 {
-    double result = 0;
-    for ( size_t i = 0; i < x.size()-1; i++ ) {
-        result += 100 * sqr( x[i+1] - sqr( x[i] ) ) + sqr( x[i] - 1 );
-    }
-    return result;
+	double result = 0;
+	for ( size_t i = 0; i < x.size()-1; i++ ) {
+		result += 100 * sqr( x[i+1] - sqr( x[i] ) ) + sqr( x[i] - 1 );
+	}
+	return result;
 }
 
 /*!
@@ -44,11 +44,11 @@ inline double rosenbrock( const vector<double> & x )
 */
 inline double rastrigin( const vector<double> & x )
 {
-    double result = 10.0 * x.size();
-    for ( size_t i = 0; i < x.size()-1; i++ ) {
-        result += sqr( x[i] ) - 10.0 * cos( 2 * PI * x[i] );
-    }
-    return result;
+	double result = 10.0 * x.size();
+	for ( size_t i = 0; i < x.size()-1; i++ ) {
+		result += sqr( x[i] ) - 10.0 * cos( 2 * PI * x[i] );
+	}
+	return result;
 }
 
 /*!
@@ -60,9 +60,9 @@ inline double rastrigin( const vector<double> & x )
 inline double paraboloid( const vector<double> & x )
 {
 	double result = 0;
-    for ( size_t i = 0; i < x.size(); i++ ) {
-        result += sqr( 1 - x[i] );
-    }
+	for ( size_t i = 0; i < x.size(); i++ ) {
+		result += sqr( 1 - x[i] );
+	}
 	return result;
 }
 

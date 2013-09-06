@@ -31,9 +31,9 @@ public:
 	 * exposes the classical turning-points for a particle with energy E
 	 *
 	 * limited default implementation provided:
-	 * 		- uses root-finding by bracketing and bisection from pivot point get_Vmin_pos() outwards
-	 * 		- is not guaranteed to reach the _outer_ turning points, yet more likely the inner ones (for a periodic potential)
-	 * 		- much slower than evaluation of a moderate expression
+	 *   - uses root-finding by bracketing and bisection from pivot point get_Vmin_pos() outwards
+	 *   - is not guaranteed to reach the _outer_ turning points, yet more likely the inner ones (for a periodic potential)
+	 *   - much slower than evaluation of a moderate expression
 	 * --> overwrite with analytic solution E=V(r), r minimal (maximal) for anything but testing
 	 */
 	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
@@ -42,10 +42,10 @@ public:
 	 * returns the position r for which the potential has its global minimum
 	 *
 	 * limited default implementation provided:
-	 * 		- uses minimum search by bracketing starting at r = 0
-	 * 		- is not guaranteed to reach the lowest V(r) for weird periodic potentials,
-	 * 		  but should do the trick in most practical cases
-	 * 		- result is cached in case the method is called many times
+	 *   - uses minimum search by bracketing starting at r = 0
+	 *   - is not guaranteed to reach the lowest V(r) for weird periodic potentials,
+	 *     but should do the trick in most practical cases
+	 *   - result is cached in case the method is called many times
 	 */
 	virtual double get_Vmin_pos();
 
@@ -63,8 +63,8 @@ public:
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "liee.Module.Pot_Round_Well_wImage" );
 	}
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}	// effort depends on callers
-	virtual void summarize( map<string, string> & results ) {}	// nothing to write home about
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  // effort depends on callers
+	virtual void summarize( map<string, string> & results ) {}  // nothing to write home about
 
 	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
 	virtual double get_Vmin_pos();
@@ -78,16 +78,17 @@ protected:
 	double shift_mirror;
 
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & width;
-        ar & depth;
-        ar & expo;
-    	ar & a;
-    	ar & shift_cosh;
-    	ar & shift_mirror;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & width;
+		ar & depth;
+		ar & expo;
+		ar & a;
+		ar & shift_cosh;
+		ar & shift_mirror;
+
+	}
 };
 
 /*!
@@ -103,8 +104,8 @@ public:
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "Pot_Experimental" );
 	}
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}	// effort depends on callers
-	virtual void summarize( map<string, string> & results ) {}	// nothing to write home about
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  // effort depends on callers
+	virtual void summarize( map<string, string> & results ) {}  // nothing to write home about
 
 private:
 	double width;
@@ -120,20 +121,20 @@ private:
 	vector<double> b;
 
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & width;
-        ar & depth;
-        ar & expo;
-    	ar & a;
-    	ar & shift_cosh;
-    	ar & shift_mirror;
-        ar & v_scale;
-        ar & h_scale;
-        ar & power;
-        ar & b;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & width;
+		ar & depth;
+		ar & expo;
+		ar & a;
+		ar & shift_cosh;
+		ar & shift_mirror;
+		ar & v_scale;
+		ar & h_scale;
+		ar & power;
+		ar & b;
+	}
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -152,13 +153,13 @@ public:
 class Gaussian_Pulse : public Laser_Field
 {
 public:
-    virtual inline double electric_field( double t );
+	virtual inline double electric_field( double t );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "liee.Module.Gaussian_Pulse" );
 	}
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}	// effort depends on callers
-	virtual void summarize( map<string, string> & results ) {}	// nothing to write home about
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  // effort depends on callers
+	virtual void summarize( map<string, string> & results ) {}  // nothing to write home about
 
 private:
 	double t_ofs;
@@ -171,17 +172,17 @@ private:
 
 protected:
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & t_ofs;
-        ar & fwhm;
-        ar & ga;
-        ar & F0;
-        ar & omega0;
-        ar & phi0;
-        ar & theta0;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & t_ofs;
+		ar & fwhm;
+		ar & ga;
+		ar & F0;
+		ar & omega0;
+		ar & phi0;
+		ar & theta0;
+	}
 
 };
 
@@ -204,19 +205,19 @@ public:
 
 private:
 	vector<Laser_Field*> pulses;
-	vector<int> pulse_serials;		///< remember which dependency modules to register
+	vector<int> pulse_serials;  ///< remember which dependency modules to register
 	double L;
 	double st;
 
 protected:
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	ar & pulse_serials;
-        ar & L;
-        ar & st;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & pulse_serials;
+		ar & L;
+		ar & st;
+	}
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -264,31 +265,31 @@ public:
 private:
 	Pot_const* well;
 	vector<Laser_Field*> pulses;
-	vector<int> reg_serials;		///< remember which dependency modules to register
-	vector<double> grid_r;			///< all r-positions of the grid (optional) (!not saved to archive!)
-	vector<dcmplx> cache_Vconst;	///< indexed constant potential (V_well+V_dc+V_cap) (!not saved to archive!) (!not saved to archive!)
-	vector<dcmplx> cache_Vwell;		///< indexed constant potential without V_dc, needed for the non-constant ramping-up period (!not saved to archive!)
-	double grid_dr;					///< spacing of the requested grid
+	vector<int> reg_serials;      ///< remember which dependency modules to register
+	vector<double> grid_r;        ///< all r-positions of the grid (optional) (!not saved to archive!)
+	vector<dcmplx> cache_Vconst;  ///< indexed constant potential (V_well+V_dc+V_cap) (!not saved to archive!) (!not saved to archive!)
+	vector<dcmplx> cache_Vwell;   ///< indexed constant potential without V_dc, needed for the non-constant ramping-up period (!not saved to archive!)
+	double grid_dr;               ///< spacing of the requested grid
 
-	double t_on;					///< activation start-time of the constant field, F_dc(t < t_on) = 0
-	double t_full;					///< time when activation of the constant field is completed
-	bool ini_erf;					///< if "true", the activation follows an erf()-like smooth swing, linear otherwise
-	double deltaDC;					///< distance at which the static field has decreased to 1/e inside the tip (r<0)
-	double deltaAC;					///< distance at which the Laser field has decreased to 1/e inside the tip (r<0)
-	double r_range;					///< spatial range of simulation
-	double r_start;					///< start position defined by where the negative-side repulsion potential reaches a certain threshold
-	double wcap;					///< width of complex absorbing potential at the right side of the simulation range
-	double r_cap;					///< start of complex absorbing potential, short for r_start + r_range - wcap
-	double F_dc;					///< electric field at tip apex from applying a constant voltage
-	double gamma;					///< resonant amplification factor
-	double s2;						///< resonant amplification range
+	double t_on;                  ///< activation start-time of the constant field, F_dc(t < t_on) = 0
+	double t_full;                ///< time when activation of the constant field is completed
+	bool ini_erf;                 ///< if "true", the activation follows an erf()-like smooth swing, linear otherwise
+	double deltaDC;               ///< distance at which the static field has decreased to 1/e inside the tip (r<0)
+	double deltaAC;               ///< distance at which the Laser field has decreased to 1/e inside the tip (r<0)
+	double r_range;               ///< spatial range of simulation
+	double r_start;               ///< start position defined by where the negative-side repulsion potential reaches a certain threshold
+	double wcap;                  ///< width of complex absorbing potential at the right side of the simulation range
+	double r_cap;                 ///< start of complex absorbing potential, short for r_start + r_range - wcap
+	double F_dc;                  ///< electric field at tip apex from applying a constant voltage
+	double gamma;                 ///< resonant amplification factor
+	double s2;                    ///< resonant amplification range
 	//following members are not saved to checkpoint archive!
-	double t_now;					///< as long as t==t_current the cache is valid
+	double t_now;                 ///< as long as t==t_current the cache is valid
 	double dx_sample;
 	size_t int_samples;
 	vector<Point> Pulse_samples;
 
-    inline double V_cap( double r );
+	inline double V_cap( double r );
 	inline double V_Fdc( double r, double t );
 	inline double F_pulse( double r, double t );
 	inline double V_pulse( double r, double t );
@@ -296,24 +297,24 @@ private:
 
 protected:
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	ar & reg_serials;
-    	ar & t_on;
-    	ar & t_full;
-    	ar & ini_erf;
-    	ar & deltaDC;
-    	ar & deltaAC;
-    	ar & r_range;
-    	ar & r_start;
-        ar & wcap;
-        ar & r_cap;
-        ar & F_dc;
-        ar & gamma;
-        ar & s2;
-    	ar & int_samples;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & reg_serials;
+		ar & t_on;
+		ar & t_full;
+		ar & ini_erf;
+		ar & deltaDC;
+		ar & deltaAC;
+		ar & r_range;
+		ar & r_start;
+		ar & wcap;
+		ar & r_cap;
+		ar & F_dc;
+		ar & gamma;
+		ar & s2;
+		ar & int_samples;
+	}
 };
 
 
@@ -339,18 +340,18 @@ public:
 	virtual void summarize( map<string, string> & results ) {} // no relevant information to summarise
 
 private:
-	double k;		///< force constant. equals omega^2, since m=1
-	double w;		///< eigen frequency in (atomic time unit)^-2
-	double shift;	///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
+	double k;      ///< force constant. equals omega^2, since m=1
+	double w;      ///< eigen frequency in (atomic time unit)^-2
+	double shift;  ///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	ar & k;
-    	ar & w;
-    	ar & shift;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & k;
+		ar & w;
+		ar & shift;
+	}
 };
 
 class Chulkov_Image_Potential : public Pot_const
@@ -365,8 +366,8 @@ public:
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "liee.Module.Chulkov_Image_Potential" );
 	}
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {} // whatever
-	virtual void summarize( map<string, string> & results ) {} // no relevant information to summarise
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  // whatever
+	virtual void summarize( map<string, string> & results ) {}  // no relevant information to summarise
 
 private:
 	int nlay;
@@ -384,13 +385,13 @@ private:
 	double lambda;
 	double zim;
 
-	double shift;	///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
+	double shift;  ///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version ) //TODO
-    {
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version ) //TODO
+	{
+	}
 };
 
 /*!
@@ -405,20 +406,20 @@ public:
 
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {} // TODO
-	virtual void summarize( map<string, string> & results ) {}// TODO
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  //TODO
+	virtual void summarize( map<string, string> & results ) {}  //TODO
 
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-    	ar & r_;
-    	ar & V_;
-    }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & r_;
+		ar & V_;
+	}
 
 private:
-    vector<double>	r_;		///< list of r-coordinates
-    vector<double>	V_;		///< V_list[ r_list[i] {+epsilon} ]: list of potential energies at the positions in r_list
+	vector<double> r_;  ///< list of r-coordinates
+	vector<double> V_;  ///< V_list[ r_list[i] {+epsilon} ]: list of potential energies at the positions in r_list
 };
 } //namespace liee
 

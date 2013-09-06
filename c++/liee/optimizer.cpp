@@ -13,7 +13,7 @@
 #include "optimizer.hpp"
 
 #ifdef SERVER
-#include "sched_config.h"	// only for server-sided  logging
+#include "sched_config.h"  // only for server-sided  logging
 #endif
 
 using namespace std;
@@ -22,7 +22,7 @@ namespace liee {
 
 void opti::Asynch_Optimizer::convergence_test( const vector<opti::Request> & population )
 {
-	current_min =   6.66e300;
+	current_min = 6.66e300;
 
 	for ( size_t i = 0; i < population.size(); i++ ) {
 		if ( population[i].flag == 0 )
@@ -72,11 +72,11 @@ int opti::Shot_Gun_Optimizer::initialise( const vector<double> & lower, const ve
 
 int opti::Shot_Gun_Optimizer::generate_requests( vector<Request> & work )
 {
-	if ( evaluations >= max_eval ) return 1;		// end condition
+	if ( evaluations >= max_eval ) return 1;  // end condition
 
 	work.clear();
 	for ( int i = 0; i < num_bullets_per_shot; i++ ) {
-		if ( in_flight[i].id == -1 ) // free slot?
+		if ( in_flight[i].id == -1 )  // free slot?
 		{
 			in_flight[i].id = next_id++;
 			// draw random point
@@ -96,7 +96,7 @@ int opti::Shot_Gun_Optimizer::assimilate_results( const vector<Request> & result
 		for ( int bi = 0; bi < num_bullets_per_shot; bi++ )	{
 			if ( in_flight[bi].id == result[ri].id )
 			{
-			    in_flight[bi].id = -1; // freeing the slot
+			    in_flight[bi].id = -1;  // freeing the slot
 				if ( result[ri].flag == 0 )
 				{
 					in_flight[bi].x = in_flight[bi].x_new;
@@ -110,7 +110,7 @@ int opti::Shot_Gun_Optimizer::assimilate_results( const vector<Request> & result
 			}
 		}
 	}
-	convergence_test( in_flight );	// this is silly, it wont converge unless the objective is flat
+	convergence_test( in_flight );  // this is silly, it wont converge unless the objective is flat
 	return 0;
 }
 
@@ -154,18 +154,18 @@ int opti::Particle_Swarm_Optimizer::generate_requests( vector<Request> & work )
 	double MAX_V = 10.0 * exp( -evaluations / swarm_sz / 10000.0 );  //TODO make configurable
 
 	work.clear();
-	if ( evaluations >= max_eval ) return 1;		// give up end condition
-	if ( histo_var <= tolerance ) return 0;			// success end condition
+	if ( evaluations >= max_eval ) return 1;  // give up end condition
+	if ( histo_var <= tolerance ) return 0;  // success end condition
 
 	for ( int i = 0; i < swarm_sz; i++ )
 	{
-		if ( swarm[i].id == -1 )	// free slot?
+		if ( swarm[i].id == -1 )  // free slot?
 		{
 			// find the hood's leader
-			int j_best = (i + hood_sz) % swarm_sz;		// default is the last of the neighbourhood, which isn't touched in the for-loop
+			int j_best = (i + hood_sz) % swarm_sz;  // default is the last of the neighbourhood, which isn't touched in the for-loop
 			for ( int j = i - hood_sz; j < i + hood_sz; j++ )
 			{
-				int j_ = ( j + swarm_sz ) % swarm_sz;	// add swarm size to make sure dividend is positive
+				int j_ = ( j + swarm_sz ) % swarm_sz;  // add swarm size to make sure dividend is positive
 				if ( swarm[j_].min_value < swarm[j_best].min_value ) {
 					j_best = j_;
 				}
@@ -176,8 +176,8 @@ int opti::Particle_Swarm_Optimizer::generate_requests( vector<Request> & work )
 			for ( int d = 0; d < dim; d++ )
 			{
 				swarm[i].v[d] = inertia * swarm[i].v[d]
-				             + cognition * random->doub() * ( swarm[  i   ].x_min[d] - swarm[i].x[d] )
-				             + coherence * random->doub() * ( swarm[j_best].x_min[d] - swarm[i].x[d] );
+					+ cognition * random->doub() * ( swarm[  i   ].x_min[d] - swarm[i].x[d] )
+					+ coherence * random->doub() * ( swarm[j_best].x_min[d] - swarm[i].x[d] );
 				v += swarm[i].v[d] * swarm[i].v[d];
 			}
 			// limit velocity
@@ -209,7 +209,7 @@ int opti::Particle_Swarm_Optimizer::assimilate_results( const vector<Request> & 
 		for ( int i = 0; i < swarm_sz; i++ ) {
 			if ( swarm[i].id == result[r].id )
 			{
-				swarm[i].id = -1;	// in any case: make available for next round
+				swarm[i].id = -1;  // in any case: make available for next round
 				if ( result[i].flag == 0 )
 				{
 					swarm[i].x = swarm[i].x_new;
@@ -266,7 +266,7 @@ int opti::Rasterizer::initialise( const vector<double> & lower, const vector<dou
 		for ( int d = 0; d < dim; d++ ) { logscale[d] = false; }
 	}
 	discharged = false;
-	if ( ((int)num_samples.size()) != dim ) { // apply uniform N to all dimensions
+	if ( ((int)num_samples.size()) != dim ) {  // apply uniform N to all dimensions
 		int N = num_samples[0];
 		num_samples.resize( dim );
 		for ( size_t i = 0; i < num_samples.size(); i++ ) {
@@ -366,25 +366,25 @@ double opti::Golden_Section_Search::minimize( boost::function<double (double)> f
 	{
 		double ab = abs( xb - xa );
 		double bc = abs( xb - xc );
-		if ( ab > bc ) {	// bisect [ab] for it is the bigger interval
+		if ( ab > bc ) {  // bisect [ab] for it is the bigger interval
 			xd = xb - gs * ab;
 			fd = func( xd );
-			if ( fd < fb ) { // test point d is the lowest --> exclude c
+			if ( fd < fb ) {  // test point d is the lowest --> exclude c
 				xc = xb; fc = fb;
 				xb = xd; fb = fd;
 			}
-			else { // b remains the lowest --> pull in a to d
+			else {  // b remains the lowest --> pull in a to d
 				xa = xd; fa = fd;
 			}
 		}
-		else { // bisect interval [bc]
+		else {  // bisect interval [bc]
 			xd = xb + gs * bc;
 			fd = func( xd );
-			if ( fd < fb ) { // test point d is the lowest --> exclude a
+			if ( fd < fb ) {  // test point d is the lowest --> exclude a
 				xa = xb; fa = fb;
 				xb = xd; fb = fd;
 			}
-			else { // b remains the lowest --> pull in c to d
+			else {  // b remains the lowest --> pull in c to d
 				xc = xd; fc = fd;
 			}
 		}

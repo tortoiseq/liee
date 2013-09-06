@@ -24,7 +24,7 @@
 using namespace std;
 namespace liee {
 
-#define STORE_MODULE( _class )	\
+#define STORE_MODULE( _class ) \
 		_class* instance = dynamic_cast<_class*>( module ); \
 		if ( instance == NULL ) LOG_ERROR( "DYNAMIC CAST FAILED"); \
 		*oarch << instance;
@@ -38,40 +38,40 @@ namespace liee {
 #define SWITCH_MODULES( _load_or_store, _type, _name ) \
 		if ( _type.compare( "potential" ) == 0 ) \
 		{ \
-			if ( _name.compare( "main_pot" ) == 0 ) 			{ _load_or_store( Potential ); } \
+			if      ( _name.compare( "main_pot" ) == 0 )        { _load_or_store( Potential ); } \
 		} \
 		else if ( _type.compare( "pulse" ) == 0 ) \
 		{ \
-			if 		( _name.compare( "gaussian" ) == 0 )		{ _load_or_store( Gaussian_Pulse ); } \
-			else if	( _name.compare( "slm" ) == 0 ) 			{ _load_or_store( Spatial_Light_Modificator ); } \
+			if      ( _name.compare( "gaussian" ) == 0 )        { _load_or_store( Gaussian_Pulse ); } \
+			else if ( _name.compare( "slm" ) == 0 )             { _load_or_store( Spatial_Light_Modificator ); } \
 		} \
 		else if ( _type.compare( "pot_const" ) == 0 ) \
 		{ \
-			if 		( _name.compare( "round_well" ) == 0 ) 		{ _load_or_store( Pot_Round_Well_wImage ); } \
-			else if	( _name.compare( "pot_lol" ) == 0 ) 		{ _load_or_store( Pot_Experimental ); } \
-			else if	( _name.compare( "harmonic_osci" ) == 0 ) 	{ _load_or_store( Pot_Harm_Oscillator ); } \
-			else if	( _name.compare( "metal_surface" ) == 0 ) 	{ _load_or_store( Chulkov_Image_Potential ); } \
-			else if	( _name.compare( "piecewise_linear" ) == 0 ){ _load_or_store( Pot_Piecewise ); } \
+			if      ( _name.compare( "round_well" ) == 0 )      { _load_or_store( Pot_Round_Well_wImage ); } \
+			else if ( _name.compare( "pot_lol" ) == 0 )         { _load_or_store( Pot_Experimental ); } \
+			else if ( _name.compare( "harmonic_osci" ) == 0 )   { _load_or_store( Pot_Harm_Oscillator ); } \
+			else if ( _name.compare( "metal_surface" ) == 0 )   { _load_or_store( Chulkov_Image_Potential ); } \
+			else if ( _name.compare( "piecewise_linear" ) == 0 ){ _load_or_store( Pot_Piecewise ); } \
 		} \
 		else if ( _type.compare( "initial_wf" ) == 0 ) \
 		{ \
-			if 		( _name.compare( "wf_reader" ) == 0 ) 		{ _load_or_store( WF_Reader ); } \
-			else if	( _name.compare( "wave_packet" ) == 0 )		{ _load_or_store( WF_Gauss_Packet); } \
+			if      ( _name.compare( "wf_reader" ) == 0 )       { _load_or_store( WF_Reader ); } \
+			else if ( _name.compare( "wave_packet" ) == 0 )     { _load_or_store( WF_Gauss_Packet); } \
 		} \
 		else if ( _type.compare( "executable" ) == 0 ) \
 		{ \
-			if 		( _name.compare( "numerov" ) == 0 ) 		{ _load_or_store( Noumerov1d ); } \
+			if      ( _name.compare( "numerov" ) == 0 )         { _load_or_store( Noumerov1d ); } \
 		} \
 		else if ( _type.compare( "observer" ) == 0 ) \
 		{ \
-			if 		( _name.compare( "wf_snapshots" ) == 0 )	{ _load_or_store( Obs_Snapshot_WF ); } \
-			else if	( _name.compare( "tunnel_ratio" ) == 0 )	{ _load_or_store( Obs_Tunnel_Ratio ); } \
-			else if	( _name.compare( "jwkb_tunnel" ) == 0 ) 	{ _load_or_store( Obs_JWKB_Tunnel ); } \
-			else if	( _name.compare( "wigner_phasespace" ) == 0 ){ _load_or_store( Obs_Wigner_Distribution ); } \
+			if      ( _name.compare( "wf_snapshots" ) == 0 )    { _load_or_store( Obs_Snapshot_WF ); } \
+			else if ( _name.compare( "tunnel_ratio" ) == 0 )    { _load_or_store( Obs_Tunnel_Ratio ); } \
+			else if ( _name.compare( "jwkb_tunnel" ) == 0 )     { _load_or_store( Obs_JWKB_Tunnel ); } \
+			else if ( _name.compare( "wigner_phasespace" ) == 0 ){ _load_or_store( Obs_Wigner_Distribution ); } \
 		} \
 		else if ( _type.compare( "solver" ) == 0 ) \
 		{ \
-			if 		( _name.compare( "crank_nicholson" ) == 0 )	{ _load_or_store( Crank_Nicholson ); } \
+			if      ( _name.compare( "crank_nicholson" ) == 0 ) { _load_or_store( Crank_Nicholson ); } \
 		} \
 		else { \
 			throw Except__Wrong_Module_Type( __LINE__ ); \
@@ -92,22 +92,22 @@ public:
 	map<string, bool> EXECUTION_REQUIRED;
 
 	Module_Factory() {
-		EXECUTION_REQUIRED["main_pot"] 			= false;
-		EXECUTION_REQUIRED["gaussian"]			= false;
-		EXECUTION_REQUIRED["slm"] 				= false;
-		EXECUTION_REQUIRED["round_well"] 		= false;
-		EXECUTION_REQUIRED["pot_lol"] 			= false;
-		EXECUTION_REQUIRED["harmonic_osci"] 	= false;
-		EXECUTION_REQUIRED["metal_surface"] 	= false;
-		EXECUTION_REQUIRED["piecewise_linear"]	= false;
-		EXECUTION_REQUIRED["wf_reader"] 		= false;
-		EXECUTION_REQUIRED["wave_packet"] 		= false;
-		EXECUTION_REQUIRED["wf_snapshots"] 		= false;
-		EXECUTION_REQUIRED["tunnel_ratio"] 		= false;
-		EXECUTION_REQUIRED["jwkb_tunnel"] 		= false;
-		EXECUTION_REQUIRED["wigner_phasespace"]	= false;
-		EXECUTION_REQUIRED["crank_nicholson"] 	= true;
-		EXECUTION_REQUIRED["numerov"] 			= true;
+		EXECUTION_REQUIRED["main_pot"]          = false;
+		EXECUTION_REQUIRED["gaussian"]          = false;
+		EXECUTION_REQUIRED["slm"]               = false;
+		EXECUTION_REQUIRED["round_well"]        = false;
+		EXECUTION_REQUIRED["pot_lol"]           = false;
+		EXECUTION_REQUIRED["harmonic_osci"]     = false;
+		EXECUTION_REQUIRED["metal_surface"]     = false;
+		EXECUTION_REQUIRED["piecewise_linear"]  = false;
+		EXECUTION_REQUIRED["wf_reader"]         = false;
+		EXECUTION_REQUIRED["wave_packet"]       = false;
+		EXECUTION_REQUIRED["wf_snapshots"]      = false;
+		EXECUTION_REQUIRED["tunnel_ratio"]      = false;
+		EXECUTION_REQUIRED["jwkb_tunnel"]       = false;
+		EXECUTION_REQUIRED["wigner_phasespace"] = false;
+		EXECUTION_REQUIRED["crank_nicholson"]   = true;
+		EXECUTION_REQUIRED["numerov"]           = true;
 	}
 
 	static Module* assemble( string & type, string & name, int serial )

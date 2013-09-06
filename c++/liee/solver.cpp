@@ -26,10 +26,10 @@ double Solver::integrate_psi_sqr()
 }
 
 /*!
- *	Integrates the squared Wavefunction amplitude over the interval [a,b]
- *	Caution! The domain for the bounds is [0, r_range] and not [r_start, r_start+r_range]
+ * Integrates the squared Wavefunction amplitude over the interval [a,b]
+ * Caution! The domain for the bounds is [0, r_range] and not [r_start, r_start+r_range]
  *
- *	using extended trapeziodal rule with all available data points of the WF
+ * using extended trapeziodal rule with all available data points of the WF
  */
 double Solver::integrate_psi_sqr( double a, double b )
 {
@@ -46,7 +46,7 @@ double Solver::integrate_psi_sqr( double a, double b )
 
 bool Solver::execute()
 {
-	const double WORK = Nr * t_end / dt; // samples * frames
+	const double WORK = Nr * t_end / dt;  // samples * frames
 	const time_t start_time = time(0);
 	time_t last_report_time = start_time;
 	time_t last_checkpoint_time = start_time;
@@ -61,13 +61,13 @@ bool Solver::execute()
 		}
 		boinc_end_critical_section();
 
-		evolve_1step();			//<<<<<<<<<<<<<<< this is where the action is
+		evolve_1step();  //<<<<<<<<<<<<<<< this is where the action is
 		t += dt;
 
 		if ( ++count % count_tic == 0 ) {
 			time_t now = time(0);
 			boinc_fraction_done( t / t_end );
-			if ( boinc_time_to_checkpoint() || ( now - last_checkpoint_time > 300 ) ) { 	// in any case checkpoint every 5 min
+			if ( boinc_time_to_checkpoint() || ( now - last_checkpoint_time > 300 ) ) {  // in any case checkpoint every 5 min
 				last_checkpoint_time = now;
 				return false;
 			}
@@ -82,7 +82,7 @@ bool Solver::execute()
 				double current_speed = leap / wait;
 				double samples_per_s = current_speed * WORK;
 				double hours_remain = (1.0 - last_progress) / current_speed / 3600;
-				count_tic = 1 + (int)abs( 10.0 * samples_per_s / Nr );	// check progress about once in 10s
+				count_tic = 1 + (int)abs( 10.0 * samples_per_s / Nr );  // check progress about once in 10s
 				INFO_SHOW4( count, last_progress, samples_per_s, hours_remain );
 			}
 		}
@@ -153,7 +153,7 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	Nr = 1 + r_range / dr;
 	LOG_INFO( "Problem size (Nr x Nt): " << Nr << " x " << (int)(t_end / dt) << " = " << (Nr * t_end / dt) );
 	jb = Nr - 1;
-	c = dcmplx( 0.0, -dt / ( 8.0 * dr*dr ) );   //(44)
+	c = dcmplx( 0.0, -dt / ( 8.0 * dr*dr ) );  //(44)
 	alfa.resize(Nr);
 	gamma.resize(Nr);
 	g.resize(Nr);
@@ -184,7 +184,7 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
 	double Nt = config->getParam("t_range")->value / config->getParam("dt")->value;
 
-	flops += abs( Nt * N * ( 6*6 + 5*2 + 3*4 + 3) ); // 6 complex(*) + 5 complex(+) + 3 double(/^2) + 3 double(+)  ... for every cell and every step
+	flops += abs( Nt * N * ( 6*6 + 5*2 + 3*4 + 3) );  // 6 complex(*) + 5 complex(+) + 3 double(/^2) + 3 double(+)  ... for every cell and every step
 	ram += abs( 7 * sizeof( dcmplx ) * N + 256 );
 	disk += 0;
 }
@@ -197,7 +197,7 @@ void Crank_Nicholson::evolve_1step()
 	//file = boinc_fopen( filename.c_str(), "a" );
 
 	for (size_t j=0; j < Nr; j++) {
-		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t ); //#(45)
+		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t );  //#(45)
 		//fprintf( file, "%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t )*CONV_au_eV );
 	}
 	//fclose( file );
@@ -208,22 +208,22 @@ void Crank_Nicholson::evolve_1step()
 	alfa[0] = d[0];
 	gamma[0] = c / alfa[0];
 	for (int j=1; j < jb+1; j++) {
-		alfa[j] = d[j] - c * gamma[j-1]; //#(50)
-		gamma[j] = c / alfa[j]; //#(49)
+		alfa[j] = d[j] - c * gamma[j-1];  //#(50)
+		gamma[j] = c / alfa[j];  //#(49)
 	}
 
-	g[0] = psi[0] / alfa[0]; //#(52)
+	g[0] = psi[0] / alfa[0];  //#(52)
 	for (int j=1; j < jb+1; j++) {
-		g[j] = ( psi[j] - c * g[j-1] ) / alfa[j]; //#(53)
+		g[j] = ( psi[j] - c * g[j-1] ) / alfa[j];  //#(53)
 	}
 
-	phi[jb] = g[jb]; //#(55)
+	phi[jb] = g[jb];  //#(55)
 	for (int j=jb-1; j > -1; j--) {
-		phi[j] = g[j] - gamma[j] * phi[j+1]; //#(56)
+		phi[j] = g[j] - gamma[j] * phi[j+1];  //#(56)
 	}
 
 	for (int j=0; j <= jb; j++) {
-		psi[j] = phi[j] - psi[j]; //#(39)
+		psi[j] = phi[j] - psi[j];  //#(39)
 	}
 }
 

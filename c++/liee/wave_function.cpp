@@ -1,4 +1,4 @@
-#include <cstddef>		//needed in windows build
+#include <cstddef>  //needed in windows build
 #include "filesys.h"
 #include "boinc_api.h"
 
@@ -21,15 +21,15 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 		}
 	}
 
-    string resolved_name;
-    boinc_resolve_filename_s( config->getParam("INFILE")->text.c_str(), resolved_name );
+	string resolved_name;
+	boinc_resolve_filename_s( config->getParam("INFILE")->text.c_str(), resolved_name );
 
 	double dr = config->getParam("dr")->value / CONV_au_nm;
 	double r_range = config->getParam("r_range")->value / CONV_au_nm;
 	double r_start = pot->get_r_start();
 	int Nr = 1 + r_range / dr;
 
-	//bool complex = config->getParam("complex"]->text.compare("true") == 0; //TODO(depricated)
+	//bool complex = config->getParam("complex"]->text.compare("true") == 0;  //TODO(depricated)
 	vector<double> parsed;
 	vector<Point> wave_funct;
 	parse_datafile( resolved_name, parsed );
@@ -97,7 +97,7 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 		if ( r >= r_min  &&  r <= r_max  ) {
 			psi.push_back( dcmplx( alglib::spline1dcalc( spline, r ), 0.0 ) );
 		}
-		else { // extrapolate exponential decay of left and right tail
+		else {  // extrapolate exponential decay of left and right tail
 			if ( r < r_min ) {
 				psi.push_back( dcmplx( exp( m_l * r + n_l ), 0.0 ) );
 			}

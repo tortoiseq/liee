@@ -15,39 +15,39 @@ namespace lib_liee {
  */
 extern "C" void init_potential()
 {
-    Module_Factory factory;
-    Config* cnf;
-    try {
-    	cnf = new Config( "liee_parameter.xml" );
-    }
-    catch ( Except__Preconditions_Fail & e )
-    {
-    	if ( e.specification_code == 6544 ) {
-    		cnf = new Config( "liee_parameter.XML" );	// try if the auto-renamed parameter file is present instead of the default one
-    	}
-    	else { throw e; }
-    }
+	Module_Factory factory;
+	Config* cnf;
+	try {
+		cnf = new Config( "liee_parameter.xml" );
+	}
+	catch ( Except__Preconditions_Fail & e )
+	{
+		if ( e.specification_code == 6544 ) {
+			cnf = new Config( "liee_parameter.XML" );  // try if the auto-renamed parameter file is present instead of the default one
+		}
+		else { throw e; }
+	}
 
-    // go over the chain like in app_opti_wrap.cpp to assemble the required Modules (but don't execute any tasks)
-    vector<Module*> deps;
-    for ( int i = 0; i < (int)cnf->chain.size(); i++ )
-    {
-    	if ( cnf->chain[i]->type.compare("potential") == 0			// so far, only concerned with using potential components
-    			|| cnf->chain[i]->type.compare("pot_const") == 0
-    			|| cnf->chain[i]->type.compare("pulse") == 0 )
-    	{
-    		Module* m;
-    		m = factory.assemble( cnf->chain[i]->type, cnf->chain[i]->name, cnf->chain[i]->serial );
-    		m->initialize( cnf->chain[i], deps );
-    		deps.push_back( m );
+	// go over the chain like in app_opti_wrap.cpp to assemble the required Modules (but don't execute any tasks)
+	vector<Module*> deps;
+	for ( int i = 0; i < (int)cnf->chain.size(); i++ )
+	{
+		if ( cnf->chain[i]->type.compare("potential") == 0       // so far, only concerned with using potential components
+				|| cnf->chain[i]->type.compare("pot_const") == 0
+				|| cnf->chain[i]->type.compare("pulse") == 0 )
+		{
+			Module* m;
+			m = factory.assemble( cnf->chain[i]->type, cnf->chain[i]->name, cnf->chain[i]->serial );
+			m->initialize( cnf->chain[i], deps );
+			deps.push_back( m );
 
-    		if ( cnf->chain[i]->type.compare( "potential" ) == 0 ) {
-    			my_pot = dynamic_cast<Potential*>( m );
-    		}
-    	}
-    }
+			if ( cnf->chain[i]->type.compare( "potential" ) == 0 ) {
+				my_pot = dynamic_cast<Potential*>( m );
+			}
+		}
+	}
 
-    delete cnf;
+	delete cnf;
 }
 
 extern "C" void calc_potential( double r, double t, double & V_real, double & V_imag )

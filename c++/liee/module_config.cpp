@@ -69,7 +69,7 @@ TiXmlElement* Conf_Param::minimal_xml_element()
 		if ( this->values.size() > 0 ) {
 			//TODO put the conversion in a to_string() function
 			ostringstream ss;
-			ss << "{" << setprecision( 15 );	//TODO investigate more into portable and exact string representation of doubles
+			ss << "{" << setprecision( 15 );    //TODO investigate more into portable and exact string representation of doubles
 			for ( size_t i = 0; i < values.size(); i++ ) {
 				if ( i == values.size() - 1 ) {
 					ss << values[i] << "}";
@@ -143,10 +143,10 @@ TiXmlElement* Conf_Module::minimal_xml_element() //TODO the name minimal is misl
 void Conf_Module::evaluate_expressions()
 {
 	map<string, Conf_Param*>::iterator iter;
-	map<string, double> vars;	// a directory of the actual parameter values
+	map<string, double> vars;  // a directory of the actual parameter values
 
 	size_t num_unresolved;
-	size_t num_unres_last = param.size();	// to pretend there was an improvement from the last loop
+	size_t num_unres_last = param.size();  // to pretend there was an improvement from the last loop
 
 	// repeat maximum as many times as there are parameters, to be able to resolve cascaded dependencies
 	for ( size_t i = 0; i < param.size(); i++ )
@@ -156,7 +156,7 @@ void Conf_Module::evaluate_expressions()
 		// find ready-to-use parameters
 		for ( iter = param.begin(); iter != param.end(); ++iter ) {
 			Conf_Param* p = iter->second;
-			if ( (not p->textual) && p->values.size() == 0 ) {	// arrays are not supported
+			if ( (not p->textual) && p->values.size() == 0 ) {  // arrays are not supported
 				// add the parameter's value to the variables, since it is ready to use
 				vars[iter->first] = p->value;
 			}
@@ -173,7 +173,7 @@ void Conf_Module::evaluate_expressions()
 					double v = parser.evaluate( p->text );
 					// parsing succeeded
 					p->textual = false;
-					p->value = v;		// next loop this parameter is available in vars too
+					p->value = v;  // next loop this parameter is available in vars too
 				}
 				catch ( Except__Preconditions_Fail& e ) {
 					num_unresolved++;
@@ -193,7 +193,7 @@ void Conf_Module::evaluate_expressions()
 				if ( p->textual  &&  opos != p->text.npos ) {
 					string key = p->text.substr( opos + 2, p->text.npos );
 					string prefix = p->text.substr( 0, opos );
-					if ( vars.find( key ) == vars.end() ) continue;		// suffix is not a known variable --> ignore
+					if ( vars.find( key ) == vars.end() ) continue;  // suffix is not a known variable --> ignore
 					p->text = prefix + boost::lexical_cast<string>( (int)vars[key] );
 				}
 			}
@@ -216,16 +216,16 @@ Config::Config( string filename )
 
 	if ( doc.LoadFile() == false ) {
 		LOG_FATAL( "Couldn't load work-unit file: " << filename );
-		throw Except__Preconditions_Fail( 6544 );	//TODO have more specific exception
+		throw Except__Preconditions_Fail( 6544 );  //TODO have more specific exception
 	}
 	TiXmlHandle hDoc( &doc );
 	TiXmlElement* pModuleNode;
 	TiXmlHandle hRoot( 0 );
 
 	pModuleNode = hDoc.FirstChildElement().Element();
-	if ( not pModuleNode ) {	// should always have a valid root
+	if ( not pModuleNode ) {  // should always have a valid root
 		LOG_FATAL( "work-unit is malformed XML: " << filename );
-		throw ( Except__Preconditions_Fail( 6545 ) );	//TODO have more specific exception
+		throw ( Except__Preconditions_Fail( 6545 ) );  //TODO have more specific exception
 	}
 
 	this->version = pModuleNode->Attribute( "version" );

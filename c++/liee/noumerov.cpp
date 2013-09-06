@@ -50,7 +50,7 @@ void Noumerov1d::initialize( Conf_Module* config, vector<Module*> dependencies )
 	exec_done = false;
 	iteration = 0;
 	limbo = 0;
-    register_dependencies( dependencies );
+	register_dependencies( dependencies );
 }
 
 void Noumerov1d::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -110,23 +110,23 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 		cumulative_error = 0;
 		steps_needed *= 2.0;
 		steps_took = 1;
-		double h_ = pow( epsilon / 7.2 / steps_needed / pow( (pot->V( a ) - Q) / 6, 3.0 ), 1.0/6 );		//(3.2)
-		double h = dx; // maximal step size
-		while ( abs(h) > h_ ) {	// h has to satisfy: dx / 2^i   ;i being an integer
+		double h_ = pow( epsilon / 7.2 / steps_needed / pow( (pot->V( a ) - Q) / 6, 3.0 ), 1.0/6 );  //(3.2)
+		double h = dx;  // maximal step size
+		while ( abs(h) > h_ ) {  // h has to satisfy: dx / 2^i   (for integer i)
 			h /= 2.0;
 		}
-		if ( b < a ) h *= -1;	// reverse direction with negative step size
+		if ( b < a ) h *= -1;  // reverse direction with negative step size
 		double h2o6 = h * h / 6.0;
-		double T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );		//(3.2)
+		double T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );  //(3.2)
 
 		double u_last, u_this, T_last, T_this, T_next;
 		double x = a + h; //points at 'u_next'
 		double homerun;
 
-		T_this = h2o6 * (pot->V( a ) - Q);        //(2.7);
+		T_this = h2o6 * (pot->V( a ) - Q);  //(2.7);
 		u_this = 1.0;
-		T_next = h2o6 * (pot->V( x ) - Q);        //(2.7);
-		u_next = exp( sqrt( 3.0 * T_this ) + sqrt( 3.0 * T_next ) );    //(7.3)
+		T_next = h2o6 * (pot->V( x ) - Q);  //(2.7);
+		u_next = exp( sqrt( 3.0 * T_this ) + sqrt( 3.0 * T_next ) );  //(7.3)
 		cumulative_error += 7.2 * pow( abs( T_next ), 3 );
 		solution.push_back( Point( a, u_this ) );
 		solution.push_back( Point( x, u_next ) );
@@ -139,7 +139,7 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 			x += h; //points at 'u_next'
 			steps_took++;
 
-			T_next = h2o6 * (pot->V( x ) - Q);        //(2.7);
+			T_next = h2o6 * (pot->V( x ) - Q);  //(2.7);
 			u_next = ((2.0 + 10.0 * T_this) * u_this - (1.0 - T_last) * u_last) / (1.0 - T_next);  //(2.8)
 			cumulative_error += 7.2 * pow( abs( T_next ), 3 );
 			if ( isinf(u_next) ) throw Except__Too_Far_Out( __LINE__ );
@@ -151,24 +151,24 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 				// double step size
 				h *= 2.0;
 				h2o6 *= 4.0;
-				T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );		//(3.2)
+				T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );  //(3.2)
 				u_this = u_last;
 				T_this = 4.0 * T_last;
 				T_next *= 4.0;
 			}
 			// if |T| exceeds save value
 			else if ( abs( T_next ) > T_thresh ||
-			// or         close to middle        && current step size would miss exact midpoint
-					( homerun < abs( 4.0 * dx )  &&  offgrid( homerun, abs(h) ) < 1e-6 * dx ) )
+			// or     close to middle        && current step size would miss exact midpoint
+				( homerun < abs( 4.0 * dx )  &&  offgrid( homerun, abs(h) ) < 1e-6 * dx ) )
 			{
 				// half step size
 				double x0 = x - 0.5 * h;
 				h *= 0.5;
 				h2o6 *= 0.25;
-				T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );		//(3.2)
+				T_thresh = pow( epsilon / ( 7.2 * steps_needed ), 1.0/3 );  //(3.2)
 				T_next /= 4.0;
 				T_this = h2o6 * (pot->V( x0 ) - Q);
-				u_this = ( (1.0 - T_next) * u_next + (1.0 - h2o6 * (pot->V( x0 - h ) - Q)) * u_this ) / (2.0 + 10.0 * T_this); //(3.5)
+				u_this = ( (1.0 - T_next) * u_next + (1.0 - h2o6 * (pot->V( x0 - h ) - Q)) * u_this ) / (2.0 + 10.0 * T_this);  //(3.5)
 			}
 		} while ( (x < b && h > 0) || (x > b && h < 0) ); //overshoot the midpoint till reached b
 		//DEBUG_SHOW3( x, b, h );
@@ -180,8 +180,8 @@ void Noumerov1d::noumerovate( double Q, double a, double m, double b, double dx,
 }
 /* BACKUP of the slope - calculation, which has been dumped in favour of the mean square error minimisation
 // here we end with u_next==u(b), u_this==u(b-h), u_last==u(b-2h)
-double u_plus_h = ( (2.0 + 10.0 * h2 * T(b) ) * u_next - ( 1.0 - h2 * T(b-h) ) * u_this ) / ( 1.0 - h2*T(b+h) );  		//(2.8)
-double u_plus_2h = ( (2.0 + 10.0 * h2 * T(b+h) ) * u_plus_h - ( 1.0 - h2 * T(b) ) * u_next ) / ( 1.0 - h2*T(b+2*h) );  	//(2.8)
+double u_plus_h = ( (2.0 + 10.0 * h2 * T(b) ) * u_next - ( 1.0 - h2 * T(b-h) ) * u_this ) / ( 1.0 - h2*T(b+h) );  //(2.8)
+double u_plus_2h = ( (2.0 + 10.0 * h2 * T(b+h) ) * u_plus_h - ( 1.0 - h2 * T(b) ) * u_next ) / ( 1.0 - h2*T(b+2*h) );  //(2.8)
 double A1 = 0.5 * (u_plus_h - u_this);         								//(4.4)
 double A2 = 0.5 * (u_plus_2h - u_last);        								//(4.7)
 double B1 = T(x + h) * u_plus_h - T(x - h) * u_this;						//(4.5)
@@ -189,36 +189,35 @@ double B2 = T(x + 2.0*h) * u_plus_2h - T(x - 2.0*h) * u_last;				//(4.8)
 slope = 16.0/21.0 * ( -A1 + 37.0/32.0*A2 - 37.0/5.0*B1 - 17.0/40.0*B2 ) / h;    //(4.9)
 */
 
-
 double Noumerov1d::penetrate_border( double Q, double x_turn, double d, double not_less_than )
 {
-    double A; // area under sqrt(V) beyond turning points
-    do {
-    	d *= 2.0; //increase penetration to the left until A is sufficiently large (triangle estimation)
-    	if ( ( pot->V( x_turn + d ) - Q ) < 0 ) {
-    		A = 0;
-    	}
-    	else {
-    		A = 0.5 * abs( d ) * sqrt( 2.0 * ( pot->V( x_turn + d ) - Q ) );
-    	}
+	double A; // area under sqrt(V) beyond turning points
+	do {
+		d *= 2.0; //increase penetration to the left until A is sufficiently large (triangle estimation)
+		if ( ( pot->V( x_turn + d ) - Q ) < 0 ) {
+			A = 0;
+		}
+		else {
+			A = 0.5 * abs( d ) * sqrt( 2.0 * ( pot->V( x_turn + d ) - Q ) );
+		}
 
-    } while ( A < -log( tail_tiny ) );
+	} while ( A < -log( tail_tiny ) );
 
-    double x = x_turn;
-    // start integrating (sum) all over again with a step-size of 1/1000 of the estimated penetration depth
-    for ( A = 0.0; ; x += d / 1000.0 ) {
-    	if ( pot->V( x ) < Q ) continue;
-    	if ( A > -log( tail_tiny ) ) {
-    		if ( d > 0  &&  x > not_less_than ) break;
-    		if ( d < 0  &&  x < not_less_than ) break;
-    	}
-    	A += abs( d ) / 1000.0 * sqrt( 2.0 * ( pot->V( x ) - Q ) );
-    }
-    // to fulfil the not_less_than condition, outward integration would go further than the allowed underflow ttoo_tiny,
-    if ( A > -log( ttoo_tiny ) ) {
-    	throw Except__Too_Far_Out( __LINE__ );
-    }
-    return x;
+	double x = x_turn;
+	// start integrating (sum) all over again with a step-size of 1/1000 of the estimated penetration depth
+	for ( A = 0.0; ; x += d / 1000.0 ) {
+		if ( pot->V( x ) < Q ) continue;
+		if ( A > -log( tail_tiny ) ) {
+			if ( d > 0  &&  x > not_less_than ) break;
+			if ( d < 0  &&  x < not_less_than ) break;
+		}
+		A += abs( d ) / 1000.0 * sqrt( 2.0 * ( pot->V( x ) - Q ) );
+	}
+	// to fulfil the not_less_than condition, outward integration would go further than the allowed underflow ttoo_tiny,
+	if ( A > -log( ttoo_tiny ) ) {
+		throw Except__Too_Far_Out( __LINE__ );
+	}
+	return x;
 }
 
 /*!
@@ -246,8 +245,8 @@ void Noumerov1d::blend_wf( Integration_Rec& rec )
  * Too many samples cause things to break. This method drops expendable samples, e.g. those which
  * are closer to the predecessor than a given portion.
  * Example: portion_to_drop == 0.5
- * 				all samples with distances smaller than the median distance
- * 				to the predecessor are dropped, but NEVER two consecutive samples.
+ *              all samples with distances smaller than the median distance
+ *              to the predecessor are dropped, but NEVER two consecutive samples.
  *
  * Performance tip: This method is meant to be a lifeline when in serious trouble to overshoot,
  * avoid situations which call this method often, by choosing parameters compatible with reasonable sample rates.
@@ -262,7 +261,7 @@ void Noumerov1d::drop_overly_dense_samples( vector<Point> & wf, double portion_t
 	std::sort( histogram.begin(), histogram.end() );
 	size_t i = (size_t)( portion_to_drop * histogram.size() );
 	if ( i < 0 || i > histogram.size() ) {
-		LOG_FATAL( "drop_overly_dense_samples could not find threshold element" ); //TODO for debug, no need to check in final code
+		LOG_FATAL( "drop_overly_dense_samples could not find threshold element" );  //TODO for debug, no need to check in final code
 	}
 	double threshold = histogram[i];
 	histogram.clear();
@@ -355,22 +354,22 @@ double Noumerov1d::mean_square_error( Integration_Rec& rec )
 }
 
 /*!
- *	Normalising both branches to area=1 might cause a small mismatch at the common midpoint due to inaccuracies.
- *	This Method re-scales, in order to have a smooth transition.
+ * Normalising both branches to area=1 might cause a small mismatch at the common midpoint due to inaccuracies.
+ * This Method re-scales, in order to have a smooth transition.
  *
- *	This method is probably not needed and currently only logs what would have been done, so the alleged benefit
- *	can be estimated. For now it seems that the y-mismatch is by and large a function of the x-mismatch and that
- *	the area-normalisation works reasonably well. It seems to scale again does more harm than good.
+ * This method is probably not needed and currently only logs what would have been done, so the alleged benefit
+ * can be estimated. For now it seems that the y-mismatch is by and large a function of the x-mismatch and that
+ * the area-normalisation works reasonably well. It seems to scale again does more harm than good.
  */
 void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
 {
 	if ( ir.leftwards.size() == 0 || ir.rightwards.size() == 0 ) {
-		evaluate_energy( ir );	// have to reevaluate if data got cleared
+		evaluate_energy( ir );  // have to reevaluate if data got cleared
 	}
 	//TODO-performance cache the midpoint index instead of finding it again, or at least use phone-book strategy
 	int midi_left;
 	double closest = ir.b - ir.a;
-	for( size_t i = 0; i < ir.leftwards.size(); i++ ) {		// dumb but surely effective, elaborate above TODO if overall plan has worked out
+	for( size_t i = 0; i < ir.leftwards.size(); i++ ) {  // dumb but surely effective, elaborate above TODO if overall plan has worked out
 		if ( abs( ir.leftwards[i].x - ir.middle ) < closest ) {
 			midi_left = i;
 			closest = abs( ir.leftwards[i].x - ir.middle );
@@ -378,7 +377,7 @@ void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
 	}
 	int midi_right;
 	closest = ir.b - ir.a;
-	for( size_t i = 0; i < ir.rightwards.size(); i++ ) {		// dumb but surely effective, elaborate above TODO if overall plan has worked out
+	for( size_t i = 0; i < ir.rightwards.size(); i++ ) {  // dumb but surely effective, elaborate above TODO if overall plan has worked out
 		if ( abs( ir.rightwards[i].x - ir.middle ) < closest ) {
 			midi_right = i;
 			closest = abs( ir.rightwards[i].x - ir.middle );
@@ -388,7 +387,7 @@ void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
 	double mid_offset = ir.leftwards[midi_left].x - ir.rightwards[midi_right].x;
 	double scale = ir.leftwards[midi_left].y / ir.rightwards[midi_right].y;
 	DEBUG_SHOW3( ir.middle, mid_offset, (scale-1.0) );
-	return;	// testing
+	return;  // testing ...TODO huh, still testing??
 
 	// only scale if reasonably close match (last polish)
 	if ( abs(scale - 1) < 1e-3 ) {
@@ -514,7 +513,7 @@ void Noumerov1d::save_results( string & filename )
 	{
 		if ( spectrum[i - lvl_lo].num_trial > 0 ) {
 			evaluate_energy( spectrum[i - lvl_lo] );
-			string fi = filename + boost::lexical_cast<string>( i );	// (no more leading zeros)
+			string fi = filename + boost::lexical_cast<string>( i );  // (no more leading zeros)
 			files.push_back( fi );
 			save_graph( fi , spectrum[i - lvl_lo].blend );
 			spectrum[i - lvl_lo].clear();
@@ -549,7 +548,7 @@ bool Noumerov1d::execute()
 		catch ( Except__Preconditions_Fail & e ) {
 			// evaluation of the three energies could not bracket a minimum --> retry
 			iteration++;
-			 continue;
+			continue;
 		}
 		catch ( Except__Too_Far_Out & e ) {
 			// evaluation of one of the three energies hit infinity --> retry
@@ -558,14 +557,14 @@ bool Noumerov1d::execute()
 				LOG_FATAL("Hit too often infinity during integration! Must exit before memory leakage causes real trouble!")
 				break;
 			}
-			 continue;
+			continue;
 		}
 
 		//LOG_DEBUG( "Converged at level " << Qb.level << " with Energy " << Qb.E << " \t remaining difference: " << Qb.werror )
 		if ( Qb.level <= lvl_up  && Qb.level >= lvl_lo )
 		{
 			int num_trial = spectrum[Qb.level - lvl_lo].num_trial;
-			if ( ( spectrum[Qb.level - lvl_lo].num_trial == 0 )	|| spectrum[Qb.level - lvl_lo].werror > Qb.werror )	{
+			if ( ( spectrum[Qb.level - lvl_lo].num_trial == 0 )	|| spectrum[Qb.level - lvl_lo].werror > Qb.werror ) {
 				// found a new one or better one
 				//scale_to_matching_midpoint( Qb );	// only check if there is a step at the midpoint
 				spectrum[Qb.level - lvl_lo] = Qb;
@@ -580,7 +579,7 @@ bool Noumerov1d::execute()
 			Q_bottom = Q_lo = Qb.E;
 		}
 		iteration++;
-		if ( not target_missed_levels( Q_bottom, Q_top ) )	break;	// nothing left to target
+		if ( not target_missed_levels( Q_bottom, Q_top ) ) break;  // nothing left to target
 		//DEBUG_SHOW2( Q_bottom, Q_top );
 	}
 	if ( iteration >= max_iterations ) {
@@ -627,8 +626,8 @@ bool Noumerov1d::target_missed_levels( double & Q_bottom, double & Q_top )
 	if ( void_start == -1 ) {
 		if ( spectrum[0].num_trial > limbo ) {
 			// all levels got at least limbo+1 trials
-			if ( ++limbo > retries ) {  return false; }
-			else 					 { goto retarget; }
+			if ( ++limbo > retries ) { return false; }
+			else                     { goto retarget; }
 		}
 		Q_bottom = Q_lo;
 		Q_top = Q_up;
@@ -650,9 +649,9 @@ void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec
 #endif
 	Integration_Rec d( a );
 	provider->evaluate_energy( a );
-	a.clear();							// clear the data, since for the moment we are only interested in E
+	a.clear();  // clear the data, since for the moment we are only interested in E
 	provider->evaluate_energy( b );
-	b.clear();							// ^-- ...and werror. copy-assigning filled vectors would be wasted effort.
+	b.clear();  // ^-- ...and werror. copy-assigning filled vectors would be wasted effort.
 	provider->evaluate_energy( c );
 	c.clear();
 
@@ -660,22 +659,22 @@ void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec
 	double gs = ( 3.0 - sqrt( 5.0 ) ) / 2.0;
 
 	if (not ((a.E < b.E) && (b.E < c.E) && (b.werror < a.werror) && (b.werror < c.werror)) ) {
-		 throw Except__Preconditions_Fail( __LINE__ );
+		throw Except__Preconditions_Fail( __LINE__ );
 	}
 
 	while ( abs( c.E - a.E ) > tol )
 	{
 		double ab = abs( b.E - a.E );
 		double bc = abs( b.E - c.E );
-		if ( ab > bc ) {	// bisect [ab] for it is the bigger interval
+		if ( ab > bc ) {  // bisect [ab] for it is the bigger interval
 			d.E = b.E - gs * ab;
 			provider->evaluate_energy( d );
 			d.clear();
-			if ( d.werror < b.werror ) { // test point d is the lowest --> exclude c
+			if ( d.werror < b.werror ) {  // test point d is the lowest --> exclude c
 				c = b;
 				b = d;
 			}
-			else { // b remains the lowest --> pull in a to d
+			else {  // b remains the lowest --> pull in a to d
 				a = d;
 			}
 		}
@@ -683,11 +682,11 @@ void Noum_Golden_Section_Search::minimize( Noumerov1d* provider, Integration_Rec
 			d.E = b.E + gs * bc;
 			provider->evaluate_energy( d );
 			d.clear();
-			if ( d.werror < b.werror ) { // test point d is the lowest --> exclude a
+			if ( d.werror < b.werror ) {  // test point d is the lowest --> exclude a
 				a = b;
 				b = d;
 			}
-			else { // b remains the lowest --> pull in c to d
+			else {  // b remains the lowest --> pull in c to d
 				c = d;
 			}
 		}

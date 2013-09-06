@@ -102,16 +102,16 @@ void save(Archive & ar, const dcmplx & z, const unsigned int version)
 {
 	double r = real( z );
 	double i = imag( z );
-    ar & r;
-    ar & i;
+	ar & r;
+	ar & i;
 }
 template<class Archive>
 void load(Archive & ar, dcmplx & z, const unsigned int version)
 {
 	double r, i;
-    ar & r;
-    ar & i;
-    z = dcmplx( r, i );
+	ar & r;
+	ar & i;
+	z = dcmplx( r, i );
 }
 }} //namespace boost::serialization
 BOOST_SERIALIZATION_SPLIT_FREE(dcmplx)
@@ -119,14 +119,14 @@ BOOST_SERIALIZATION_SPLIT_FREE(dcmplx)
 template <typename T>
 int sgn(T val)
 {
-    return (val > T(0)) - (val < T(0));
+	return (val > T(0)) - (val < T(0));
 }
 
 template <typename T>
 int sign(T val)
 {
-    if ( val >= T(0) ) return T(1);
-    return T(-1);
+	if ( val >= T(0) ) return T(1);
+	return T(-1);
 }
 
 using std::vector;
@@ -139,16 +139,16 @@ struct Point {
 	Point( double x, double y ) : x(x), y(y) {}
 	Point() : x(0), y(0) {}
 	friend class boost::serialization::access;
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version ) { ar & x; ar & y; }
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version ) { ar & x; ar & y; }
 };
 
 struct less_than_point_x
 {
-    inline bool operator() (const Point& p1, const Point& p2)
-    {
-        return ( p1.x  < p2.x );
-    }
+	inline bool operator() (const Point& p1, const Point& p2)
+	{
+		return ( p1.x  < p2.x );
+	}
 };
 
 /*
@@ -164,7 +164,7 @@ struct Linear_Interpolant
 		std::sort( d.begin(), d.end(), less_than_point_x() );
 	}
 
-	double interpol( double x )	{
+	double interpol( double x ) {
 		if ( x == d.at(pos).x ) return d.at(pos).y;
 
 		// to find the point in our data nearest to the requested x, determine in which direction to move (starting from the cached position of last call)
@@ -173,31 +173,31 @@ struct Linear_Interpolant
 		double nearest = 2 * abs( d.front().x - d.back().x );
 
 		size_t i, j = pos;
-		while ( i >= 0 && i < d.size() && abs( d.at(i).x - x ) < nearest ) {	// move until the distance to x gets bigger again
+		while ( i >= 0 && i < d.size() && abs( d.at(i).x - x ) < nearest ) {  // move until the distance to x gets bigger again
 			nearest = abs( d.at(i).x - x );
-			pos = i;	// cache the index, because next request is probably close to it
+			pos = i;  // cache the index, because next request is probably close to it
 			i += dir;
 		}
-		i = pos;	// last step was one too far
+		i = pos;  // last step was one too far
 		double xi = d.at(i).x;
 		double yi = d.at(i).y;
 
 		if ( x == xi ) return d.at(i).y;
 
-		if ( i == 0 && x < xi ) {	// extrapolate towards left
+		if ( i == 0 && x < xi ) {  // extrapolate towards left
 			double dx = x - xi;
 			double m = ( d.at(i+1).y - yi ) / ( d.at(i+1).x - xi );
 			return yi + m * dx;
 		}
 
-		if ( i == d.size()-1  &&  x > xi ) {	// extrapolate towards right
+		if ( i == d.size()-1  &&  x > xi ) {  // extrapolate towards right
 			double dx = x - xi;
 			double m = ( yi - d.at(i-1).y ) / ( xi - d.at(i-1).x );
 			return yi + m * dx;
 		}
 
 		j = i + 1;
-		if ( x < xi ) {			// make sure that: xi < xj  &&  i < j
+		if ( x < xi ) {  // make sure that: xi < xj  &&  i < j
 			j = i;
 			i = j - 1;
 			xi = d.at(i).x;
@@ -233,7 +233,7 @@ void linear_fit( const vector<Point>& data, double& m, double& n, double& dm, do
 class Ranq1
 {
 public:
-	/*! current position in the number-loop */		unsigned long long 		v;
+	unsigned long long  v;  //< current position in the number-loop
 
 	//! Initialise with a constant seed to have repeatable results or with time-stamp or a true random number otherwise.
 	Ranq1(unsigned long long seed);

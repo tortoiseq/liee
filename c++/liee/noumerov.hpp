@@ -21,20 +21,20 @@ struct Integration_Rec
 	double E;
 	double werror;
 	size_t level;
-	double xa;				///< Left classical turning point
-	double xb;				///< Right classical turning point
-	double a;				///< Left integration bound
-	double b;				///< Right integration bound
-	double dx;				///< maximum step size
+	double xa;              ///< Left classical turning point
+	double xb;              ///< Right classical turning point
+	double a;               ///< Left integration bound
+	double b;               ///< Right integration bound
+	double dx;              ///< maximum step size
 	double middle;
-	bool fixed_bounds;		///< if true, then keep bounds fixed to assure final convergence
+	bool fixed_bounds;      ///< if true, then keep bounds fixed to assure final convergence
 	vector<Point> blend;
 	vector<Point> rightwards, leftwards;
 	int num_trial;
 
 	// default constructor
 	Integration_Rec( ) : E(0), werror(0), level(0), xa(0), xb(0), a(0), b(0), dx(0),
-			middle(0), fixed_bounds(false), num_trial(0) {}
+		middle(0), fixed_bounds(false), num_trial(0) {}
 
 	void set_bounds( double a, double b, double xa, double xb, double dx, bool fixed )
 	{
@@ -50,12 +50,12 @@ struct Integration_Rec
 		leftwards.clear();
 	}
 
-    inline bool operator> ( const Integration_Rec& that )
-    {
-        return ( this->E  > that.E );
-    }
+	inline bool operator> ( const Integration_Rec& that )
+	{
+		return ( this->E  > that.E );
+	}
 
-    friend class boost::serialization::access;
+	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version)
 	{

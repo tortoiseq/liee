@@ -25,39 +25,39 @@ public:
 	virtual double integrate_psi_sqr();
 	virtual double integrate_psi_sqr( double a, double b);
 
-	Potential* 			potential;
-	vector<dcmplx> 		psi;		///< wave function
-	vector<Observer*> 	obs;		///< registered observers
+	Potential* potential;
+	vector<dcmplx> psi;    ///< wave function
+	vector<Observer*> obs; ///< registered observers
 
-	size_t Nr;						///< number of positions on the grid
-	double r_range;					///< spatial range
-	double dr;						///< step size for r
-	double t;						///< simulation-time
-	double t_end;					///< the end of simulation-time
-	double dt;						///< step size for t
-	double dt_;						///< backup of the actual dt while changing time-steps for adiabatic activation
+	size_t Nr;             ///< number of positions on the grid
+	double r_range;        ///< spatial range
+	double dr;             ///< step size for r
+	double t;              ///< simulation-time
+	double t_end;          ///< the end of simulation-time
+	double dt;             ///< step size for t
+	double dt_;            ///< backup of the actual dt while changing time-steps for adiabatic activation
 	int count;
-	string outfile;					///< optionally write final state to this file
+	string outfile;        ///< optionally write final state to this file
 
 	friend class boost::serialization::access;
-    /*! When the class Archive corresponds to an output archive, the
-     *  & operator is defined similar to <<.  Likewise, when the class Archive
-     *  is a type of input archive the & operator is defined similar to >>. */
-    template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
-    {
-        ar & psi;
-        ar & Nr;
-        ar & r_range;
-        ar & dr;
-        ar & t;
-        ar & t_end;
-        ar & dt;
-        ar & dt_;
-        ar & count;
-        ar & exec_done;
-        ar & outfile;
-    }
+	/*! When the class Archive corresponds to an output archive, the
+	 *  & operator is defined similar to <<.  Likewise, when the class Archive
+	 *  is a type of input archive the & operator is defined similar to >>. */
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version )
+	{
+		ar & psi;
+		ar & Nr;
+		ar & r_range;
+		ar & dr;
+		ar & t;
+		ar & t_end;
+		ar & dt;
+		ar & dt_;
+		ar & count;
+		ar & exec_done;
+		ar & outfile;
+	}
 };
 
 class Crank_Nicholson : public Solver
@@ -86,13 +86,11 @@ private:
 	template<class Archive>
 	void serialize( Archive & ar, const unsigned int version )
 	{
-		// serialize base class information
-		ar & boost::serialization::base_object<Solver>( *this );
+		ar & boost::serialization::base_object<Solver>( *this );  // serialize base class information
 		ar & jb;
 		ar & c;
 	}
 };
-
 
 //------------------------------------------------------------------------------------------------
 
