@@ -129,7 +129,7 @@ void WF_Gauss_Packet::initialize( Conf_Module* config, vector<Module*> dependenc
 	GET_LOGGER( "liee.Module.WF_Gauss_Packet" );
 	r0 = config->getParam("r0")->value / CONV_au_nm;
 	double E0 = config->getParam("E0")->value / CONV_au_eV;
-	k0 = sign(E0) * 2.0 * CONST_PI * sqrt( 2.0 * abs(E0) );
+	k0 = sign(E0) * sqrt( 2.0 * abs(E0) );
 	sigma = config->getParam("sigma")->value / CONV_au_nm;
 	dr = config->getParam("dr")->value / CONV_au_nm;
 	N = 1 + (int)( config->getParam("r_range")->value / config->getParam("dr")->value );

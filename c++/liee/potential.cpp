@@ -611,29 +611,40 @@ double Pot_Harm_Oscillator::analytic_eigenfunction( int n, double x )
 }
 
 //------------------------------------------------------------------------------------------------------------
+
 inline double Pot_Piecewise::V( double r )
 {
-	if ( r <= r_[0] ) {
-		return V_[0];
+	if ( r < segs.front().start_r ) {
+		r = segs.front().start_r;
 	}
-	for ( size_t i = 0; i < r_.size()-1; i++ ) {
-		if ( r > r_[i]  &&  r <= r_[i+1] ) {
-			return V_[i] + ( V_[i+1] - V_[i] ) * ( r - r_[i] ) / ( r_[i+1] - r_[i] );
+	if ( r > segs.back().end_r ) {
+		r = segs.back().end_r;
+	}
+	for ( size_t i = 0; i < segs.size(); i++ ) {
+		if ( r > segs[i].start_r  &&  r <= segs[i].end_r ) {
+			if ( segs[i].sign == 0 ) {
+				return segs[i].m * r + segs[i].n;  // line segment
+			}
+			if ( SQR( segs[i].radius ) - SQR( r - segs[i].cr ) < 0.0 ) {
+				return segs[i].cV;
+			}
+			return segs[i].cV + segs[i].sign * sqrt( SQR( segs[i].radius ) - SQR( r - segs[i].cr ) ) / scale_y;  // ellipse segment
 		}
 	}
-	//else: r is larger than the defined range -> set to last V-value
-	return V_.back();
+	LOG_ERROR( "Pot_Piecewise failed to be continuous" )
+	return 0;
 }
 
 void Pot_Piecewise::get_outer_turningpoints( const double E, double & leftmost, double & rightmost )
 {
+	//TODO adapt to rounding procedure
 	leftmost  = numeric_limits<double>::quiet_NaN();
 	rightmost = numeric_limits<double>::quiet_NaN();
 
-	for ( size_t i = 0; i < r_.size()-1; i++ ) {
-		if ( (E >= V_[i] && E < V_[i+1]) || (E <= V_[i] && E > V_[i+1]) )
+	for ( size_t i = 0; i < X.size()-1; i++ ) {
+		if ( (E >= Y[i] && E < Y[i+1]) || (E <= Y[i] && E > Y[i+1]) )
 		{
-			double turningpoint = r_[i] + ( E - V_[i] ) / ( V_[i+1] - V_[i] ) * ( r_[i+1] - r_[i] );
+			double turningpoint = X[i] + ( E - Y[i] ) / ( Y[i+1] - Y[i] ) * ( X[i+1] - X[i] );
 
 			if ( isnan( leftmost ) ) {
 				leftmost = turningpoint;
@@ -645,41 +656,98 @@ void Pot_Piecewise::get_outer_turningpoints( const double E, double & leftmost, 
 
 double Pot_Piecewise::get_Vmin_pos()
 {
+	//TODO adapt to rounding procedure
 	size_t i_min = 0;
-	for ( size_t i = 1; i < r_.size(); i++ ) {
-		if ( V_[i] < V_[i_min] ) {
+	for ( size_t i = 1; i < X.size(); i++ ) {
+		if ( Y[i] < Y[i_min] ) {
 			i_min = i;
 		}
 	}
-	return r_[i_min];
+	return X[i_min];
+}
+
+
+void Pot_Piecewise::Segment::line( double x1, double x2, double y1, double y2 )
+{
+	sign = 0;
+	start_r = x1;
+	end_r = x2;
+	m = (y2 - y1) / (x2 - x1);
+	n = y1 - m * x1;
+	ortho_X = -m  / sqrt( 1.0 + SQR(m) );
+	ortho_Y = 1.0 / sqrt( 1.0 + SQR(m) );
 }
 
 void Pot_Piecewise::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_Piecewise" );
 	double epsilon = config->getParam("epsilon")->value / CONV_au_nm;
-	r_ = config->getParam("r_list")->values;
-	V_ = config->getParam("V_list")->values;
-	if ( r_.size() != V_.size() ) {
+	rounding = config->getParam("ellipse")->values[0] / CONV_au_nm;
+	scale_y = rounding / ( config->getParam("ellipse")->values[1] / CONV_au_eV );
+	X = config->getParam("r_list")->values;
+	Y = config->getParam("V_list")->values;
+	if ( X.size() != Y.size() ) {
 		LOG_ERROR( "r_list and V_list are required to have the same number of elements. exiting" )
 		exit(1);
 	}
 
-	for ( size_t i = 0; i < r_.size(); i++ )
-	{
-		r_[i] /= CONV_au_nm;
+	for ( size_t i = 0; i < X.size(); i++ ) {
+		X[i] /= CONV_au_nm;
+		Y[i] /= CONV_au_eV;
+		if ( i > 0  &&  X[i-1] > X[i] ) {
+			LOG_ERROR( "r_list is required to be sorted in ascending order. exiting." )
+			exit(1);
+		}
+		if ( i > 0  &&  X[i-1] == X[i] ) {
+			X[i] += epsilon;
+		}
+	}
 
-		int count = 0;
-		while ( i > 0  &&  r_[i-1] >= r_[i] ) {
-			r_[i] += epsilon;
-			count++;
-			if ( count > 10 ) {
-				LOG_ERROR( "r_list is required to be sorted in ascending order. exiting." )
-				exit(1);
+	for ( size_t i = 1; i < X.size()-1; i++ )
+	{
+		Segment left, right;
+		if ( i == 1 ) {
+			left.line( X[i-1], X[i], Y[i-1], Y[i] );
+			segs.push_back( left );
+		} else {
+			left = segs.back();
+		}
+		right.line( X[i], X[i+1], Y[i], Y[i+1] );
+
+		if ( rounding > 0  &&  left.m != right.m ) {
+			// note: tangential-circle calculation is done in a y-stretched system in order to
+			// work with a circle instead of an ellipse. The x-positions are valid in both systems,
+			// while the circle centre-V is scaled back to the actual ellipse-centre
+			// (V(r) draws the ellipse according to scale_y)
+			for ( double rr = rounding; rr > 1e-4 * rounding; rr /= 1.5 )
+			{
+				Segment sleft, sright, circle;
+				double S = scale_y;
+				sleft.line( X[i-1], X[i], S*Y[i-1], S*Y[i] );
+				sright.line( X[i], X[i+1], S*Y[i], S*Y[i+1] );
+
+				circle.sign = ( left.m > right.m )  ?  +1  : -1;  // sign=+1: circle under the roof-like kink, positive "square-root"-circle is touching tangents and opposite for sign=-1
+				double dist = -circle.sign * rr;  // the possible centre-positions for the tangential circle are on a parallel line, distanced 1 rounding-radius in orthogonal direction, either above or below
+				double shifted_n_l = (S*Y[i] + dist * sleft.ortho_Y)  - sleft.m  * (X[i] + dist * sleft.ortho_X);  // ordinate of the left-side parallel
+				double shifted_n_r = (S*Y[i] + dist * sright.ortho_Y) - sright.m * (X[i] + dist * sright.ortho_X);
+				circle.cr = (shifted_n_l - shifted_n_r) / (sright.m - sleft.m);  // circle centre at the intersection of the two parallels
+				circle.cV = ( sleft.m * circle.cr + shifted_n_l ) / S;
+				circle.start_r = circle.cr - dist * sleft.ortho_X;  // from circle centre back on the normal-vector to the respective lines
+				circle.end_r   = circle.cr - dist * sright.ortho_X;
+				circle.radius = rr;
+
+				// only accept rounding circle if it does not exceed the middle of neighbouring segments
+				if (    circle.start_r > 0.5 * (segs.back().start_r + segs.back().end_r)
+				     && circle.end_r   < 0.5 * (right.start_r + right.end_r) )
+				{
+					segs.back().end_r = circle.start_r;  // reduce left segment extend
+					right.start_r = circle.end_r;
+					segs.push_back( circle );
+					break;
+				} // else continue loop with a smaller radius
 			}
 		}
-
-		V_[i] /= CONV_au_eV;
+		segs.push_back( right );
 	}
 }
 

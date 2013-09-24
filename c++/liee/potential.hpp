@@ -408,18 +408,30 @@ public:
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  //TODO
 	virtual void summarize( map<string, string> & results ) {}  //TODO
-
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & r_;
-		ar & V_;
-	}
+	SERIALIZE( X & Y & segs )
 
 private:
-	vector<double> r_;  ///< list of r-coordinates
-	vector<double> V_;  ///< V_list[ r_list[i] {+epsilon} ]: list of potential energies at the positions in r_list
+	struct Segment{
+		int sign;        ///< flag: [0|-1|+1] for line, lower-half-circle, upper-half-circle
+		double start_r;
+		double end_r;
+		double m;        ///< slope of line segment
+		double n;        ///< V(r=0) of line segment
+		double ortho_X;  ///< r-component of normal vector
+		double ortho_Y;  ///< V-component of normal vector
+		double cr;       ///< r-position of circle centre
+		double cV;       ///< V-position of circle centre
+		double radius;   ///< circle radius
+
+		void line( double x1, double x2, double y1, double y2 );
+		SERIALIZE( sign & start_r & end_r & m & n & ortho_X & ortho_Y & cr & cV & radius )
+	};
+	vector<Segment> segs;
+
+	double rounding;         ///< approximate radius of curvature at the intersection points of line-segments in a.u. of length
+	double scale_y;         ///< approximate radius of curvature at the intersection points of line-segments in a.u. of energy
+	vector<double> X;  ///< list of r-coordinates
+	vector<double> Y;  ///< Y[ X[i] {+epsilon} ]: list of potential energies at the positions in X
 };
 } //namespace liee
 

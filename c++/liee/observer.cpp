@@ -35,7 +35,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	if ( do_square ) {
 		ss << "%1." << digits << "g\t";
 	} else {
-		ss << "%1." << digits << "g;%1." << digits << "g\t";
+		ss << "%1." << digits << "g\t%1." << digits << "g\t";
 	}
 	format = ss.str();
 
@@ -193,7 +193,6 @@ void Obs_Snapshot_WF::observe( Module* state )
 	file = boinc_fopen( filename.c_str(), "a" );
 	for ( size_t i = 0; i < valrec.size(); i++ ) {
 		dcmplx value = rel_change  ?  ( valrec[i] - valrec_prev[i] )  :  valrec[i];
-
 		if ( do_square ) {
 			value = value * conj( value );
 			fprintf( file, format.c_str(), real( value ) );
@@ -204,6 +203,7 @@ void Obs_Snapshot_WF::observe( Module* state )
 	}
 	fprintf( file, "\n" );
 	fclose( file );
+
 	if ( rel_change ) { rel_change_ready = false; }
 }
 

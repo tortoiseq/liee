@@ -79,9 +79,16 @@
 	#include "log4cxx/helpers/exception.h"
 #endif
 
-
 #include "../alglib/ap.h"
 #include "../alglib/interpolation.h"
+
+//TODO does not compute, would need to replace the "," in __VA_ARGS__ with "&"
+#define SERIALIZE( stream ) \
+	friend class boost::serialization::access;\
+	template<class Archive>\
+	void serialize( Archive & ar, const unsigned int version ) { ar & stream; }
+
+#define SQR(x) pow(x,2)
 
 double const CONST_PI = 3.14159265358979323846;
 double const CONV_au_m = 5.2917720859e-11;

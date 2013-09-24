@@ -24,16 +24,17 @@ CONV_au_V = CONV_au_V_over_m * CONV_au_m
 def main():
     # parse arguments, load datafile, find maxima of Psi, minima of V
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "f:pt:r:l", ["file=","potential","tiny=","huge=","logscale","movie"])
+        opts, args = getopt.getopt(sys.argv[1:], "f:pt:r:l", ["file=","potential","tiny=","huge=","logscale","movie","complex"])
     except getopt.GetoptError, err:
         print str(err) # will print something like "option -a not recognized"
         sys.exit(2)
         
-    TINY = 1e-10
-    HUGE = 1e-1
+    TINY = float('nan')
+    HUGE = float('nan')
     filename = ""
     do_pot = False
     logscale = False
+    do_square = True
     do_movie = False
     t_range = False 
     r_range = False
@@ -55,6 +56,8 @@ def main():
             logscale = True
         elif o in ("--movie"):
             do_movie = True
+        elif o in ("--complex"):
+            do_square = False
         else:
             assert False, "unhandled option"
 
@@ -97,9 +100,17 @@ def main():
             t_charge = float( line[( i + len("t_charge\t") ):] ) 
     fobj.close()
     
-    psi = numpy.loadtxt( filename, numpy.float, '#', ) 
+    if ( do_square == True ):
+        psi = numpy.loadtxt( filename, numpy.float, '#', )
+    else:
+        num_col = len( open( filename ).readline().split( "\t" ) )
+        psi = numpy.loadtxt( filename, numpy.float, comments='#', usecols = range( 0, num_col-1, 2 ) )
+        psi_im = numpy.loadtxt( filename, numpy.float, comments='#', usecols = range( 1, num_col-1, 2 ) )
+
     Nt = psi.shape[0]
     Nr = psi[0].shape[0]
+    print(Nt)
+    print(Nr)
     psi_log = numpy.zeros( (Nt, Nr) )
     dr = r_range / ( Nr - 1 )
     dt = t_range / ( Nt - 1 )
@@ -108,6 +119,24 @@ def main():
     print( "Nt = " + str(Nt) )
     tc_i = int( t_charge / CONV_au_fs / dt ) + 1 
     print( "tc_i = " + str(tc_i) )
+    
+    # auto-scale margins
+    min = 1e+66
+    max = 1e-66
+    for ti in range( Nt ):
+        for ri in range( Nr ):
+            if ( do_square ):
+                psi[ti][ri] = psi[ti][ri] / CONV_au_nm
+            absr = abs( psi[ti][ri] )
+            absi = abs( psi_im[ti][ri] )
+            min = absr if ( absr < min ) else min
+            max = absr if ( absr > max ) else max
+            if ( not do_square ):
+                min = absi if ( absi < min ) else min
+                max = absi if ( absi > max ) else max
+    TINY = min if ( math.isnan( TINY ) ) else TINY
+    HUGE = max if ( math.isnan( HUGE ) ) else HUGE
+    print( "Bounds:  [ " + str( TINY ) + " : " + str( HUGE ) + " ]\n")
     
     pot = None
     if do_pot:
@@ -123,13 +152,20 @@ def main():
                 lib.calc_potential( c_r, c_t, ctypes.byref(c_Vr), ctypes.byref(c_Vi) )
                 pot[ti][ri] = c_Vr.value
 
+    if ( not do_square ):
+        outfile = open( "matrix.dat", "w" )
     for ti in range( Nt ):
         for ri in range( Nr ):
-            psi[ti][ri] = psi[ti][ri] / CONV_au_nm
             if psi[ti][ri] < TINY:
                 psi_log[ti][ri] = math.log10( TINY )
             else:
                 psi_log[ti][ri] = math.log10( psi[ti][ri] )
+            if ( not do_square ):
+                #TODO logscale support
+                realb = int( 255 * ( abs( psi[ti][ri] ) - TINY ) / (HUGE - TINY) )
+                imagr = int( 255 * ( abs( psi_im[ti][ri] ) - TINY ) / (HUGE - TINY) )
+                outfile.write( str(ri) + "\t" + str(ti) + "\t" + str( imagr ) + "\t" + str(0) + "\t" + str( realb ) + "\n" )
+
 
     max = -6.66e66
     for i in range( Nt ):
@@ -137,10 +173,13 @@ def main():
             if ( psi[i][x] > max ):
                 max = psi[i][x]
 
-    if ( logscale ):
-        numpy.savetxt( "matrix.dat", psi_log )
+    if ( do_square ):
+        if ( logscale ):
+            numpy.savetxt( "matrix.dat", psi_log )
+        else:
+            numpy.savetxt( "matrix.dat", psi )
     else:
-        numpy.savetxt( "matrix.dat", psi )
+        outfile.close()
         
     r_split = 1.0
     i_split = int( ( r_split / CONV_au_nm - r_0 ) / dr )
@@ -173,21 +212,21 @@ def main():
         Vmax_l = -0.0
         for i in range( Nr ):
             V_of_r[i] = pot[tVmin][i]
-            if V_of_r[i] < Vmin_l and ( (r_0 + i*dr)*CONV_au_nm < r_split ) and ( (r_0 + i*dr)*CONV_au_nm > -width/2 ):    
+            if V_of_r[i] < Vmin_l and ( (r_0 + i*dr)*CONV_au_nm < r_split ) and ( (r_0 + i*dr)*CONV_au_nm > -width/2 ):
                 Vmin_l = V_of_r[i]
             if V_of_r[i] < Vmin_r:    
                 Vmin_r = V_of_r[i]
-            if ( V_of_r[i] > Vmax_r ) and ( r_0 + i*dr > 0.0 ):    
+            if ( V_of_r[i] > Vmax_r ) and ( r_0 + i*dr > 0.0 ):
                 Vmax_r = V_of_r[i]
         numpy.savetxt( "V(r)_pull.dat", V_of_r )
 
         for i in range( Nr ):
             V_of_r[i] = pot[tVmax][i]
-            if V_of_r[i] > Vmax_l and ( (r_0 + i*dr)*CONV_au_nm < r_split ) and ( (r_0 + i*dr)*CONV_au_nm > -width/2 ):    
+            if V_of_r[i] > Vmax_l and ( (r_0 + i*dr)*CONV_au_nm < r_split ) and ( (r_0 + i*dr)*CONV_au_nm > -width/2 ):
                 Vmax_l = V_of_r[i]
-            if V_of_r[i] < Vmin_r:    
+            if V_of_r[i] < Vmin_r:
                 Vmin_r = V_of_r[i]
-            if ( V_of_r[i] > Vmax_r ) and ( r_0 + i*dr > 0.0 ):    
+            if ( V_of_r[i] > Vmax_r ) and ( r_0 + i*dr > 0.0 ):
                 Vmax_r = V_of_r[i]
         numpy.savetxt( "V(r)_push.dat", V_of_r )
         
@@ -202,7 +241,7 @@ def main():
     if ( do_pot ):
         gp = "set term png size 800, 600\n"
         gp += "set ylabel  \"V(r)\"\n"
-        gp += "#set yrange [-1.4:0.1]\n"
+        #gp += "set yrange [" + str( Vmin ) + ":" + str( Vmax ) + "]\n"
         gp += "set xlabel 'r (in arbitrary units)'\n"
         gp += "#set key off\n"
         gp += "#t = sprintf(\"%5.3g\",time)\n"
@@ -238,17 +277,15 @@ def main():
 #                   Matrix plot                                                     #
 #####################################################################################    
     
-    gnuplot0 = "set term png size 1200, 800\n\
-#set ylabel \"E (Ha)\"\n\
-#set xlabel \"r (a0)\"\n\
-#set key off\n\
-#set title \"\"\n\
-set xrange [0:" + str( Nr ) + "]\n\
-set yrange [0:" + str( Nt ) + "]\n\
-#set cbrange [" + str( math.log10( TINY ) ) + ":" + str( math.log10( HUGE ) ) + "] \n\
-set pm3d map\n\
-set output 'matrix.png'\n\
-plot \"matrix.dat\" matrix with image\n"
+    gnuplot0 = "set term png size 1200, 800\n"
+    gnuplot0 += "set xrange [0:" + str( Nr - 1 ) + "]\n"
+    gnuplot0 += "set yrange [0:" + str( Nt - 1 ) + "]\n"
+    gnuplot0 += "set output 'matrix.png'\n"
+    if ( do_square ):
+        gnuplot0 += "set pm3d map\n"
+        gnuplot0 += "plot \"matrix.dat\" matrix with image\n"
+    else:
+        gnuplot0 += "plot \"matrix.dat\" with rgbimage\n"
 
     proc = subprocess.Popen( "gnuplot", stdin=subprocess.PIPE, stdout=subprocess.PIPE )
     print proc.communicate( gnuplot0 )[0]
@@ -292,7 +329,7 @@ plot \"matrix.dat\" matrix with image\n"
 #        gp +=       "'V(r)_push.dat' using (" + str( r_0 * CONV_au_nm ) + " + $0 * " + str( dr * CONV_au_nm ) + "):($1 * " + str( CONV_au_eV ) + ") title \"V_max\" with lines ls 1\n"
 
         r_range = Nr * dr * CONV_au_nm
-        sz = 158.2 # damnit whats the size of the plot in character width?
+        sz = 158.2  # whats the size of the plot in character width?
         x_range = sz - 33.0 - 8.2
         x_split = 8.2 + ( r_split - r_0 * CONV_au_nm ) * x_range / r_range
 
@@ -386,27 +423,26 @@ plot \"matrix.dat\" matrix with image\n"
     gp += "unset ytics \n"
     gp += "set xrange [0:" + str( Nr ) + "]\n"
     gp += "set yrange [0:" + str( Nt ) + "]\n"
-    gp += "set cbrange [" + str( math.log10( TINY ) ) + ":" + str( math.log10( HUGE ) ) + "] \n"
-    gp += "set colorbox horizontal user origin (d1+cbar_hborder),(sz-d4+cbar_vborder) size (sz-m-d1-2*cbar_hborder), (d4-2*cbar_vborder) front \n"
-    gp += 'set label "log_{10}( {/Symbol-Oblique Y}^2 nm )" at screen 0.055*sz, screen 0.95*sz front \n'
-    gp += "#unset colorbox \n"
-    gp += "set pm3d map \n"
-    #gp += "set palette defined("
-    #for ci in range( len( pal_c ) ):
-    #    gp += str( math.log10(TINY) + ci * ( math.log10(HUGE) - math.log10(TINY) ) / ( len(pal_c) - 1 ) )
-    #    gp += " " + str( pal_r[ci] ) + " " + str( pal_g[ci] ) + " " + str( pal_b[ci] ) + ", "
-    #gp += "\n" 
+    if ( do_square ):
+        gp += "set cbrange [" + str( math.log10( TINY ) ) + ":" + str( math.log10( HUGE ) ) + "] \n"
+        gp += "set colorbox horizontal user origin (d1+cbar_hborder),(sz-d4+cbar_vborder) size (sz-m-d1-2*cbar_hborder), (d4-2*cbar_vborder) front \n"
+        gp += 'set label "log_{10}( {/Symbol-Oblique Y}^2 nm )" at screen 0.055*sz, screen 0.95*sz front \n'
+        #gp += "unset colorbox \n"
+        gp += "set pm3d map \n"
+        #gp += "set palette defined("
+        #for ci in range( len( pal_c ) ):
+        #    gp += str( math.log10(TINY) + ci * ( math.log10(HUGE) - math.log10(TINY) ) / ( len(pal_c) - 1 ) )
+        #    gp += " " + str( pal_r[ci] ) + " " + str( pal_g[ci] ) + " " + str( pal_b[ci] ) + ", "
+        #gp += "\n" 
+        #gp += "set palette grey negative\n"
+        gp += "set palette defined("
+        gp += str( math.log10(TINY) )       + " 1 1 1, "
+        gp += str( math.log10(HUGE)-0.03 )  + " 0 0 0, "
+        gp += str( math.log10(HUGE) )       + " 1 0.8 0.8) \n"
+        gp += "plot 'matrix.dat' matrix with image\n"
+    else:
+        gp += "plot 'matrix.dat' with image\n"
 
-    #gp += "set palette grey negative\n"
-
-    gp += "set palette defined("
-    gp += str( math.log10(TINY) )       + " 1 1 1, "
-    gp += str( math.log10(HUGE)-0.03 )  + " 0 0 0, "
-    gp += str( math.log10(HUGE) )       + " 1 0.8 0.8) \n"
-    
-    gp += "plot 'matrix.dat' matrix with image\n"
-    #print(gp)
-    
     proc = subprocess.Popen( "gnuplot", stdin=subprocess.PIPE, stdout=subprocess.PIPE )
     print proc.communicate( gp )[0]
 
@@ -416,7 +452,7 @@ plot \"matrix.dat\" matrix with image\n"
 
     if ( not do_movie ):
         sys.exit( 0 )
-        
+
     gp1 = "set term png size 800, 600\n"
     gp1 += "set y2label  \"Amplitude\"\n"
     gp1 += "set yrange [-1.4:0.1]\n"

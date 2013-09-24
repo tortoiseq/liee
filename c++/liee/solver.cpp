@@ -201,7 +201,7 @@ void Crank_Nicholson::evolve_1step()
 		//fprintf( file, "%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t )*CONV_au_eV );
 	}
 	//fclose( file );
-	//if ( count > 10 ) {
+	//if ( count > 3 ) {
 	//	exit(0);
 	//}
 
