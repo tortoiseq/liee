@@ -30,12 +30,7 @@ public:
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results ){}
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version)
-	{
-		ar & psi;
-	}
+	SERIALIZE( psi )
 };
 
 
@@ -57,17 +52,7 @@ public:
 	virtual void summarize( map<string, string> & results ){}
 	void compute_wf();
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version)
-	{
-		ar & psi;
-		ar & r0;
-		ar & k0;
-		ar & sigma;
-		ar & N;
-		ar & dr;
-	}
+	SERIALIZE( psi & r0 & k0 & sigma & N & dr )
 };
 
 } //namespace liee

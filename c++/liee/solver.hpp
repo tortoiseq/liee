@@ -39,25 +39,7 @@ public:
 	int count;
 	string outfile;        ///< optionally write final state to this file
 
-	friend class boost::serialization::access;
-	/*! When the class Archive corresponds to an output archive, the
-	 *  & operator is defined similar to <<.  Likewise, when the class Archive
-	 *  is a type of input archive the & operator is defined similar to >>. */
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & psi;
-		ar & Nr;
-		ar & r_range;
-		ar & dr;
-		ar & t;
-		ar & t_end;
-		ar & dt;
-		ar & dt_;
-		ar & count;
-		ar & exec_done;
-		ar & outfile;
-	}
+	SERIALIZE( psi & Nr & r_range & dr & t & t_end & dt & dt_ & count & exec_done & outfile )
 };
 
 class Crank_Nicholson : public Solver
@@ -79,17 +61,7 @@ private:
 	vector<dcmplx> d;
 	dcmplx c;
 
-	friend class boost::serialization::access;
-	/*! When the class Archive corresponds to an output archive, the
-	 *  & operator is defined similar to <<.  Likewise, when the class Archive
-	 *  is a type of input archive the & operator is defined similar to >>. */
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & boost::serialization::base_object<Solver>( *this );  // serialize base class information
-		ar & jb;
-		ar & c;
-	}
+	SERIALIZE( boost::serialization::base_object<Solver>( *this ) & jb & c )
 };
 
 //------------------------------------------------------------------------------------------------

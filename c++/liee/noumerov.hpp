@@ -32,6 +32,8 @@ struct Integration_Rec
 	vector<Point> rightwards, leftwards;
 	int num_trial;
 
+	SERIALIZE( E & werror & level & xa & xb & a & b & dx & middle & fixed_bounds & num_trial )
+
 	// default constructor
 	Integration_Rec( ) : E(0), werror(0), level(0), xa(0), xb(0), a(0), b(0), dx(0),
 		middle(0), fixed_bounds(false), num_trial(0) {}
@@ -50,26 +52,8 @@ struct Integration_Rec
 		leftwards.clear();
 	}
 
-	inline bool operator> ( const Integration_Rec& that )
-	{
+	inline bool operator> ( const Integration_Rec& that ) {
 		return ( this->E  > that.E );
-	}
-
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version)
-	{
-		ar & E;
-		ar & werror;
-		ar & level;
-		ar & xa;
-		ar & xb;
-		ar & a;
-		ar & b;
-		ar & dx;
-		ar & middle;
-		ar & fixed_bounds;
-		ar & num_trial;
 	}
 };
 
@@ -95,34 +79,15 @@ public:
 	bool is_objective;
 	string target_E;
 
+	SERIALIZE( Q_up & Q_lo & epsilon & N_min & N_max & retries & limbo & iteration & max_iterations
+	          & tail_tiny & ttoo_tiny & lvl_lo & lvl_up & filename & is_objective & target_E )
+
 	void register_dependencies( vector<Module*> dependencies );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results );
 	virtual bool execute();
-
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version)
-	{
-		ar & Q_up;
-		ar & Q_lo;
-		ar & epsilon;
-		ar & N_min;
-		ar & N_max;
-		ar & retries;
-		ar & limbo;
-		ar & iteration;
-		ar & max_iterations;
-		ar & tail_tiny;
-		ar & ttoo_tiny;
-		ar & lvl_lo;
-		ar & lvl_up;
-		ar & filename;
-		ar & is_objective;
-		ar & target_E;
-	}
 
 	double evaluate_energy( Integration_Rec& ir );
 	void try_fixate_bounds( Integration_Rec& ir1, Integration_Rec& ir2, Integration_Rec& ir3, Integration_Rec& ir4 );

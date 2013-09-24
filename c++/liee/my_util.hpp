@@ -82,7 +82,6 @@
 #include "../alglib/ap.h"
 #include "../alglib/interpolation.h"
 
-//TODO does not compute, would need to replace the "," in __VA_ARGS__ with "&"
 #define SERIALIZE( stream ) \
 	friend class boost::serialization::access;\
 	template<class Archive>\

@@ -37,17 +37,7 @@ public:
 	int     counter;
 	double  dt;         ///< time resolution of experiment
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & N;
-		ar & t_range;
-		ar & counter;
-		ar & filename;
-		ar & t_last;
-		ar & dt;
-	}
+	SERIALIZE( N & t_range & counter & filename & t_last & dt )
 
 	//! state should point to a Solver
 	virtual void observe( Module* state ) = 0;
@@ -91,30 +81,9 @@ public:
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results ){}
 
-	friend class boost::serialization::access;
-	/*! When the class Archive corresponds to an output archive, the
-	 *  & operator is defined similar to <<.  Likewise, when the class Archive
-	 *  is a type of input archive the & operator is defined similar to >>. */
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & boost::serialization::base_object<Observer>( *this );
-		ar & N;
-		ar & num_r;
-		ar & num_t;
-		ar & step_r;
-		ar & step_t;
-		ar & format;
-		ar & do_square;
-		ar & do_fourier;
-		ar & do_normalize;
-		ar & rel_change;
-		ar & ir0;
-		ar & ir1;
-		ar & t0;
-		ar & t1;
-		ar & writtenLns;
-	}
+	SERIALIZE( boost::serialization::base_object<Observer>( *this )
+			& N & num_r & num_t & step_r & step_t & format & do_square & do_fourier
+			& do_normalize & rel_change & ir0 & ir1 & t0 & t1 & writtenLns )
 };
 
 /*!
@@ -142,18 +111,8 @@ public:
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results ){}
 
-	friend class boost::serialization::access;
-	/*! When the class Archive corresponds to an output archive, the
-	 *  & operator is defined similar to <<.  Likewise, when the class Archive
-	 *  is a type of input archive the & operator is defined similar to >>. */
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & boost::serialization::base_object<Observer>( *this );
-		ar & num_r & num_k & num_t & step_t
-		& t0 & t1 & k0 & k1 & r0 & r1
-		& writtenFrames & format;
-	}
+	SERIALIZE( boost::serialization::base_object<Observer>( *this )
+			& num_r & num_k & num_t & step_t & t0 & t1 & k0 & k1 & r0 & r1 & writtenFrames & format )
 };
 
 
@@ -179,19 +138,8 @@ public:
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results );
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & boost::serialization::base_object<Observer>( *this );
-		ar & psi_sqr;
-		ar & step_t;
-		ar & t_samples;
-		ar & tunnel_ratio;
-		ar & ra;
-		ar & rb;
-		ar & is_objective;
-	}
+	SERIALIZE( boost::serialization::base_object<Observer>( *this )
+			& psi_sqr & step_t & t_samples & tunnel_ratio & ra & rb & is_objective )
 };
 
 /*!
@@ -227,27 +175,8 @@ public:
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
 	virtual void summarize( map<string, string> & results );
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & boost::serialization::base_object<Observer>( *this );
-		ar & j;
-		ar & rt;
-		ar & A;
-		ar & sum_j;
-		ar & E;
-		ar & dr;
-		ar & Vp0;
-		ar & last_r2;
-		ar & N;
-		ar & g;
-		ar & r_end;
-		ar & burst;
-		ar & step_t;
-		ar & t_samples;
-		ar & is_objective;
-	}
+	SERIALIZE( boost::serialization::base_object<Observer>( *this )
+			& j & rt & A & sum_j & E & dr & Vp0 & last_r2 & N & g & r_end & burst & step_t & t_samples & is_objective )
 };
 
 } // namespace liee

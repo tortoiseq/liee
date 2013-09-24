@@ -77,18 +77,7 @@ protected:
 	double shift_cosh;
 	double shift_mirror;
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & width;
-		ar & depth;
-		ar & expo;
-		ar & a;
-		ar & shift_cosh;
-		ar & shift_mirror;
-
-	}
+	SERIALIZE( width & depth & expo & a & shift_cosh & shift_mirror )
 };
 
 /*!
@@ -120,21 +109,7 @@ private:
 	double power;
 	vector<double> b;
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & width;
-		ar & depth;
-		ar & expo;
-		ar & a;
-		ar & shift_cosh;
-		ar & shift_mirror;
-		ar & v_scale;
-		ar & h_scale;
-		ar & power;
-		ar & b;
-	}
+	SERIALIZE( width & depth & expo & a & shift_cosh & shift_mirror & v_scale & h_scale & power & b )
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -170,20 +145,7 @@ private:
 	double phi0;
 	double theta0;
 
-protected:
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & t_ofs;
-		ar & fwhm;
-		ar & ga;
-		ar & F0;
-		ar & omega0;
-		ar & phi0;
-		ar & theta0;
-	}
-
+	SERIALIZE( t_ofs & fwhm & ga & F0 & omega0 & phi0 & theta0 )
 };
 
 
@@ -209,15 +171,7 @@ private:
 	double L;
 	double st;
 
-protected:
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & pulse_serials;
-		ar & L;
-		ar & st;
-	}
+	SERIALIZE( pulse_serials & L & st )
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -295,26 +249,8 @@ private:
 	inline double V_pulse( double r, double t );
 	inline double integral_gauss_x_oscill( double t_a, double t_b );
 
-protected:
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & reg_serials;
-		ar & t_on;
-		ar & t_full;
-		ar & ini_erf;
-		ar & deltaDC;
-		ar & deltaAC;
-		ar & r_range;
-		ar & r_start;
-		ar & wcap;
-		ar & r_cap;
-		ar & F_dc;
-		ar & gamma;
-		ar & s2;
-		ar & int_samples;
-	}
+	SERIALIZE( reg_serials & t_on & t_full & ini_erf & deltaDC & deltaAC & r_range & r_start
+			& wcap & r_cap & F_dc & gamma & s2 & int_samples )
 };
 
 
@@ -344,14 +280,7 @@ private:
 	double w;      ///< eigen frequency in (atomic time unit)^-2
 	double shift;  ///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version )
-	{
-		ar & k;
-		ar & w;
-		ar & shift;
-	}
+	SERIALIZE( k & w & shift )
 };
 
 class Chulkov_Image_Potential : public Pot_const
@@ -387,11 +316,7 @@ private:
 
 	double shift;  ///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version ) //TODO
-	{
-	}
+	SERIALIZE( A20 ) //TODO
 };
 
 /*!
@@ -408,7 +333,6 @@ public:
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  //TODO
 	virtual void summarize( map<string, string> & results ) {}  //TODO
-	SERIALIZE( X & Y & segs )
 
 private:
 	struct Segment{
@@ -428,10 +352,12 @@ private:
 	};
 	vector<Segment> segs;
 
-	double rounding;         ///< approximate radius of curvature at the intersection points of line-segments in a.u. of length
-	double scale_y;         ///< approximate radius of curvature at the intersection points of line-segments in a.u. of energy
+	double rounding;   ///< approximate radius of curvature at the intersection points of line-segments in a.u. of length
+	double scale_y;    ///< approximate radius of curvature at the intersection points of line-segments in a.u. of energy
 	vector<double> X;  ///< list of r-coordinates
 	vector<double> Y;  ///< Y[ X[i] {+epsilon} ]: list of potential energies at the positions in X
+
+	SERIALIZE( X & Y & segs & rounding & scale_y )
 };
 } //namespace liee
 
