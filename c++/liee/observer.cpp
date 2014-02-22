@@ -297,7 +297,7 @@ void Obs_Wigner_Distribution::observe( Module* state )
 
 	FILE *file;
 	file = boinc_fopen( filename.c_str(), "a" );
-	fprintf( file, "##\t%d\n#t=%g\n#rmin=%g\n#kmin=%g\n#dr=%g\n#dk=%g\n#Nr=%d\n#Nk=%d\n",
+	fprintf( file, "#i=%d\n#t=%g\n#rmin=%g\n#kmin=%g\n#dr=%g\n#dk=%g\n#Nr=%d\n#Nk=%d\n",
 			(int)( counter / step_t ), s->t*CONV_au_fs, r0*CONV_au_nm, k0/CONV_au_nm,
 			dr*CONV_au_nm, dk/CONV_au_nm, (int)num_r, (int)num_k );
 

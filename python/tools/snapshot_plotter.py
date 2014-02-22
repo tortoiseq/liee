@@ -20,7 +20,6 @@ CONV_au_fs = 2.418884326505e-2
 CONV_au_V_over_m = 5.1421e11
 CONV_au_V = CONV_au_V_over_m * CONV_au_m
 
-
 def main():
     # parse arguments, load datafile, find maxima of Psi, minima of V
     try:
@@ -125,13 +124,12 @@ def main():
     max = 1e-66
     for ti in range( Nt ):
         for ri in range( Nr ):
-            if ( do_square ):
-                psi[ti][ri] = psi[ti][ri] / CONV_au_nm
             absr = abs( psi[ti][ri] )
-            absi = abs( psi_im[ti][ri] )
             min = absr if ( absr < min ) else min
             max = absr if ( absr > max ) else max
             if ( not do_square ):
+                psi[ti][ri] = psi[ti][ri] / CONV_au_nm
+                absi = abs( psi_im[ti][ri] )
                 min = absi if ( absi < min ) else min
                 max = absi if ( absi > max ) else max
     TINY = min if ( math.isnan( TINY ) ) else TINY
@@ -166,13 +164,6 @@ def main():
                 imagr = int( 255 * ( abs( psi_im[ti][ri] ) - TINY ) / (HUGE - TINY) )
                 outfile.write( str(ri) + "\t" + str(ti) + "\t" + str( imagr ) + "\t" + str(0) + "\t" + str( realb ) + "\n" )
 
-
-    max = -6.66e66
-    for i in range( Nt ):
-        for x in range( Nr ):
-            if ( psi[i][x] > max ):
-                max = psi[i][x]
-
     if ( do_square ):
         if ( logscale ):
             numpy.savetxt( "matrix.dat", psi_log )
@@ -181,7 +172,7 @@ def main():
     else:
         outfile.close()
         
-    r_split = 1.0
+    r_split = 50.0
     i_split = int( ( r_split / CONV_au_nm - r_0 ) / dr )
     print( str(i_split) + " of "+ str(Nr) )
     tVmin = 0
