@@ -39,6 +39,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	}
 	format = ss.str();
 
+	stringstream range_info;
 	double dr = config->getParam("dr")->value / CONV_au_nm;
 	if ( not do_fourier ) {
 		// prepare spatial downsampling
@@ -55,6 +56,9 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		if ( step_r > Nr ) { step_r = Nr; }
 		num_r = 1 + Nr / step_r;
 		config->getParam("r_samples")->value = num_r;
+		range_info << "##\t" << "r0=" << r0 << ";\n";
+		range_info << "##\t" << "r1=" << r1 << ";\n";
+		range_info << "##\t" << "Nr=" << num_r << ";\n";
 	} else {
 		// prepare spectral downsampling
 		double k_range = 0.5 / ( config->getParam("dr")->value / CONV_au_nm );  // k_max = 1/(2 dr)
@@ -76,7 +80,10 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		if ( step_r < 1 ) { step_r = 1; }
 		if ( step_r > Nk ) { step_r = Nk; }
 		num_r = 1 + Nk / step_r;
-		config->getParam("E_samples")->value = num_r;
+		config->getParam("E_samples")->value = num_r;  // variable num_r re-used as num_k if do_fourier==true
+		range_info << "##\t" << "k0=" << k0 << ";\n";
+		range_info << "##\t" << "k1=" << k1 << ";\n";
+		range_info << "##\t" << "Nk=" << num_r << ";\n";
 
 		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * N );
 		plan = fftw_plan_dft_1d( N, psi_fft, psi_fft, FFTW_FORWARD, FFTW_ESTIMATE );
@@ -93,6 +100,9 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	if ( step_t > Nt ) { step_t = Nt; }
 	num_t = 1 + Nt / step_t;
 	config->getParam("t_samples")->value = num_t;
+	range_info << "##\t" << "t0=" << t0 << ";\n";
+	range_info << "##\t" << "t1=" << t1 << ";\n";
+	range_info << "##\t" << "Nt=" << num_t << ";\n";
 
 	valrec.resize( num_r );
 	if ( rel_change ) {
@@ -102,6 +112,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 
 	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	FILE* f = boinc_fopen( filename.c_str(), "w" );  // delete previous snapshot file
+	fprintf( f, "%s", range_info.str().c_str() );  // write range-information as comments
 	fclose( f );
 }
 
@@ -247,6 +258,17 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	num_r = (int)config->getParam("r_samples")->value;
 	num_k = (int)config->getParam("k_samples")->value;
 
+	stringstream range_info;
+	range_info << "##\t" << "t0=" << t0 << ";\n";
+	range_info << "##\t" << "t1=" << t1 << ";\n";
+	range_info << "##\t" << "Nt=" << num_t << ";\n";
+	range_info << "##\t" << "r0=" << r0 << ";\n";
+	range_info << "##\t" << "r1=" << r1 << ";\n";
+	range_info << "##\t" << "Nr=" << num_r << ";\n";
+	range_info << "##\t" << "k0=" << k0 << ";\n";
+	range_info << "##\t" << "k1=" << k1 << ";\n";
+	range_info << "##\t" << "Nk=" << num_k << ";\n";
+
 	stringstream ss;
 	int digits = int( config->getParam("precision")->value );
 	ss << "%1." << digits << "g\t";
@@ -254,6 +276,7 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 
 	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
 	FILE* f = boinc_fopen( filename.c_str(), "w" );  // delete previous snapshot file
+	fprintf( f, "%s", range_info.str().c_str() );  // write range-information as comments
 	fclose( f );
 }
 
@@ -297,9 +320,6 @@ void Obs_Wigner_Distribution::observe( Module* state )
 
 	FILE *file;
 	file = boinc_fopen( filename.c_str(), "a" );
-	fprintf( file, "#i=%d\n#t=%g\n#rmin=%g\n#kmin=%g\n#dr=%g\n#dk=%g\n#Nr=%d\n#Nk=%d\n",
-			(int)( counter / step_t ), s->t*CONV_au_fs, r0*CONV_au_nm, k0/CONV_au_nm,
-			dr*CONV_au_nm, dk/CONV_au_nm, (int)num_r, (int)num_k );
 
 	for ( size_t ri = 0; ri < num_r; ri++ )
 	{
@@ -326,7 +346,6 @@ void Obs_Wigner_Distribution::observe( Module* state )
 
 	fprintf( file, "\n" );
 	fclose( file );
-	// to split the file before gnu-plotting use: awk '/##/{n++}{print >"frame" n ".dat" }' phasespace.dat
 }
 
 //-------------------------------------------------------------------------------------------------------------
