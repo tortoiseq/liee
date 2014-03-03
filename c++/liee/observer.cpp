@@ -1,5 +1,5 @@
 #include <fstream>
-
+#include <iomanip>
 #include "filesys.h"
 #include "boinc_api.h"
 
@@ -40,6 +40,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	format = ss.str();
 
 	stringstream range_info;
+	range_info << std::scientific << std::setprecision(8);
 	double dr = config->getParam("dr")->value / CONV_au_nm;
 	if ( not do_fourier ) {
 		// prepare spatial downsampling
@@ -56,8 +57,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		if ( step_r > Nr ) { step_r = Nr; }
 		num_r = 1 + Nr / step_r;
 		config->getParam("r_samples")->value = num_r;
-		range_info << "##\t" << "r0=" << r0 << ";\n";
-		range_info << "##\t" << "r1=" << r1 << ";\n";
+		range_info << "##\t" << "r0=" << r0 * CONV_au_nm << ";\n";
+		range_info << "##\t" << "r1=" << r1 * CONV_au_nm << ";\n";
 		range_info << "##\t" << "Nr=" << num_r << ";\n";
 	} else {
 		// prepare spectral downsampling
@@ -81,8 +82,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		if ( step_r > Nk ) { step_r = Nk; }
 		num_r = 1 + Nk / step_r;
 		config->getParam("E_samples")->value = num_r;  // variable num_r re-used as num_k if do_fourier==true
-		range_info << "##\t" << "k0=" << k0 << ";\n";
-		range_info << "##\t" << "k1=" << k1 << ";\n";
+		range_info << "##\t" << "k0=" << k0 / CONV_au_nm << ";\n";
+		range_info << "##\t" << "k1=" << k1 / CONV_au_nm << ";\n";
 		range_info << "##\t" << "Nk=" << num_r << ";\n";
 
 		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * N );
@@ -100,8 +101,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	if ( step_t > Nt ) { step_t = Nt; }
 	num_t = 1 + Nt / step_t;
 	config->getParam("t_samples")->value = num_t;
-	range_info << "##\t" << "t0=" << t0 << ";\n";
-	range_info << "##\t" << "t1=" << t1 << ";\n";
+	range_info << "##\t" << "t0=" << t0 * CONV_au_fs << ";\n";
+	range_info << "##\t" << "t1=" << t1 * CONV_au_fs << ";\n";
 	range_info << "##\t" << "Nt=" << num_t << ";\n";
 
 	valrec.resize( num_r );
@@ -259,14 +260,15 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	num_k = (int)config->getParam("k_samples")->value;
 
 	stringstream range_info;
-	range_info << "##\t" << "t0=" << t0 << ";\n";
-	range_info << "##\t" << "t1=" << t1 << ";\n";
+	range_info << std::scientific << std::setprecision(8);
+	range_info << "##\t" << "t0=" << t0 * CONV_au_fs << ";\n";
+	range_info << "##\t" << "t1=" << t1 * CONV_au_fs << ";\n";
 	range_info << "##\t" << "Nt=" << num_t << ";\n";
-	range_info << "##\t" << "r0=" << r0 << ";\n";
-	range_info << "##\t" << "r1=" << r1 << ";\n";
+	range_info << "##\t" << "r0=" << r0 * CONV_au_nm << ";\n";
+	range_info << "##\t" << "r1=" << r1 * CONV_au_nm << ";\n";
 	range_info << "##\t" << "Nr=" << num_r << ";\n";
-	range_info << "##\t" << "k0=" << k0 << ";\n";
-	range_info << "##\t" << "k1=" << k1 << ";\n";
+	range_info << "##\t" << "k0=" << k0 / CONV_au_nm << ";\n";
+	range_info << "##\t" << "k1=" << k1 / CONV_au_nm << ";\n";
 	range_info << "##\t" << "Nk=" << num_k << ";\n";
 
 	stringstream ss;
@@ -407,7 +409,7 @@ void Obs_Tunnel_Ratio::summarize( map<string, string> & results )
 	{
 		double j = ( last - psi_sqr[i] ) / dt;
 		last = psi_sqr[i];
-		fprintf( f, "%1.6g\t%1.16g\t%1.16g\n", i * dt , psi_sqr[i], j );
+		fprintf( f, "%1.6g\t%1.16g\t%1.16g\n", i * dt * CONV_au_fs , psi_sqr[i], j );
 	}
 	fprintf( f, "\n" );
 	fclose( f );
