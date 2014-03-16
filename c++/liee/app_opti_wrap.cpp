@@ -33,7 +33,7 @@
 using namespace std;
 using namespace liee;
 
-string VERSION = "1.22";    ///< the parameter file is required to have the same version identifier
+string VERSION = "1.23";    ///< the parameter file is required to have the same version identifier
 
 
 #ifdef LOG_ENABLED

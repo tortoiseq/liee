@@ -53,21 +53,26 @@ public:
 class Obs_Snapshot_WF : public Observer
 {
 public:
-	size_t  N;                 ///< total number of WF-samples
+	size_t  Nfou;              ///< size of Fourier window
 	size_t  num_r;             ///< number of spatial samples to produce
 	size_t  num_t;             ///< number of temporal samples to produce
+	size_t  num_k;             ///< number of wave-number samples to produce
 	size_t  step_r;            ///< number of spatial samples to skip over between those being saved
 	size_t  step_t;            ///< number of temporal samples to skip over between the saved ones
+	size_t  step_k;            ///< number of wave-number samples to skip over between the saved ones
 	string  format;            ///< cache format string for fprintf
 	bool    do_square;         ///< only save the square of the complex wf
 	bool    do_fourier;        ///< save the FFT-transformed
 	bool    do_normalize;      ///< if true, normalise integral to Psi Psi* == 1
+	bool    do_average;        ///< if true, normalise integral to Psi Psi* == 1
 	bool    rel_change;        ///< show relative(!) deviation compared to previous time steps if 'true'
 	bool    rel_change_ready;  ///< in case of observing relative changes, this is a two-step process. this flag indicates readiness for the second step (false after checkpoint)
 	vector<dcmplx> valrec;     ///< sub-sampled values prepared for saving (not saved to checkpoint!)
 	vector<dcmplx> valrec_prev;///< backup of valrec from t-1, to be able to calculate relative changes (not saved to checkpoint!)
 	size_t  ir0;               ///< index of start-pos of recording window
 	size_t  ir1;               ///< index of end-pos of recording window
+	size_t  ik0;               ///< index of minimum wave-mumber of recording window
+	size_t  ik1;               ///< index of maximum wave-number of recording window
 	double  t0;                ///< start-time of recording window
 	double  t1;                ///< end-time of recording window
 	size_t  writtenLns;        ///< number of lines written to the outfile
@@ -79,11 +84,11 @@ public:
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
-	virtual void summarize( map<string, string> & results ){}
+	virtual void summarize( map<string, string> & results );
 
 	SERIALIZE( boost::serialization::base_object<Observer>( *this )
-			& N & num_r & num_t & step_r & step_t & format & do_square & do_fourier
-			& do_normalize & rel_change & ir0 & ir1 & t0 & t1 & writtenLns )
+			& N & num_r & num_t & num_k & step_r & step_t & step_k & format & do_square & do_fourier
+			& do_normalize & rel_change & ir0 & ir1 & ik0 & ik1 & t0 & t1 & writtenLns )
 };
 
 /*!
@@ -115,32 +120,6 @@ public:
 			& num_r & num_k & num_t & step_t & t0 & t1 & k0 & k1 & r0 & r1 & writtenFrames & format )
 };
 
-
-/*!
- * This Observer can be used together with a Solver of time-dependent Schroedinger equation.
- * It integrates the Psi^2 for the first and last time step. The result is a single valued:		//TODO describe extended functionality
- * the relative portion of tunnelled (electron) density.
- */
-class Obs_Tunnel_Ratio : public Observer
-{
-public:
-	vector<double> psi_sqr;  ///< total probability over integration region for each time sample
-	int     step_t;
-	int     t_samples;
-	double  tunnel_ratio;    ///< portion of probability lost during simulation
-	double  ra;
-	double  rb;
-	bool    is_objective;
-
-	virtual void observe( Module* state );
-	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
-	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
-	virtual void summarize( map<string, string> & results );
-
-	SERIALIZE( boost::serialization::base_object<Observer>( *this )
-			& psi_sqr & step_t & t_samples & tunnel_ratio & ra & rb & is_objective )
-};
 
 /*!
  * The Obs_JWKB_Tunnel observer can be used in conjunction with a solver of the time-dependent Schroedinger
@@ -178,6 +157,33 @@ public:
 	SERIALIZE( boost::serialization::base_object<Observer>( *this )
 			& j & rt & A & sum_j & E & dr & Vp0 & last_r2 & N & g & r_end & burst & step_t & t_samples & is_objective )
 };
+
+/*!
+ * This Observer can be used together with a Solver of time-dependent Schroedinger equation.
+ * It calculates the probability current at the specified position r_detect a given number of times
+ * and saves the data-row to a file. The time-integral (e.g. sum) is reported in the summary.
+ */
+class Obs_Probability_Current : public Observer
+{
+public:
+	vector<double> j;      ///< time-samples of Obs_Probability_Current at r_detect
+	double  r_detect;      ///< position of detector
+	dcmplx  prefac;        ///< i*hbar/4/m/dr
+	int     ri;
+	int     step_t;
+	int     t_samples;
+	bool    is_objective;
+
+	virtual void observe( Module* state );
+	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );
+	virtual void summarize( map<string, string> & results );
+
+	SERIALIZE( boost::serialization::base_object<Observer>( *this )
+			& r_detect & ri & step_t & t_samples & is_objective )
+};
+
 
 } // namespace liee
 

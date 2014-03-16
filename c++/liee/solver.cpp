@@ -37,6 +37,7 @@ double Solver::integrate_psi_sqr( double a, double b )
 	size_t ib = b / dr;
 	if ( ib >= psi.size() ) { ib = psi.size()-1; }
 
+	//TODO pairwise summation to reduce rounding error
 	double sum = -0.5 * real( psi[ia] * conj( psi[ia] ) ) - 0.5 * real( psi[ib] * conj( psi[ib] ) );  //end-points have only half the weight
 	for ( size_t i = ia; i <= ib; i++ ) {
 		sum += real( psi[i] * conj( psi[i] ) );

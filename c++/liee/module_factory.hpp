@@ -65,9 +65,9 @@ namespace liee {
 		else if ( _type.compare( "observer" ) == 0 ) \
 		{ \
 			if      ( _name.compare( "wf_snapshots" ) == 0 )    { _load_or_store( Obs_Snapshot_WF ); } \
-			else if ( _name.compare( "tunnel_ratio" ) == 0 )    { _load_or_store( Obs_Tunnel_Ratio ); } \
 			else if ( _name.compare( "jwkb_tunnel" ) == 0 )     { _load_or_store( Obs_JWKB_Tunnel ); } \
 			else if ( _name.compare( "wigner_phasespace" ) == 0 ){ _load_or_store( Obs_Wigner_Distribution ); } \
+			else if ( _name.compare( "probability_current" ) == 0 ){ _load_or_store( Obs_Probability_Current ); } \
 		} \
 		else if ( _type.compare( "solver" ) == 0 ) \
 		{ \
@@ -103,9 +103,9 @@ public:
 		EXECUTION_REQUIRED["wf_reader"]         = false;
 		EXECUTION_REQUIRED["wave_packet"]       = false;
 		EXECUTION_REQUIRED["wf_snapshots"]      = false;
-		EXECUTION_REQUIRED["tunnel_ratio"]      = false;
 		EXECUTION_REQUIRED["jwkb_tunnel"]       = false;
 		EXECUTION_REQUIRED["wigner_phasespace"] = false;
+		EXECUTION_REQUIRED["probability_current"] = false;
 		EXECUTION_REQUIRED["crank_nicholson"]   = true;
 		EXECUTION_REQUIRED["numerov"]           = true;
 	}

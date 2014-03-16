@@ -152,12 +152,38 @@ void WF_Gauss_Packet::estimate_effort( Conf_Module* config, double & flops, doub
 
 void WF_Gauss_Packet::compute_wf()
 {
-	psi.resize( N );
+	psi.resize( N, dcmplx( 0.0, 0.0 ) );
+	// Backup
 	double normfac = 1.0 / sqrt( sigma * sqrt( CONST_PI ) );
 
 	for ( size_t i = 0; i < N; i++ ) {
 		psi[i] = normfac * exp( -0.5 * pow( (i*dr - r0) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k0 * i*dr ) );
 	}
+	// */
+
+	/*
+	// debug code: generate a burst of 3 electrons arriving together at r=125nm t=84.3fs
+	double k1 = sqrt( 2.0 * 1.0 / CONV_au_eV );
+	double k2 = sqrt( 2.0 * 2.0 / CONV_au_eV );
+	double k3 = sqrt( 2.0 * 3.0 / CONV_au_eV );
+	LOG_INFO(k1/CONV_au_nm);
+	LOG_INFO(k2/CONV_au_nm);
+	LOG_INFO(k3/CONV_au_nm);
+	double r1 = 75.0 / CONV_au_nm;
+	double r2 = 54.3 / CONV_au_nm;
+	double r3 = 38.4 / CONV_au_nm;
+	double normfac = 1.0 / sqrt( (sigma) * sqrt( CONST_PI ) );
+
+	for ( size_t i = 0; i < N; i++ ) {
+		psi[i] += normfac * exp( -0.5 * pow( (i*dr - r1) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k1 * i*dr ) );
+	}
+	for ( size_t i = 0; i < N; i++ ) {
+		psi[i] += normfac * exp( -0.5 * pow( (i*dr - r2) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k2 * i*dr ) );
+	}
+	for ( size_t i = 0; i < N; i++ ) {
+		psi[i] += normfac * exp( -0.5 * pow( (i*dr - r3) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k3 * i*dr ) );
+	}
+	*/
 }
 
 
