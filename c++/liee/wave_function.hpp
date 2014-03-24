@@ -41,11 +41,11 @@ public:
 class WF_Gauss_Packet : public Wave_Function, public Module
 {
 public:
-	double r0;     ///< starting expectation value for position
-	double k0;     ///< starting expectation value for wavenumber
-	double sigma;  ///< width parameter of Gaussian
-	size_t N;      ///< number of spatial samples
-	double dr;     ///< spatial grid spacing
+	vector<double> r0;     ///< starting expectation value for position
+	vector<double> k0;     ///< starting expectation value for wavenumber
+	vector<double> sigma;  ///< width parameter of Gaussian
+	size_t N;              ///< number of spatial samples
+	double dr;             ///< spatial grid spacing
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk );

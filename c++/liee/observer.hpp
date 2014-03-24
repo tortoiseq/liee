@@ -60,6 +60,7 @@ public:
 	size_t  step_r;            ///< number of spatial samples to skip over between those being saved
 	size_t  step_t;            ///< number of temporal samples to skip over between the saved ones
 	size_t  step_k;            ///< number of wave-number samples to skip over between the saved ones
+	size_t  damn;            ///< another counter
 	string  format;            ///< cache format string for fprintf
 	bool    do_square;         ///< only save the square of the complex wf
 	bool    do_fourier;        ///< save the FFT-transformed
@@ -88,7 +89,7 @@ public:
 
 	SERIALIZE( boost::serialization::base_object<Observer>( *this )
 			& N & num_r & num_t & num_k & step_r & step_t & step_k & format & do_square & do_fourier
-			& do_normalize & rel_change & ir0 & ir1 & ik0 & ik1 & t0 & t1 & writtenLns )
+			& do_normalize & rel_change & ir0 & ir1 & ik0 & ik1 & t0 & t1 & writtenLns & damn )
 };
 
 /*!
@@ -145,7 +146,7 @@ public:
 	double r_end;     ///< for r > r_end, the potential stops to be useful (because CAP takes over)
 	bool burst;       ///< true if: at least at one sampling time the barrier was pushed bellow the states initial energy
 	int step_t;
-	int t_samples;
+	int num_t;
 	bool is_objective;
 
 	virtual void observe( Module* state );
@@ -155,7 +156,7 @@ public:
 	virtual void summarize( map<string, string> & results );
 
 	SERIALIZE( boost::serialization::base_object<Observer>( *this )
-			& j & rt & A & sum_j & E & dr & Vp0 & last_r2 & N & g & r_end & burst & step_t & t_samples & is_objective )
+			& j & rt & A & sum_j & E & dr & Vp0 & last_r2 & N & g & r_end & burst & step_t & num_t & is_objective )
 };
 
 /*!
@@ -171,7 +172,7 @@ public:
 	dcmplx  prefac;        ///< i*hbar/4/m/dr
 	int     ri;
 	int     step_t;
-	int     t_samples;
+	int     num_t;
 	bool    is_objective;
 
 	virtual void observe( Module* state );
@@ -181,7 +182,7 @@ public:
 	virtual void summarize( map<string, string> & results );
 
 	SERIALIZE( boost::serialization::base_object<Observer>( *this )
-			& r_detect & ri & step_t & t_samples & is_objective )
+			& r_detect & ri & step_t & num_t & is_objective )
 };
 
 

@@ -349,6 +349,46 @@ template <class T> void sort3( T & a, T & b, T & c) {
 	sort2( a, b );
 }
 
+/*!
+ * Applying pairwise summation to a stream of doubles of unknown length.
+ * Reduces numerical errors.
+ */
+struct Summator {
+	vector<double> subtotal;
+	vector<bool> occuped;
+	size_t N;
+
+	Summator( size_t initial_size ) {
+		N = initial_size;
+		subtotal.resize( N, 0 );
+		subtotal.resize( N, false );
+	}
+	Summator() {
+		N = 8;
+		subtotal.resize( N, 0 );
+		subtotal.resize( N, false );
+	}
+	void add( double x ) {
+		//TODO FAULTY INCOMPLETE implementation
+		if (x==0) return;
+		int i = 0;
+		while ( occuped[i] ) {
+			subtotal[i+1] = subtotal[i] + x;
+			occuped[i] = false;
+			occuped[i+1] = true;
+			i++;
+		}
+		subtotal[i] = x;
+	}
+	double get_sum() {
+		//TODO FAULTY INCOMPLETE implementation
+		return 0;
+	}
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize( Archive & ar, const unsigned int version ) { ar & N; ar & subtotal; ar & occuped; }
+};
+
 //----------------------------Expression Parser-------------------------------------------------------------
 
 /*!

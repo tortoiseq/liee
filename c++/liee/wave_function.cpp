@@ -127,10 +127,13 @@ void WF_Reader::estimate_effort( Conf_Module* config, double & flops, double & r
 void WF_Gauss_Packet::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.WF_Gauss_Packet" );
-	r0 = config->getParam("r0")->value / CONV_au_nm;
-	double E0 = config->getParam("E0")->value / CONV_au_eV;
-	k0 = sign(E0) * sqrt( 2.0 * abs(E0) );
-	sigma = config->getParam("sigma")->value / CONV_au_nm;
+	size_t l = config->getParam("r0")->values.size();
+	for ( size_t i=0; i<l; i++ ) {
+		r0.push_back( config->getParam("r0")->values[i] / CONV_au_nm );
+		double E0 = config->getParam("E0")->values[i] / CONV_au_eV;
+		k0.push_back( sign(E0) * sqrt( 2.0 * abs(E0) ) );
+		sigma.push_back( config->getParam("sigma")->value / CONV_au_nm );
+	}
 	dr = config->getParam("dr")->value / CONV_au_nm;
 	N = 1 + (int)( config->getParam("r_range")->value / config->getParam("dr")->value );
 	compute_wf();
@@ -153,37 +156,12 @@ void WF_Gauss_Packet::estimate_effort( Conf_Module* config, double & flops, doub
 void WF_Gauss_Packet::compute_wf()
 {
 	psi.resize( N, dcmplx( 0.0, 0.0 ) );
-	// Backup
-	double normfac = 1.0 / sqrt( sigma * sqrt( CONST_PI ) );
-
-	for ( size_t i = 0; i < N; i++ ) {
-		psi[i] = normfac * exp( -0.5 * pow( (i*dr - r0) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k0 * i*dr ) );
+	for (size_t j=0; j < k0.size(); j++ ) {
+		double normfac = 1.0 / sqrt( sigma[j] * sqrt( CONST_PI ) );
+		for ( size_t i = 0; i < N; i++ ) {
+			psi[i] += normfac * exp( -0.5 * pow( (i*dr - r0[j]) / sigma[j], 2.0 ) ) * exp( dcmplx( 0.0, k0[j] * i*dr ) );
+		}
 	}
-	// */
-
-	/*
-	// debug code: generate a burst of 3 electrons arriving together at r=125nm t=84.3fs
-	double k1 = sqrt( 2.0 * 1.0 / CONV_au_eV );
-	double k2 = sqrt( 2.0 * 2.0 / CONV_au_eV );
-	double k3 = sqrt( 2.0 * 3.0 / CONV_au_eV );
-	LOG_INFO(k1/CONV_au_nm);
-	LOG_INFO(k2/CONV_au_nm);
-	LOG_INFO(k3/CONV_au_nm);
-	double r1 = 75.0 / CONV_au_nm;
-	double r2 = 54.3 / CONV_au_nm;
-	double r3 = 38.4 / CONV_au_nm;
-	double normfac = 1.0 / sqrt( (sigma) * sqrt( CONST_PI ) );
-
-	for ( size_t i = 0; i < N; i++ ) {
-		psi[i] += normfac * exp( -0.5 * pow( (i*dr - r1) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k1 * i*dr ) );
-	}
-	for ( size_t i = 0; i < N; i++ ) {
-		psi[i] += normfac * exp( -0.5 * pow( (i*dr - r2) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k2 * i*dr ) );
-	}
-	for ( size_t i = 0; i < N; i++ ) {
-		psi[i] += normfac * exp( -0.5 * pow( (i*dr - r3) / sigma, 2.0 ) ) * exp( dcmplx( 0.0, k3 * i*dr ) );
-	}
-	*/
 }
 
 

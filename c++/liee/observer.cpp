@@ -22,6 +22,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 {
 	GET_LOGGER( "liee.Obs_Snapshot_WF" );
 	counter = 0;
+	damn = 0;
 	writtenLns = 0;
 	foundLns = 0;
 	do_square = config->getParam("square")->text.compare("true") == 0;
@@ -55,7 +56,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		step_r = floor( Nr / config->getParam("r_samples")->value );
 		if ( step_r < 1 ) { step_r = 1; }
 		if ( step_r > Nr ) { step_r = Nr; }
-		num_r = 1 + Nr / step_r;
+		num_r = (Nr % step_r)  ?  Nr / step_r + 1  :  Nr / step_r;  // ceil( Nr/step_r )
 		config->getParam("r_samples")->value = num_r;
 		valrec.resize( num_r );
 		range_info << "##\t" << "r0=" << r0 * CONV_au_nm << ";\n";
@@ -72,6 +73,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		if ( k1 < -k_range ) { k1 = -k_range; }
 		if ( k0 > +k_range ) { k0 = +k_range; }
 		if ( k1 > +k_range ) { k1 = +k_range; }
+		//TODO check indices ik0, ik1! Experiments at low k-resolution indicate that expected k(ik) is actually k(ik-1), i.e. the index might be offset by 1
 		ik0 = (int) ( (k0 + k_range) / dk );
 		ik1 = (int) ( (k1 + k_range) / dk );
 
@@ -79,7 +81,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		step_k = floor( Nk / config->getParam("k_samples")->value );
 		if ( step_k < 1 ) { step_k = 1; }
 		if ( step_k > Nk ) { step_k = Nk; }
-		num_k = 1 + Nk / step_k;
+		num_k = (Nk % step_k)  ?  Nk / step_k + 1  :  Nk / step_k;
 		config->getParam("k_samples")->value = num_k;
 		valrec.resize( num_k );
 		range_info << "##\t" << "k0=" << k0 / CONV_au_nm << ";\n";
@@ -100,7 +102,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	step_t = floor( Nt / config->getParam("t_samples")->value );
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
-	num_t = 1 + Nt / step_t;
+	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
 	config->getParam("t_samples")->value = num_t;
 	double v_g = num_t / (t1 - t0) * (r1 - r0);  // only relevant for spectrometer calibration by a runtime-correction-factor v/v_g {v_g being the velocity at which (on average) just one sample is taken while the wave-packet is passing the detector's length. Slower packets are oversampled by a factor of v_g/v. As long v remains below relativistic, v_g might be surpass the speed of light without causing problems.}
 
@@ -187,7 +189,8 @@ void Obs_Snapshot_WF::observe( Module* state )
 
 	//TODO optional smoothing of data before sub-sampling
 	if ( do_fourier ) {
-		fac = sqrt( s->dr / Nfou );
+		//fac = sqrt( s->dr / Nfou) );
+		fac = s->dr / sqrt( 2.0 * CONST_PI );
 		for ( size_t i = ik0, j = 0; i <= ik1 && j < valrec.size(); i += step_k, j++ ) {
 			// ring-looping necessary because fftw places positive frequencies in the first half before the negative frequencies in output-array.
 			size_t i_ = ( i + Nfou/2 ) % Nfou;
@@ -207,6 +210,7 @@ void Obs_Snapshot_WF::observe( Module* state )
 	if ( rel_change ) { rel_change_ready = false; }
 
 	if ( do_average ) {
+		damn++;
 		// use valrec_prev to store the sum, (rel_change and do_average are exclusive)
 		for ( size_t i = 0; i < valrec.size(); i++ ) {
 			if ( do_square ) {
@@ -242,10 +246,10 @@ void Obs_Snapshot_WF::summarize( map<string, string> & results )
 	FILE* f = boinc_fopen( filename.c_str(), "a" );
 	for ( size_t i = 0; i < valrec_prev.size(); i++ ) {
 		if ( do_square ) {
-			fprintf( f, "%1.16g\n", real( valrec_prev[i] )/counter );
+			fprintf( f, "%1.16g\n", real( valrec_prev[i] )/num_t );
 		}
 		else {
-			fprintf( f, "%1.16g\t%1.16g\n", real( valrec_prev[i] )/counter, imag( valrec_prev[i] )/counter );
+			fprintf( f, "%1.16g\t%1.16g\n", real( valrec_prev[i] )/num_t, imag( valrec_prev[i] )/num_t );
 		}
 	}
 	fclose( f );
@@ -269,7 +273,7 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
 	// save the actual number of samples
-	num_t = 1 + Nt / step_t;
+	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
 	config->getParam("t_samples")->value = num_t;
 
 	double r_start = 0;
@@ -423,14 +427,14 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 	dt *= step_t;
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
-	t_samples = 1 + Nt / step_t;
-	config->getParam("t_samples")->value = t_samples;  // save the actual number of samples
+	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
+	config->getParam("t_samples")->value = num_t;  // save the actual number of samples
 }
 
 void Obs_JWKB_Tunnel::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Obs_JWKB_Tunnel" );
-	config->getParam("t_samples")->value = t_samples;  // save the actual number of samples again
+	config->getParam("t_samples")->value = num_t;  // save the actual number of samples again
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
 			V = dynamic_cast<Potential*>( dependencies[i] );
@@ -578,8 +582,8 @@ void Obs_Probability_Current::initialize( Conf_Module* config, vector<Module*> d
 	dt *= step_t;
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
-	t_samples = 1 + Nt / step_t;
-	config->getParam("t_samples")->value = t_samples;	// save the actual number of samples
+	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
+	config->getParam("t_samples")->value = num_t;	// save the actual number of samples
 }
 
 void Obs_Probability_Current::reinitialize( Conf_Module* config, vector<Module*> dependencies )
