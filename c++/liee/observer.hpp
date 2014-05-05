@@ -60,7 +60,6 @@ public:
 	size_t  step_r;            ///< number of spatial samples to skip over between those being saved
 	size_t  step_t;            ///< number of temporal samples to skip over between the saved ones
 	size_t  step_k;            ///< number of wave-number samples to skip over between the saved ones
-	size_t  damn;            ///< another counter
 	string  format;            ///< cache format string for fprintf
 	bool    do_square;         ///< only save the square of the complex wf
 	bool    do_fourier;        ///< save the FFT-transformed
@@ -89,7 +88,7 @@ public:
 
 	SERIALIZE( boost::serialization::base_object<Observer>( *this )
 			& N & num_r & num_t & num_k & step_r & step_t & step_k & format & do_square & do_fourier
-			& do_normalize & rel_change & ir0 & ir1 & ik0 & ik1 & t0 & t1 & writtenLns & damn )
+			& do_normalize & rel_change & ir0 & ir1 & ik0 & ik1 & t0 & t1 & writtenLns )
 };
 
 /*!

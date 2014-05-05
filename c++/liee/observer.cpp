@@ -22,7 +22,6 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 {
 	GET_LOGGER( "liee.Obs_Snapshot_WF" );
 	counter = 0;
-	damn = 0;
 	writtenLns = 0;
 	foundLns = 0;
 	do_square = config->getParam("square")->text.compare("true") == 0;
@@ -210,7 +209,6 @@ void Obs_Snapshot_WF::observe( Module* state )
 	if ( rel_change ) { rel_change_ready = false; }
 
 	if ( do_average ) {
-		damn++;
 		// use valrec_prev to store the sum, (rel_change and do_average are exclusive)
 		for ( size_t i = 0; i < valrec.size(); i++ ) {
 			if ( do_square ) {

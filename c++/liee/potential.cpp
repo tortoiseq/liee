@@ -354,6 +354,7 @@ void Potential::set_grid( double dr, size_t N )
 			cache_Vconst.push_back( dcmplx( well->V(r) + V_Fdc( r, t_full ), 0.0 ) );
 			cache_Vwell.push_back( dcmplx( well->V(r), 0.0 ) );
 		}
+		//LOG_DEBUG( "CHECK Vwell\t" << r << "\t" << cache_Vwell[i].real() << "\t" << cache_Vwell[i].imag() );
 	}
 }
 
@@ -631,7 +632,7 @@ inline double Pot_Piecewise::V( double r )
 			return segs[i].cV + segs[i].sign * sqrt( SQR( segs[i].radius ) - SQR( r - segs[i].cr ) ) / scale_y;  // ellipse segment
 		}
 	}
-	LOG_ERROR( "Pot_Piecewise failed to be continuous" )
+	LOG_ERROR( "Pot_Piecewise failed to be continuous at r=" << r )
 	return 0;
 }
 

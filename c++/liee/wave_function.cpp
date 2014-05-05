@@ -132,7 +132,7 @@ void WF_Gauss_Packet::initialize( Conf_Module* config, vector<Module*> dependenc
 		r0.push_back( config->getParam("r0")->values[i] / CONV_au_nm );
 		double E0 = config->getParam("E0")->values[i] / CONV_au_eV;
 		k0.push_back( sign(E0) * sqrt( 2.0 * abs(E0) ) );
-		sigma.push_back( config->getParam("sigma")->value / CONV_au_nm );
+		sigma.push_back( config->getParam("sigma")->values[i] / CONV_au_nm );
 	}
 	dr = config->getParam("dr")->value / CONV_au_nm;
 	N = 1 + (int)( config->getParam("r_range")->value / config->getParam("dr")->value );
@@ -141,7 +141,7 @@ void WF_Gauss_Packet::initialize( Conf_Module* config, vector<Module*> dependenc
 
 void WF_Gauss_Packet::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
-	GET_LOGGER( "liee.Module.WF_Reader" );
+	GET_LOGGER( "liee.Module.WF_Gauss_Packet" );
 	compute_wf();
 }
 

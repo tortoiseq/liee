@@ -15,6 +15,10 @@ namespace liee {
 void Solver::renormalize()
 {
 	double norm_factor = 1.0 / sqrt( integrate_psi_sqr( 0.0, r_range ) );
+	if ( isinf( norm_factor ) || isnan( norm_factor ) ) {
+		LOG_FATAL("Normalization of WaveFunction failed. (check that initial WF is non-zero)");
+		exit(1);
+	}
 	for ( size_t i = 0; i < Nr; i++ ) {
 		psi[i] *= norm_factor;
 	}
@@ -124,7 +128,7 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 			LOG_DEBUG( "found initial WV to use: " << dependencies[i]->name );
 			Wave_Function* wf = dynamic_cast<Wave_Function*>( dependencies[i] );
 
-			this->psi.resize( Nr );
+			psi.resize( Nr );
 			for( size_t i = 0; i < Nr; i++ ) {
 				if ( i < wf->psi.size() ) {
 					psi[i] = wf->psi[i];
@@ -198,6 +202,7 @@ void Crank_Nicholson::evolve_1step()
 	//file = boinc_fopen( filename.c_str(), "a" );
 
 	for (size_t j=0; j < Nr; j++) {
+		//fprintf( file, "%1.5g\t%1.5g\t%1.5g\n", dr*j*CONV_au_nm, psi[j].real(), psi[j].imag() );
 		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t );  //#(45)
 		//fprintf( file, "%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t )*CONV_au_eV );
 	}
