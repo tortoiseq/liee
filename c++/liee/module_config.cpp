@@ -1,11 +1,8 @@
-#include <sstream>
 #include <iomanip>
-#include <iostream>
 #include <time.h>
 
 #include "filesys.h"
 
-#include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -15,12 +12,18 @@
 using namespace std;
 namespace liee {
 
-Conf_Param::Conf_Param(TiXmlElement* pParamNode)
+Conf_Param::Conf_Param(TiXmlElement* pParamNode, int parent)
 {
 	GET_LOGGER( "liee.Conf_Param" );
 	// fetch attributes
+	parent_id = parent;
+	evaluated = false;
 	name = pParamNode->Attribute( "name" );
 	text = pParamNode->Attribute( "value" );
+
+	if ( text.length() == 0 ) {
+		text = pParamNode->Attribute( "default" );
+	}
 	pParamNode->QueryDoubleAttribute( "lower" , &min );
 	pParamNode->QueryDoubleAttribute( "upper" , &max );
 
@@ -33,23 +36,40 @@ Conf_Param::Conf_Param(TiXmlElement* pParamNode)
 		}
 	}
 
-	if ( text.size() == 0 ) {
+	if ( text.length() == 0 ) {
 		textual = true;
 		return;
 	}
 
-	int check = pParamNode->QueryDoubleAttribute( "value", &value );
-	if ( check == TIXML_WRONG_TYPE ) {
+	try {
+		value = boost::lexical_cast<double>( text );
+		textual = false;
+	} catch ( boost::bad_lexical_cast& e ) {
 		// parameter might be an array (we are only interested in array of doubles)
 		if ( text[0] == '{' ) {
 			append_array_literal( text, values );
 			textual = false;
 		} else {
 			textual = true;
-			// note: also bracketed expressions like '(dr/6)' get only the textual flag at this stage
+			// note: also bracketed expressions like '($dr/6)' get flagged as textual here
 		}
-	} else {
-		textual = false;
+	}
+
+	// alter expressions such that references "$var_name" to local variables are expanded to the
+	// "$parentid::var_name" -syntax, because later on, the locality context is lost in the merged parameter map.
+	if ( text[0] == '(' ) {
+		size_t i = 0;
+		while ( text.find("$", i) != text.npos ) {
+			i = text.find("$", i);
+			size_t j = text.find("::", i);
+			try {
+				boost::lexical_cast<int>( text.substr( i+1, j-i-1 ) );
+			}
+			catch ( const boost::bad_lexical_cast& e ) {
+				text.insert( i+1, boost::lexical_cast<string>(parent_id) + "::" );
+			}
+			i++;
+		}
 	}
 }
 
@@ -102,26 +122,71 @@ Conf_Module::Conf_Module(TiXmlElement* pModuleNode)
 	for( pParamNode = handle.FirstChild( "param" ).Element() ; pParamNode; pParamNode = pParamNode->NextSiblingElement() )
 	{
 		if ( strcmp(pParamNode->Value(), "param") == 0 ) {
-			Conf_Param* p = new Conf_Param( pParamNode );
+			Conf_Param* p = new Conf_Param( pParamNode, serial );
 			//LOG4CXX_DEBUG(logger, "found parameter: " << p->name << "\t" << p->value )
 			param[pParamNode->Attribute( "name" )] = p;
 		}
 	}
 }
 
-Conf_Param* Conf_Module::getParam( const string & id )
+void Conf_Module::check_param_exists( const char* id  )
 {
-	if ( param.count( id ) == 1 ) {
-		return param[id];
-	} else {
-		LOG_FATAL( "Parameter " << id << " not found in Module " << this->name << "! Exiting..." );
-		exit(3);
-	}
+	if ( param.count( id ) == 0 ) throw Except__bad_config( "Parameter not found in module", name, id );
+	if ( param.count( id ) > 1 )  throw Except__bad_config( "Parameter appears more than once in module", name, id );
 }
 
-Conf_Param* Conf_Module::getParam( const char* id )
+double Conf_Module::get_double( const char* id  )
 {
-	return getParam( string(id) );
+	check_param_exists(id);
+	if ( param[id]->textual && param[id]->evaluated == false ) {
+		throw Except__bad_config( "Parameter's value is not a double", name, id );
+	}
+	return param[id]->value;
+}
+
+int Conf_Module::get_int( const char* id  )
+{
+	check_param_exists(id);
+	if ( param[id]->textual && param[id]->evaluated == false ) {
+		throw Except__bad_config( "Parameters value is not an integer", name, id );
+	}
+	//TODO sanity check if value is a reasonable integer
+	return (int)param[id]->value;
+}
+
+void Conf_Module::set_int( const char* id, const int x)
+{
+	check_param_exists(id);
+	param[id]->value = x;
+	param[id]->text = boost::lexical_cast<string>(x);
+	param[id]->textual = false;
+}
+
+string Conf_Module::get_string( const char* id  )
+{
+	check_param_exists(id);
+	return param[id]->text;
+}
+
+bool Conf_Module::get_bool( const char* id  )
+{
+	check_param_exists(id);
+	if ( param[id]->text.compare("true") == 0 ) return true;
+	if ( param[id]->text.compare("false") == 0 ) return false;
+
+	throw Except__bad_config( "Boolean parameter is neither \"true\" nor \"false\"", name, id );
+	return false;
+}
+
+bool Conf_Module::param_is_nan( const char* id )
+{
+	check_param_exists(id);
+	return param[id]->textual;
+}
+vector<double>& Conf_Module::get_array( const char* id )
+{
+	check_param_exists(id);
+	return param[id]->values;
 }
 
 
@@ -138,73 +203,6 @@ TiXmlElement* Conf_Module::minimal_xml_element() //TODO the name minimal is misl
 		module->LinkEndChild( iter->second->minimal_xml_element() );
 	}
 	return module;
-}
-
-void Conf_Module::evaluate_expressions()
-{
-	map<string, Conf_Param*>::iterator iter;
-	map<string, double> vars;  // a directory of the actual parameter values
-
-	size_t num_unresolved;
-	size_t num_unres_last = param.size();  // to pretend there was an improvement from the last loop
-
-	// repeat maximum as many times as there are parameters, to be able to resolve cascaded dependencies
-	for ( size_t i = 0; i < param.size(); i++ )
-	{
-		vars.clear();
-
-		// find ready-to-use parameters
-		for ( iter = param.begin(); iter != param.end(); ++iter ) {
-			Conf_Param* p = iter->second;
-			if ( (not p->textual) && p->values.size() == 0 ) {  // arrays are not supported
-				// add the parameter's value to the variables, since it is ready to use
-				vars[iter->first] = p->value;
-			}
-		}
-
-		// find expressions and try to evaluate
-		BracketedInfixParser parser( &vars );
-		num_unresolved = 0;
-		for ( iter = param.begin(); iter != param.end(); ++iter )
-		{
-			Conf_Param* p = iter->second;
-			if ( p->textual && p->text[0] == '(' ) {
-				try {
-					double v = parser.evaluate( p->text );
-					// parsing succeeded
-					p->textual = false;
-					p->value = v;  // next loop this parameter is available in vars too
-				}
-				catch ( Except__Preconditions_Fail& e ) {
-					num_unresolved++;
-				}
-			}
-		}
-
-
-		// check end conditions
-		if ( num_unresolved == 0 ) {
-			// done with numeric evaluations, now lastly check for strings with variable suffix, for e.g. numbered filenames
-			for ( iter = param.begin(); iter != param.end(); ++iter )
-			{
-				Conf_Param* p = iter->second;
-				// identify the hints for the syntax: state_$lvl
-				size_t opos = p->text.find("_$");
-				if ( p->textual  &&  opos != p->text.npos ) {
-					string key = p->text.substr( opos + 2, p->text.npos );
-					string prefix = p->text.substr( 0, opos );
-					if ( vars.find( key ) == vars.end() ) continue;  // suffix is not a known variable --> ignore
-					p->text = prefix + boost::lexical_cast<string>( (int)vars[key] );
-				}
-			}
-			break;
-		}
-		if ( not num_unresolved < num_unres_last ) {
-			LOG_FATAL( "Could not evaluate all given expressions" );
-			exit(1);
-		}
-		num_unres_last = num_unresolved;
-	}
 }
 
 Config::Config( string filename )
@@ -236,9 +234,11 @@ Config::Config( string filename )
 
 	vector<double> chain_members;
 	append_array_literal( exec_chain, chain_members );
-	this->chain.resize( chain_members.size() );
+	for ( size_t i = 0; i < chain_members.size(); i++) { chain.push_back( new Conf_Module() ); }
 
 	hRoot = TiXmlHandle( pModuleNode );
+	num_variables = 0;
+	map<string, Conf_Param*> globals;
 
 	for( pModuleNode = hRoot.FirstChild( "module" ).Element() ; pModuleNode; pModuleNode = pModuleNode->NextSiblingElement() )
 	{
@@ -246,49 +246,51 @@ Config::Config( string filename )
 		{
 			Conf_Module* m = new Conf_Module( pModuleNode );
 			LOG_INFO( "Processing config-parameters of #" << m->serial );
+
+			// distribute global parameters to all other modules
 			if ( m->serial == 0 && m->type.compare("global") == 0 ) {
-				globals = m->param;
-
-				// add the global parameters (once) to the merged-perspective
-				map<string, Conf_Param*>::iterator iter;
-				for ( iter = globals.begin(); iter != globals.end(); ++iter ) {
-					chain_params_merged.push_back( iter->second );
-				}
-			}
-			else {
-				// add the module to the execution chain if requested so
-				for ( size_t i = 0; i < chain_members.size(); i++ ) {
-					if ( ( (int)chain_members[i] ) == m->serial ) {
-						this->chain[i] = m;
-
-						// add the parameters of module m to the merged-perspective (before adding the globals)
-						map<string, Conf_Param*>::iterator iter;
-						for ( iter = m->param.begin(); iter != m->param.end(); ++iter ) {
-							chain_params_merged.push_back( iter->second );
-							//also keep account of IN and OUT-FILES
-							if ( iter->second->text.length() > 0 ) {
-								if ( iter->second->name.compare("INFILE") == 0 ) {
-									infiles.push_back( iter->second->text );
-								}
-								else if ( iter->second->name.compare("OUTFILE") == 0 ) {
-									outfiles.push_back( iter->second->text );
-								}
-							}
-						}
-					}
-				}
-
-				// add the global parameters to each module
+				globals = m->param;  // fetch globals
+			} else {
 				map<string, Conf_Param*>::iterator iter;
 				for ( iter = globals.begin(); iter != globals.end(); ++iter ) {
 					m->param[iter->first] = iter->second;
 				}
+			}
 
-				m->evaluate_expressions();
+			// add the module to the right slot in execution chain
+			for ( size_t i = 0; i < chain_members.size(); i++ ) {
+				if ( ( (int)chain_members[i] ) == m->serial ) {
+					this->chain[i] = m;
+
+					// add the parameters of module m to the merged-perspective
+					map<string, Conf_Param*>::iterator iter;
+					for ( iter = m->param.begin(); iter != m->param.end(); ++iter ) {
+						Conf_Param* p = iter->second;
+						string var_name = boost::lexical_cast<string>( p->parent_id ) + "::" + p->name;
+						merged[ var_name ] = p;
+						// also keep account of IN and OUT-FILES
+						if ( p->text.length() > 0 ) {
+							if ( p->name.compare("INFILE") == 0 ) {
+								infiles.push_back( p->text );
+							}
+							else if ( p->name.compare("OUTFILE") == 0 ) {
+								outfiles.push_back( p->text );
+							}
+						}
+						if ( ! p->fixed ) { num_variables++; }
+					}
+				}
 			}
 		}
 	}
+	for ( size_t i = 0; i < chain.size(); i++ ) {
+		if ( chain[i]->serial == -1 ) {
+			LOG_FATAL("The "<< i <<"th member of the execution chain was not found in the config file.");
+			exit(1);
+		}
+	}
 
+	evaluate_expressions();
 }
 
 void Config::save_file( string & filename )
@@ -329,18 +331,6 @@ void Config::save_text( string filename, map<string, string> & results )
 		fprintf( f, "%20s\t%s\n", iter_res->first.c_str(), iter_res->second.c_str() );
 	}
 
-	// write global parameters
-	fprintf( f, "\n%s\n", "Globals" );
-	map<string, Conf_Param*>::iterator iter;
-	for ( iter = globals.begin(); iter != globals.end(); ++iter ) {
-		if ( iter->second->text[0] == '(' ) { //TODO code duplication -> if (do write)...
-			// print evaluation result instead of expression
-			fprintf( f, "%20s\t%1.10g\n", iter->first.c_str(), iter->second->value );
-		} else {
-			fprintf( f, "%20s\t%s\n", iter->first.c_str(), iter->second->text.c_str() );
-		}
-	}
-
 	// write modules in chain
 	for ( size_t i = 0; i < chain.size(); i++ )
 	{
@@ -349,43 +339,106 @@ void Config::save_text( string filename, map<string, string> & results )
 		map<string, Conf_Param*>::iterator iter_param;
 		for ( iter_param = chain[i]->param.begin(); iter_param != chain[i]->param.end(); ++iter_param )
 		{
-			// exclude global parameters again
-			bool do_write = true;
-			map<string, Conf_Param*>::iterator iter_glob;
-			for ( iter_glob = globals.begin(); iter_glob != globals.end(); ++iter_glob )
-			{
-				if ( iter_glob->first.compare( iter_param->first ) == 0 ) {
-					do_write = false;
-					break;
-				}
-			}
-
-			if ( do_write ) {
-				if ( iter_param->second->textual || iter_param->second->values.size() > 0 ) {
-					fprintf( f, "%20s\t%s\n", iter_param->first.c_str(), iter_param->second->text.c_str() );
-				} else {
-					fprintf( f, "%20s\t%1.10g\n", iter_param->first.c_str(), iter_param->second->value );
-				}
+			if ( iter_param->second->textual || iter_param->second->values.size() > 0 ) {
+				fprintf( f, "%20s\t%s\n", iter_param->first.c_str(), iter_param->second->text.c_str() );
+			} else {
+				fprintf( f, "%20s\t%1.10g\n", iter_param->first.c_str(), iter_param->second->value );
 			}
 		}
 	}
 	fclose( f );
 }
 
-void Config::reevaluate_expressions()
+void Config::evaluate_expressions()
 {
-	// first reset textual flag to true for the expressions
-	//TODO bad style! coding with side-effects: Conf_Module::evaluate_expression() is setting some Conf_Param::textual to false for internal housekeeping, which has to be undone here. better avoid this side effect in the first place!
-	BOOST_FOREACH( Conf_Param* p, chain_params_merged ) {
-		if ( p->text[0] == '(' ) {
-			p->textual = true;
-		}
+	map<string, Conf_Param*>::iterator iter;
+	map<string, double> vars;  // a directory of the actual parameter values
+
+	size_t num_unresolved;
+	size_t num_unres_last = merged.size();  // circumvent stop condition (pretend there was an improvement from the last loop)
+
+	// reset evaluated-flags
+	for ( iter = merged.begin(); iter != merged.end(); ++iter ) {
+		iter->second->evaluated = false;
 	}
 
-	BOOST_FOREACH( Conf_Module* m, chain ) {
-		m->evaluate_expressions();
+	// repeat maximum as many times as there are parameters, to be able to resolve cascaded dependencies
+	for ( size_t i = 0; i < merged.size(); i++ )
+	{
+		vars.clear();
+
+		// find ready-to-use parameters
+		for ( iter = merged.begin(); iter != merged.end(); ++iter ) {
+			Conf_Param* p = iter->second;
+			if ( not p->textual ) {
+				// arrays are only supported as inputs with the syntax "serial::name[int]"
+				for ( size_t j; j < p->values.size(); j++ ) {
+					string key = iter->first + "[" + boost::lexical_cast<string>(j) + "]";
+					vars[key] = p->values[j];  // dump every constant from the array
+				}
+				if ( p->values.size() == 0 ) {
+					vars[iter->first] = p->value; // add the parameter's scalar value to the variables, since it's ready to use
+				}
+			}
+		}
+
+		// find expressions and try to evaluate
+		ExpressionParser parser;
+		num_unresolved = 0;
+		for ( iter = merged.begin(); iter != merged.end(); ++iter )
+		{
+			Conf_Param* p = iter->second;
+			if ( p->textual && p->text[0] == '(' && p->evaluated == false ) {
+				try {
+					double v = parser.evaluate( p->text, vars );
+					// parsing succeeded
+					p->evaluated = true;
+					p->value = v;  // next loop this parameter is available in vars too
+				}
+				catch ( Except__Preconditions_Fail& e ) {
+					num_unresolved++;
+				}
+			}
+		}
+
+		// check end conditions
+		if ( num_unresolved == 0 ) {
+			// done with numeric evaluations, now lastly check for strings with variable suffix, for e.g. numbered filenames
+			for ( iter = merged.begin(); iter != merged.end(); ++iter )
+			{
+				Conf_Param* p = iter->second;
+				// identify the hints for the syntax: string_$refInteger
+				size_t opos = p->text.find("_$");
+				if ( p->textual  &&  opos != p->text.npos ) {
+					string key = p->text.substr( opos + 2, p->text.npos );
+					if ( p->text.find("::") == p->text.npos ) {
+						key = boost::lexical_cast<string>( p->parent_id ) + "::" + key;  // adding the optional "serail::" as required with vars-directory
+					}
+					string prefix = p->text.substr( 0, opos );
+					if ( vars.find( key ) == vars.end() ) continue;  // suffix is not a known variable --> ignore
+					p->text = "" + prefix + boost::lexical_cast<string>( (int)vars[key] );
+				}
+			}
+			break;
+		}
+		if ( not num_unresolved < num_unres_last ) {
+			LOG_FATAL( "Could not evaluate all given expressions" );
+			exit(1);
+		}
+		num_unres_last = num_unresolved;
 	}
 }
 
+vector<Conf_Param*> Config::get_Variables()
+{
+	vector<Conf_Param*> result;
+	map<string, Conf_Param*>::iterator iter;
+	for ( iter = merged.begin(); iter != merged.end(); ++iter ) {
+		if ( iter->second->fixed == false ) {
+			result.push_back( iter->second );
+		}
+	}
+	return result;
+}
 
 }// namespace liee

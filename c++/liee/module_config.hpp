@@ -3,6 +3,7 @@
 
 
 #include <string>
+
 #include <vector>
 #include <map>
 #ifdef LOG_ENABLED
@@ -13,9 +14,15 @@
 //#include "../tinyxml/tinyxml.h" OS_X BUILD
 #include "my_util.hpp"
 
-
 using namespace std;
 namespace liee {
+
+struct Except__bad_config {
+	string p;
+	string m;
+	string problem;
+	Except__bad_config( string problem, string module="", string parameter="") : p(parameter), m(module), problem(problem) {}
+};
 
 class Conf_Param
 {
@@ -23,17 +30,19 @@ protected:
 	DECLARE_LOGGER;
 public:
 	string  name;
+	string  text;
 	double  value;
 	bool    fixed;
 	double  min;
 	double  max;
 	bool    logscale;
 	vector<double> values;
-	string  text;
 	bool    textual;
+	bool    evaluated;      ///< flags successful evaluation of an expression
+	int     parent_id;      ///< point to the parent-module to allow cross module references like $[0]wavelength
 
 	/*! Constructor */
-	Conf_Param( TiXmlElement * pParamNode );
+	Conf_Param( TiXmlElement * pParamNode, int parent );
 
 	/*!
 	 * Assembles a minimal xml-element from the stored data, containing only name-value-pairs
@@ -52,6 +61,9 @@ public:
 	string name;
 	map<string, Conf_Param*> param;
 
+	/*! Default constructor to create an uninitialised Conf_Module that will mark missing modules*/
+	Conf_Module() : serial(-1), stage(-1) {}
+
 	/*! Constructor */
 	Conf_Module( TiXmlElement * pmoduleNode );
 
@@ -60,23 +72,23 @@ public:
 	 * Its supposed to go into the work-unit where only name->value pairs are of concern.
 	 */
 	TiXmlElement* minimal_xml_element();
-	Conf_Param* getParam( const string & id );
-	Conf_Param* getParam( const char* id );
 
-	/*!
-	 * Parameters can be declared dependent of other parameters within Module+global scope using math expressions.
-	 * This Method tries to evaluate all such expressions and set the double Conf_Param.value accordingly.
-	 * Should be called after the global parameters have been added to the Module.
-	 */
-	void evaluate_expressions();
+	void check_param_exists( const char* id );
+	double get_double( const char* id );
+	int get_int( const char* id );
+	string get_string( const char* id );
+	bool get_bool( const char* id );
+	vector<double>& get_array( const char* id );
+	bool param_is_nan( const char* id );
+
+	void set_int( const char* id, const int x );
 };
 
 class Config {
 protected:
 	DECLARE_LOGGER;
 public:
-	map<string, Conf_Param*> globals;
-	vector<Conf_Param*>      chain_params_merged;
+	map<string, Conf_Param*> merged;         ///< parameters of modules in the chain merged and indexed by "module_serial::parameter_name"
 	vector<Conf_Module*>     chain;
 
 	string                   version;
@@ -86,6 +98,7 @@ public:
 	string                   exec_chain;
 	vector<string>           infiles;
 	vector<string>           outfiles;
+	size_t                   num_variables;  ///< number of variable (not fixed) parameters
 
 
 	/*!
@@ -110,10 +123,18 @@ public:
 	void save_text( string filename, map<string, string> & results );
 
 	/*!
-	 * Call this method after altering parameter-values to reevaluate all expressions.
+	 * Call this method after altering parameter-values to re-evaluate all expressions.
 	 * Some of them might depend on those changes and need to change too.
+	 *
+	 * Parameters can be declared dependent of other parameters within using math expressions.
+	 * This Method tries to evaluate all such expressions and sets the Conf_Param.value accordingly.
 	 */
-	void reevaluate_expressions();
+	void evaluate_expressions();
+
+	/*!
+	 * returns the not-fixed parameters of this->merged
+	 */
+	vector<Conf_Param*> get_Variables();
 };
 
 /*!

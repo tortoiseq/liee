@@ -22,10 +22,10 @@ void WF_Reader::initialize( Conf_Module* config, vector<Module*> dependencies )
 	}
 
 	string resolved_name;
-	boinc_resolve_filename_s( config->getParam("INFILE")->text.c_str(), resolved_name );
+	boinc_resolve_filename_s( config->get_string("INFILE").c_str(), resolved_name );
 
-	double dr = config->getParam("dr")->value / CONV_au_nm;
-	double r_range = config->getParam("r_range")->value / CONV_au_nm;
+	double dr = config->get_double("dr") / CONV_au_nm;
+	double r_range = config->get_double("r_range") / CONV_au_nm;
 	double r_start = pot->get_r_start();
 	int Nr = 1 + r_range / dr;
 
@@ -116,7 +116,7 @@ void WF_Reader::reinitialize( Conf_Module* config, vector<Module*> dependencies 
 
 void WF_Reader::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
+	double N = config->get_double("r_range") / config->get_double("dr");
 	flops += abs( 20 * N );
 	ram += abs( sizeof( dcmplx ) * N );
 	disk += abs( sizeof( dcmplx ) * N );
@@ -127,15 +127,15 @@ void WF_Reader::estimate_effort( Conf_Module* config, double & flops, double & r
 void WF_Gauss_Packet::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.WF_Gauss_Packet" );
-	size_t l = config->getParam("r0")->values.size();
+	size_t l = config->get_array("r0").size();
 	for ( size_t i=0; i<l; i++ ) {
-		r0.push_back( config->getParam("r0")->values[i] / CONV_au_nm );
-		double E0 = config->getParam("E0")->values[i] / CONV_au_eV;
+		r0.push_back( config->get_array("r0")[i] / CONV_au_nm );
+		double E0 = config->get_array("E0")[i] / CONV_au_eV;
 		k0.push_back( sign(E0) * sqrt( 2.0 * abs(E0) ) );
-		sigma.push_back( config->getParam("sigma")->values[i] / CONV_au_nm );
+		sigma.push_back( config->get_array("sigma")[i] / CONV_au_nm );
 	}
-	dr = config->getParam("dr")->value / CONV_au_nm;
-	N = 1 + (int)( config->getParam("r_range")->value / config->getParam("dr")->value );
+	dr = config->get_double("dr") / CONV_au_nm;
+	N = 1 + (int)( config->get_double("r_range") / config->get_double("dr") );
 	compute_wf();
 }
 
@@ -147,7 +147,7 @@ void WF_Gauss_Packet::reinitialize( Conf_Module* config, vector<Module*> depende
 
 void WF_Gauss_Packet::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
+	double N = config->get_double("r_range") / config->get_double("dr");
 	flops += 50 * N;
 	ram += abs( sizeof( dcmplx ) * N );
 	disk += abs( sizeof( dcmplx ) * N );

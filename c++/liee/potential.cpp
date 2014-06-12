@@ -79,9 +79,9 @@ void Pot_Round_Well_wImage::initialize( Conf_Module* config, vector<Module*> dep
 {
 	GET_LOGGER( "liee.Module.Pot_Round_Well_wImage" );
 	been_there = false;
-	width = config->getParam("width")->value / CONV_au_nm;
-	depth = config->getParam("depth")->value / CONV_au_eV;
-	expo = config->getParam("boxness")->value / ( width / 2.0 );
+	width = config->get_double("width") / CONV_au_nm;
+	depth = config->get_double("depth") / CONV_au_eV;
+	expo = config->get_double("boxness") / ( width / 2.0 );
 
 	a = depth / cosh( expo * width / 2.0 );
 	shift_cosh = log( (8.0 * depth + expo - sqrt( expo*expo + 16.0 * depth * expo ) ) / 4.0 / a ) / expo;
@@ -91,20 +91,20 @@ void Pot_Experimental::initialize( Conf_Module* config, vector<Module*> dependen
 {
 	GET_LOGGER( "liee.Module.Experimental" );
 	been_there = false;
-	width = config->getParam("width")->value / CONV_au_nm;
-	depth = config->getParam("depth")->value / CONV_au_eV;
-	expo = config->getParam("boxness")->value / ( width / 2.0 );
+	width = config->get_double("width") / CONV_au_nm;
+	depth = config->get_double("depth") / CONV_au_eV;
+	expo = config->get_double("boxness") / ( width / 2.0 );
 	a = depth / cosh( expo * width / 2.0 );
 	shift_cosh = log( (8.0 * depth + expo - sqrt( expo*expo + 16.0 * depth * expo ) ) / 4.0 / a ) / expo;
 	shift_mirror = 1.0 / ( 4.0 * depth - 2.0 * a * exp( expo * shift_cosh ) );
 
-	v_scale = config->getParam("v_scale")->value;
-	h_scale = config->getParam("h_scale")->value;
-	power = config->getParam("power")->value;
+	v_scale = config->get_double("v_scale");
+	h_scale = config->get_double("h_scale");
+	power = config->get_double("power");
 	b.resize(6);
 
 	b[0] = 2.3 * width;	// left-sigma / left-width
-	b[1] = config->getParam("boxness")->value / ( b[0] / 2.0 );  // left-expo
+	b[1] = config->get_double("boxness") / ( b[0] / 2.0 );  // left-expo
 	b[2] = depth / cosh( b[1] * b[0] / 2.0 );  //left-a
 	/*
 	b[0] = -2164.61;
@@ -201,13 +201,13 @@ inline double Pot_Experimental::V( double r )
 
 void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
-	t_ofs = config->getParam("t_center")->value / CONV_au_fs;
-	fwhm = config->getParam("FWHM")->value / CONV_au_fs;
+	t_ofs = config->get_double("t_center") / CONV_au_fs;
+	fwhm = config->get_double("FWHM") / CONV_au_fs;
 	ga = 2.0 * log( 2.0 ) / pow( this->fwhm, 2.0 );
-	F0 = config->getParam("amplitude")->value / CONV_au_V * CONV_au_m ;
-	omega0 = 2 * PI * 137.0 / ( config->getParam("wavelength")->value / CONV_au_nm );  // 2 pi c / lambda
-	phi0 = config->getParam("ce_phase")->value;
-	theta0 = config->getParam("chirp")->value * CONV_au_fs * CONV_au_fs;
+	F0 = config->get_double("amplitude") / CONV_au_V * CONV_au_m ;
+	omega0 = 2 * PI * 137.0 / ( config->get_double("wavelength") / CONV_au_nm );  // 2 pi c / lambda
+	phi0 = config->get_double("ce_phase");
+	theta0 = config->get_double("chirp") * CONV_au_fs * CONV_au_fs;
 }
 
 inline double Gaussian_Pulse::electric_field( double t )
@@ -222,10 +222,12 @@ inline double Gaussian_Pulse::electric_field( double t )
 
 void Potential::register_dependencies( vector<Module*> dependencies )
 {
+	bool not_well = true;
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare("pot_const") == 0  &&  dependencies[i]->serial == reg_serials[0] ) {
 			LOG_INFO( "found a static potential to use: " + dependencies[i]->name)
 			well = dynamic_cast<Pot_const*>( dependencies[i] );
+			not_well = false;
 		}
 		else if ( dependencies[i]->type.compare("pulse") == 0 ) {
 			for( size_t id = 1; id < reg_serials.size(); id++ ) {
@@ -236,36 +238,40 @@ void Potential::register_dependencies( vector<Module*> dependencies )
 			}
 		}
 	}
+	if (not_well) {
+		LOG_FATAL("Required dependency not found. At least need one pot_const module.");
+		exit(1);
+	}
 }
 
 void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Potential" );
 	// save the relevant module id's of constant potential and pulses and register them
-	reg_serials.push_back( (int)config->getParam("my_pot_const")->value );
-	BOOST_FOREACH( double serial, config->getParam("my_pulses")->values ) {
+	reg_serials.push_back( config->get_int("my_pot_const") );
+	BOOST_FOREACH( double serial, config->get_array("my_pulses") ) {
 		reg_serials.push_back( (int) serial );
 	}
 	register_dependencies( dependencies );
 
-	r_range = config->getParam("r_range")->value / CONV_au_nm;
-	double inner_cutoff = config->getParam("inner_cutoff")->value / CONV_au_eV;
+	r_range = config->get_double("r_range") / CONV_au_nm;
+	double inner_cutoff = config->get_double("inner_cutoff") / CONV_au_eV;
 	double dummy;
 	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );  // set r_start where the inner_cutoff-Energy is reached
 	LOG_INFO( "rstart: " << r_start << "  " << dummy << "\t" << inner_cutoff );
 
-	F_dc = -1 * config->getParam("F_dc")->value / (CONV_au_V / CONV_au_nm);
-	gamma = config->getParam("near_amplf")->value;
-	double s = config->getParam("near_width")->value / CONV_au_nm;
+	F_dc = -1 * config->get_double("F_dc") / (CONV_au_V / CONV_au_nm);
+	gamma = config->get_double("near_amplf");
+	double s = config->get_double("near_width") / CONV_au_nm;
 	s2 = pow( s , 2.0);
-	wcap  = config->getParam("wcap")->value / CONV_au_nm;
+	wcap  = config->get_double("wcap") / CONV_au_nm;
 	r_cap = r_start + r_range - wcap;
-	int_samples  = (int) config->getParam("int_samples")->value;
-	t_on = config->getParam("t_DC_on")->value / CONV_au_fs;
-	t_full = config->getParam("t_DC_full")->value / CONV_au_fs;
-	ini_erf = config->getParam("ini_erf_DC")->text.compare("true") == 0;
-	deltaDC = config->getParam("delta_DC")->value / CONV_au_nm;
-	deltaAC = config->getParam("delta_AC")->value / CONV_au_nm;
+	int_samples  = config->get_int("int_samples");
+	t_on = config->get_double("t_DC_on") / CONV_au_fs;
+	t_full = config->get_double("t_DC_full") / CONV_au_fs;
+	ini_erf = config->get_bool("ini_erf_DC");
+	deltaDC = config->get_double("delta_DC") / CONV_au_nm;
+	deltaAC = config->get_double("delta_AC") / CONV_au_nm;
 
 	// set spatial positions for the evaluation of the laser-pulse-field.
 	Pulse_samples.resize( int_samples );
@@ -291,7 +297,7 @@ void Potential::reinitialize( Conf_Module* config, vector<Module*> dependencies 
 
 void Potential::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
+	double N = config->get_double("r_range") / config->get_double("dr");
 	flops += abs( 23 * N );
 	ram += sizeof( Potential );
 	disk += 0;
@@ -354,7 +360,6 @@ void Potential::set_grid( double dr, size_t N )
 			cache_Vconst.push_back( dcmplx( well->V(r) + V_Fdc( r, t_full ), 0.0 ) );
 			cache_Vwell.push_back( dcmplx( well->V(r), 0.0 ) );
 		}
-		//LOG_DEBUG( "CHECK Vwell\t" << r << "\t" << cache_Vwell[i].real() << "\t" << cache_Vwell[i].imag() );
 	}
 }
 
@@ -465,14 +470,14 @@ void Spatial_Light_Modificator::register_dependencies( vector<Module*> dependenc
 void Spatial_Light_Modificator::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_GaussSLM" );
-	BOOST_FOREACH( double serial, config->getParam("orig_pulses")->values ) {
+	BOOST_FOREACH( double serial, config->get_array("orig_pulses") ) {
 		pulse_serials.push_back( (int) serial );
 	}
 	register_dependencies( dependencies );
 
 	//TODO improve the following sandbox code!
 	/*
-	double th = config->getParam("FWHM")->value / CONV_au_fs;
+	double th = config->get_double("FWHM")->value / CONV_au_fs;
 	double sw = 2.0 * sqrt( 2.0 * log(2.0) ) / th;
 	st = 1.0 / sw;
 	L = 10 * sw;
@@ -595,9 +600,9 @@ void Pot_Harm_Oscillator::initialize( Conf_Module* config, vector<Module*> depen
 {
 	GET_LOGGER( "liee.Module.Pot_Harm_Oscillator" );
 	been_there = false;
-	this->k = config->getParam("k")->value / 1e-30 * CONV_au_s * CONV_au_s;
-	this->w = sqrt( k );
-	this->shift = config->getParam("shift")->value / CONV_au_nm;
+	k = config->get_double("k") / 1e-30 * CONV_au_s * CONV_au_s;
+	w = sqrt( k );
+	shift = config->get_double("shift") / CONV_au_nm;
 }
 
 /*!
@@ -682,11 +687,11 @@ void Pot_Piecewise::Segment::line( double x1, double x2, double y1, double y2 )
 void Pot_Piecewise::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Pot_Piecewise" );
-	double epsilon = config->getParam("epsilon")->value / CONV_au_nm;
-	rounding = config->getParam("ellipse")->values[0] / CONV_au_nm;
-	scale_y = rounding / ( config->getParam("ellipse")->values[1] / CONV_au_eV );
-	X = config->getParam("r_list")->values;
-	Y = config->getParam("V_list")->values;
+	double epsilon = config->get_double("epsilon") / CONV_au_nm;
+	rounding = config->get_array("ellipse")[0] / CONV_au_nm;
+	scale_y = rounding / ( config->get_array("ellipse")[1] / CONV_au_eV );
+	X = config->get_array("r_list");
+	Y = config->get_array("V_list");
 	if ( X.size() != Y.size() ) {
 		LOG_ERROR( "r_list and V_list are required to have the same number of elements. exiting" )
 		exit(1);
@@ -842,7 +847,7 @@ void Chulkov_Image_Potential::initialize( Conf_Module* config, vector<Module*> d
 {
 	GET_LOGGER( "liee.Module.Chulkov_Image_Potential" );
 	been_there = false;
-	//this->r_end = config->getParam("r_end"]->value * 1e-9 / CONV_au_m;
+	//this->r_end = config->get_double("r_end") * 1e-9 / CONV_au_m;
 
 	// Das hier und die Funktion im Anhang erzeugen das Potential für Beryllium(0001)
 	// mit 41*2 Cos-Perioden im inneren und einer Wandstärke von 40*2 Perioden.

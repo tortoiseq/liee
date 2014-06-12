@@ -392,40 +392,55 @@ struct Summator {
 //----------------------------Expression Parser-------------------------------------------------------------
 
 /*!
- * Parser for Infix Expressions
- * Aiming at the simplest definition of a grammar which is still useful and intuitive.
+ * Parser for math expressions in the domain of real values.
+ * Should work as one expects from standard notation.
+ * Throws Except__Preconditions_Fail on syntax errors or missing variables.
  *
- * BUG: numerals with signed exponents are not supported!
- * 		use 0.001 instead of 1e-3
- * TODO special handling of "-" and "+" operator to prevent their detection inside valid numerals
- *
- * Example:
- * 	( ( sin (-$A) ) + ( 4 * $B ) )
- * 	...evaluates to 'sin(-A) + 4*B' where A and B are in the variables-directory
- *
- * Rules:
- * - every operation is enclosed in brackets ()
- * - every operation has one or two operands and an operator in between them
- * - for single-operand operations, the operator takes first place
- * - whitespace ' ' does not change evaluation and is only for readability
- * - supported operators are: + - * / ^
- * - supported functions are: exp ln sin cos
+ * - supported operators are: ^ * / - +
+ * - supported functions are: exp ln sin cos tan
  * - operands can be c-style numeric constants, nested expressions or variables
  * - the special character $ indicates an operand from the named variables directory
- * - naturally, nested operations are evaluated inside-outwards
+ *
+ * TODO needs more testing
  */
-class BracketedInfixParser
+class ExpressionParser
 {
 public:
-	//!
-	BracketedInfixParser( std::map<string, double> * directory_of_variables );
-	double evaluate( string expression );
+	ExpressionParser();
+	double evaluate( const string &expression, const std::map<string, double> &vars );
 private:
-	std::map<string, double> * vars;
+	struct Operator {
+		string symbol;
+		size_t sy_len;
+		bool is_unary;
+		double (* function)(double, double);
 
-	double eval( string ex );
-	double eval( string ex, double* operand );
-	string strip_white( string s );
+		Operator( string symbol, size_t symbol_length, bool is_unary, double (* function)(double, double) ) {
+			this->symbol = symbol;
+			this->sy_len = symbol_length;
+			this->is_unary = is_unary;
+			this->function = function;
+		}
+	};
+
+	vector<Operator> operators;
+	vector<double> operands;
+
+	double eval_expression( string ex, const std::map<string, double> &vars  );
+	double eval_operand( string &ex, const std::map<string, double> &vars  );
+	size_t copy_adjacent_operand( const string &ex, string &copyto, const size_t pos, const bool rightward, const size_t from_op );
+	void strip_white( string &s );
+
+	static double expOP(double a, double b) { return exp( b ); };  // all unary functions ignore their "virtual" left hand side operator
+	static double  lnOP(double a, double b) { return log( b ); };
+	static double sinOP(double a, double b) { return sin( b ); };
+	static double cosOP(double a, double b) { return cos( b ); };
+	static double tanOP(double a, double b) { return tan(  b); };
+	static double powOP(double a, double b) { return pow( a, b ); };
+	static double mulOP(double a, double b) { return a * b; };
+	static double divOP(double a, double b) { return a / b; };
+	static double addOP(double a, double b) { return a + b; };
+	static double subOP(double a, double b) { return a - b; };
 };
 
 

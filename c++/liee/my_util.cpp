@@ -22,6 +22,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/regex.hpp>
 
 #include "my_util.hpp"
 
@@ -36,30 +37,47 @@ Ranq1::Ranq1(unsigned long long seed)
 	v = int64();
 }
 
-BracketedInfixParser::BracketedInfixParser( std::map<string, double> * directory_of_variables )
+ExpressionParser::ExpressionParser()
 {
-	vars = directory_of_variables;
+	operators.push_back( Operator("exp", 3, true,  &expOP) );
+	operators.push_back( Operator("ln",  2, true,   &lnOP) );
+	operators.push_back( Operator("sin", 3, true,  &sinOP) );
+	operators.push_back( Operator("cos", 3, true,  &cosOP) );
+	operators.push_back( Operator("tan", 3, true,  &tanOP) );
+	operators.push_back( Operator("^",   1, false, &powOP) );
+	operators.push_back( Operator("*",   1, false, &mulOP) );
+	operators.push_back( Operator("/",   1, false, &divOP) );
+	operators.push_back( Operator("-",   1, false, &subOP) );
+	operators.push_back( Operator("+",   1, false, &addOP) );
 }
 
-double BracketedInfixParser::evaluate( string expression )
+double ExpressionParser::evaluate( const string &expression, const std::map<string, double> &vars )
 {
-	size_t a = expression.find_first_of( '(' );
-	size_t b = expression.find_last_of( ')' );
-	return eval( strip_white( expression.substr( a+1, b-a-1 ) ) );
+	string ex = expression;
+	strip_white( ex );
+	return eval_expression( ex, vars );
 }
 
-double BracketedInfixParser::eval( string ex )
+void ExpressionParser::strip_white( string &s )
 {
-	double operand[2] = {};
+	size_t pos = s.find_first_of(" \t\n");
+	while ( pos != s.npos ) {
+		s.erase( pos, 1 );
+		pos = s.find_first_of(" \t\n");
+	}
+}
 
-	// first, resolve nested expressions
+double ExpressionParser::eval_expression( string ex, const std::map<string, double> &vars )
+{
+	// first, resolve nested brackets
 	int bracket_level = 0;
 	size_t start_pos = ex.npos;
 	for ( size_t i = 0; i < ex.length(); i++ )
 	{
 		if ( ex[i] == '(' ) {
-			if ( bracket_level == 0 )	{ start_pos = i; }
+			if ( bracket_level == 0 ) { start_pos = i; }
 			bracket_level++;
+			continue;
 		}
 
 		if ( ex[i] == ')' )
@@ -71,106 +89,127 @@ double BracketedInfixParser::eval( string ex )
 
 			if ( bracket_level == 0 ) {
 				// final closing bracket for this operand. cut the sub-expression and evaluate it recursively
-				double x = eval( ex.substr( start_pos+1, i-start_pos-1 ) );
+				string subex = ex.substr( start_pos+1, i-start_pos-1 );
 				ex.erase( start_pos, i-start_pos+1 );
+				double x = eval_expression( subex, vars );
 				i = start_pos; // reset loop-index to where the removed bracketed expression was
-
-				if ( start_pos == 0 ) {
-					operand[0] = x;
-					ex.insert( start_pos, "$1" );  //replace by reference to operand-1
-				}
-				else {
-					operand[1] = x;
-					ex.insert( start_pos, "$2" );
-				}
+				operands.push_back( x );
+				string ref = "$" + boost::lexical_cast<string>( operands.size() - 1 );
+				ex.insert( start_pos, ref );  // replace by reference to the operand
 			}
 		}
 	}
 	if ( bracket_level != 0 ) { // brackets don't match
 		throw new Except__Preconditions_Fail( 102 );  //TODO give it exceptions of its own
 	}
+	// now, there should be no more brackets left
 
-	// now, there should be exactly one operator left in the string.
-	// is it an unary operator?
-	// revoke support of unary minus because it breaks number literals like 1.0E-9, now you have to type (0-$x) instead of (-$x)
-	//if ( ex.find("-") == 0 ) {
-	//	return - eval( ex.substr( 1, ex.npos ), operand );
-	//}
-	if ( ex.find("exp") == 0 ) {
-		return exp( eval( ex.substr( 3, ex.npos ), operand ) );
-	}
-	if ( ex.find("ln") == 0 ) {
-		return log( eval( ex.substr( 2, ex.npos ), operand ) );
-	}
-	if ( ex.find("sin") == 0 ) {
-		return sin( eval( ex.substr( 3, ex.npos ), operand ) );
-	}
-	if ( ex.find("cos") == 0 ) {
-		return cos( eval( ex.substr( 3, ex.npos ), operand ) );
+	// for the special case of a sign-operator at the start of the expression:  insert a "0"
+	if ( (ex.find_first_of("+-") == 0) ) {
+		ex = "0" + ex;
 	}
 
-	// must be binary then
-	size_t op_pos = ex.find_first_of("+-*/^");
-	if ( op_pos == ex.npos ) {
-		// did not find any supported operator  //TODO support "(sin(10.3))" where the inside bracket has no operator but obviously can be evaluated
-		throw new Except__Preconditions_Fail( 103 );  //TODO give it exceptions of its own
+	// find first scientific notations, so they don't introduce spurious +/- operators with positive/negative exponents
+	boost::regex scinum_regex = boost::regex("(?:0|[1-9]\\d*)(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)");  // does not match numbers without exponent
+	vector<string> matches;
+	boost::sregex_iterator it( ex.begin(), ex.end(), scinum_regex );
+	boost::sregex_iterator end;
+	for (; it != end; ++it) {
+		matches.push_back( it->str() );
 	}
-	operand[0] = eval( ex.substr( 0, op_pos ), operand );
-	operand[1] = eval( ex.substr( op_pos+1, ex.npos ), operand );
-
-	if ( ex.find("-") != ex.npos ) {
-		return operand[0] - operand[1];
-	}
-	if ( ex.find("+") != ex.npos ) {
-		return operand[0] + operand[1];
-	}
-	if ( ex.find("*") != ex.npos ) {
-		return operand[0] * operand[1];
-	}
-	if ( ex.find("/") != ex.npos ) {
-		return operand[0] / operand[1];
-	}
-	if ( ex.find("^") != ex.npos ) {
-		return pow( operand[0], operand[1] );
+	for ( size_t i = 0; i < matches.size(); i++ ) {
+		size_t pos = ex.find( matches[i] );
+		double value = eval_operand( matches[i], vars );
+		operands.push_back( value );
+		string ref = "$" + boost::lexical_cast<string>( operands.size() - 1 );
+		ex.erase( pos, matches[i].length() );
+		ex.insert( pos, ref );  // replace by reference to the operand
 	}
 
-	return 0; // never reach this line
+	double result;
+	// repeat to evaluate operation-substrings according to given ranking order of operators
+	bool noop = true;
+	for ( size_t o = 0; o < operators.size(); o++ ) {
+		while ( ex.find( operators[o].symbol ) != ex.npos )
+		{
+			size_t pos = ex.find( operators[o].symbol );
+			string operand_str;
+			size_t r_pos, l_pos = pos;
+			r_pos = copy_adjacent_operand( ex, operand_str, pos + operators[o].sy_len, true, o );
+			double r_value = eval_operand( operand_str, vars );
+
+			if ( operators[o].is_unary ) {
+				result = (*operators[o].function)( 0.0, r_value );
+			} else {
+				l_pos = copy_adjacent_operand( ex, operand_str, pos, false, o );
+				double l_value = eval_operand( operand_str, vars );
+				result = (*operators[o].function)( l_value, r_value );
+			}
+			ex.erase( l_pos, r_pos - l_pos + 1 );
+			operands.push_back( result );
+			string ref = "$" + boost::lexical_cast<string>( operands.size() - 1 );
+			ex.insert( l_pos, ref );  // replace by reference to the operand
+		}
+	}
+	if (noop) return eval_operand( ex, vars );
+	else      return result;
 }
 
-/*!
- * expressions evaluated by this method are either numerals or references to variables/operands ($...)
- * might throw boost::bad_lexical_cast
- */
-double BracketedInfixParser::eval( string ex, double* operand )
+size_t ExpressionParser::copy_adjacent_operand( const string &ex, string &copyto, const size_t pos, const bool rightward, const size_t from_op )
 {
-	if ( ex[0] == '$' ) {
-		ex.erase( 0, 1 );
+	size_t op_pos;
+	size_t farthest_operand_char;
+	if ( rightward ) { farthest_operand_char = ex.length()-1; }
+	else             { farthest_operand_char = 0; }
 
-		if ( ex[0] == '1' ) return operand[0];
-		if ( ex[0] == '2' ) return operand[1];
+	// find the next operator-string
+	for ( size_t o = from_op; o < operators.size(); o++ )
+	{
+		size_t sy_len = operators[o].sy_len;
 
-		if ( vars->find( ex ) == vars->end() ) {
-			// undefined variable
-			throw new Except__Preconditions_Fail( 104 );  //TODO give it exceptions of its own
+		if ( rightward && ( ex.length() - pos > sy_len ) ) {
+			op_pos = ex.find( operators[o].symbol, pos );
+			if ( op_pos != ex.npos  &&   op_pos-1 < farthest_operand_char ) {
+				farthest_operand_char = op_pos-1;
+			}
 		}
-		else {
-			return vars->operator[]( ex );
+		else if ( not rightward && ( pos > sy_len ) ) {
+			op_pos = ex.rfind( operators[o].symbol, pos - sy_len );
+			if ( op_pos != ex.npos  &&  op_pos + sy_len > farthest_operand_char ) {
+				farthest_operand_char = op_pos + sy_len;
+			}
 		}
-
 	}
 
+	if ( rightward ) { copyto = ex.substr( pos, farthest_operand_char - pos + 1 ); }
+	else             { copyto = ex.substr( farthest_operand_char, pos - farthest_operand_char ); }
+
+	return farthest_operand_char;
+}
+
+double ExpressionParser::eval_operand( string &ex, const std::map<string, double> &vars )
+{
+	// test for $-escaped reference
+	if ( ex.find("$") == 0 ) {
+		ex.erase(0, 1);
+		size_t i = ex.npos;
+		try { i = boost::lexical_cast<int>( ex ); } catch ( boost::bad_lexical_cast& e ) {
+			// not a previously extracted operand, try out named variables
+			if ( vars.find(ex) != vars.end() ) {
+				return vars.find(ex)->second;
+			}
+			// ...negative -> undefined variable
+			throw new Except__Preconditions_Fail( 106 );  //TODO give it exceptions of its own
+		}
+		if ( i < ex.npos ) {
+			if ( i >= operands.size() ) throw new Except__Preconditions_Fail( 107 );
+			return operands[i];
+		}
+	}
 	// must be numeral then
-	return boost::lexical_cast<double>( ex );
-}
-
-string BracketedInfixParser::strip_white( string s )
-{
-	size_t pos = s.find_first_of(" \t\n");
-	while ( pos != s.npos ) {
-		s.erase( pos, 1 );
-		pos = s.find_first_of(" \t\n");
+	try { return boost::lexical_cast<double>( ex ); } catch ( boost::bad_lexical_cast& e ) {
+		throw new Except__Preconditions_Fail( 108 );
 	}
-	return s;
 }
 
 
@@ -348,7 +387,8 @@ void tar_gz_files( const string& dir_prefix, const vector<string>& files, const 
 
 	a = archive_write_new();
 	//archive_write_set_compression_gzip( a );
-	archive_write_set_compression_lzma( a );
+	//archive_write_set_compression_lzma( a );
+	archive_write_add_filter_lzma( a );
 	archive_write_set_format_pax_restricted( a );
 	archive_write_open_filename( a, archive_name.c_str() );
 

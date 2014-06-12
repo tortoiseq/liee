@@ -31,21 +31,21 @@ void Noumerov1d::register_dependencies( vector<Module*> dependencies )
 void Noumerov1d::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Module.Noumerov1d" );
-	epsilon = config->getParam("n_eps")->value;
-	tail_tiny = config->getParam("tail_tiny_range")->values[0];
-	ttoo_tiny = config->getParam("tail_tiny_range")->values[1];
-	N_min = (int)config->getParam("num_sample_range")->values[0];
-	N_max = (int)config->getParam("num_sample_range")->values[1];
-	lvl_lo = (int)config->getParam("energy_levels")->values[0];
-	lvl_up = (int)config->getParam("energy_levels")->values[1];
-	Q_lo = config->getParam("search_range")->values[0] / CONV_au_eV;
-	Q_up = config->getParam("search_range")->values[1] / CONV_au_eV;
-	retries = (int)config->getParam("num_retries")->value;
-	max_iterations = (int)config->getParam("max_iterations")->value;
-	filename = config->getParam("OUTFILE")->text;
-	is_objective = config->getParam("is_objective")->text.compare( "true" ) == 0;
+	epsilon = config->get_double("n_eps");
+	tail_tiny = config->get_array("tail_tiny_range")[0];
+	ttoo_tiny = config->get_array("tail_tiny_range")[1];
+	N_min = (int)config->get_array("num_sample_range")[0];
+	N_max = (int)config->get_array("num_sample_range")[1];
+	lvl_lo = (int)config->get_array("energy_levels")[0];
+	lvl_up = (int)config->get_array("energy_levels")[1];
+	Q_lo = config->get_array("search_range")[0] / CONV_au_eV;
+	Q_up = config->get_array("search_range")[1] / CONV_au_eV;
+	retries = config->get_int("num_retries");
+	max_iterations = config->get_int("max_iterations");
+	filename = config->get_string("OUTFILE");
+	is_objective = config->get_bool("is_objective");
 	if ( is_objective ) {
-		target_E = config->getParam("target_E")->text;
+		target_E = config->get_string("target_E");
 	}
 	exec_done = false;
 	iteration = 0;
@@ -61,7 +61,7 @@ void Noumerov1d::reinitialize( Conf_Module* config, vector<Module*> dependencies
 
 void Noumerov1d::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	//double N = config->getParam("r_end"]->value / config->getParam("dr"]->value;
+	//double N = config->get_double("r_end"]->value / config->get_double("dr"]->value;
 	flops += 0; //TODO(impl.)
 	ram += 0; //TODO(impl.)
 }

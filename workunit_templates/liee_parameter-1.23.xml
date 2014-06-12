@@ -94,9 +94,9 @@ OPTIMIZERs	500::boinc		50::down_simplex	51::particle_swarm	52::rasterizer		53::s
   </module>
 
   <module serial="22" type="initial_wf" name="wave_packet" stage="1"><!--Gaussian shaped electron wave packet-->
-    <param name="r0" 			value="25"		variable="no" lower="" upper=""/>	<!--starting expectation value for position (in nm)-->
-    <param name="E0" 			value="1.0" 		variable="no" lower="" upper=""/>	<!--energy expectation value (in eV), negative values indicate leftward motion-->
-    <param name="sigma" 		value="5.0"		variable="no" lower="" upper=""/>	<!--width-parameter of the gaussian (in nm) -->
+    <param name="r0" 			value="{25}"		variable="no" lower="" upper=""/>	<!--array of starting expectation value for positions (in nm)-->
+    <param name="E0" 			value="{1.0}" 		variable="no" lower="" upper=""/>	<!--array of energy expectation values (in eV), negative values indicate leftward motion-->
+    <param name="sigma" 		value="{5.0}"		variable="no" lower="" upper=""/>	<!--array of width-parameter of the gaussians (in nm) -->
   </module>
   
   <!-- ================================  OBSERVERs =================================================-->

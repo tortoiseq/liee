@@ -33,7 +33,7 @@
 using namespace std;
 using namespace liee;
 
-string VERSION = "1.23";    ///< the parameter file is required to have the same version identifier
+string VERSION = "1.24";    ///< the parameter file is required to have the same version identifier
 
 
 #ifdef LOG_ENABLED
@@ -68,6 +68,7 @@ int main( int argc, char* argv[] )
 	log4cxx::LoggerPtr logger = init_logger_config( resolved_outfile_name );
 #endif
 	LOG_INFO( "Starting liee_worker");
+
 	srand( time(0) );
 	//srand( 100 );
 	boinc_init();
@@ -137,19 +138,24 @@ int main( int argc, char* argv[] )
 
 	for ( int i = 0; i < (int)cnf.chain.size(); i++ )
 	{
-		LOG_INFO( "Chain step " << i << ": " << cnf.chain[i]->type << " -> " << cnf.chain[i]->name );
-		// load or construct or ignore?
-		if ( cnf.chain[i]->stage != 1 ) continue; // this app is concerned with stage-1 only, e.g. tasks for compute-hosts
 		Module* m;
-		if ( i <= last_i_stored ) {
-			LOG_DEBUG( "load from state stored in checkpoint archive" );
-			m = factory.load( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial, iarch );
-			m->reinitialize( cnf.chain[i], deps );
-		}
-		else {
-			LOG_DEBUG( "assemble from config and initialise" );
-			m = factory.assemble( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial );
-			m->initialize( cnf.chain[i], deps );
+		try {
+			LOG_INFO( "Chain step " << i << ": " << cnf.chain[i]->type << " -> " << cnf.chain[i]->name );
+			// load or construct or ignore?
+			if ( cnf.chain[i]->stage != 1 ) continue; // this app is concerned with stage==1 only, e.g. tasks for compute-hosts
+			if ( i <= last_i_stored ) {
+				LOG_DEBUG( "load from state stored in checkpoint archive" );
+				m = factory.load( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial, iarch );
+				m->reinitialize( cnf.chain[i], deps );
+			}
+			else {
+				LOG_DEBUG( "assemble from config and initialise" );
+				m = factory.assemble( cnf.chain[i]->type, cnf.chain[i]->name, cnf.chain[i]->serial );
+				m->initialize( cnf.chain[i], deps );
+			}
+		} catch ( Except__bad_config &e ) {
+			LOG_FATAL( e.problem << " (" << e.m << "::" << e.p << ")" );
+			exit(1);
 		}
 
 		// initialised or reconstructed module to store to dependencies

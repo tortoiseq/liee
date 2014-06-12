@@ -150,10 +150,10 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Crank_Nicholson" );
-	dr = config->getParam("dr")->value / CONV_au_nm;
-	t_end = config->getParam("t_range")->value / CONV_au_fs;
-	r_range = config->getParam("r_range")->value / CONV_au_nm;
-	dt = config->getParam("dt")->value / CONV_au_fs;
+	dr = config->get_double("dr") / CONV_au_nm;
+	t_end = config->get_double("t_range") / CONV_au_fs;
+	r_range = config->get_double("r_range") / CONV_au_nm;
+	dt = config->get_double("dt") / CONV_au_fs;
 	dt_ = dt;
 	Nr = 1 + r_range / dr;
 	LOG_INFO( "Problem size (Nr x Nt): " << Nr << " x " << (int)(t_end / dt) << " = " << (Nr * t_end / dt) );
@@ -169,7 +169,7 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	register_dependencies( dependencies );
 	renormalize();
 	potential->set_grid( dr, Nr );
-	outfile = config->getParam("OUTFILE")->text;
+	outfile = config->get_string("OUTFILE");
 }
 
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -186,8 +186,8 @@ void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> depende
 
 void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
-	double Nt = config->getParam("t_range")->value / config->getParam("dt")->value;
+	double N = config->get_double("r_range") / config->get_double("dr");
+	double Nt = config->get_double("t_range") / config->get_double("dt");
 
 	flops += abs( Nt * N * ( 6*6 + 5*2 + 3*4 + 3) );  // 6 complex(*) + 5 complex(+) + 3 double(/^2) + 3 double(+)  ... for every cell and every step
 	ram += abs( 7 * sizeof( dcmplx ) * N + 256 );

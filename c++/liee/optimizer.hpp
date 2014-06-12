@@ -93,23 +93,21 @@ public:
 	 *
 	 *  Algorithm specific parameters are assumed to have been set by the constructor. See the algorithm of
 	 *   choice for details. */
-	virtual	int	initialise( const vector<double> & lower, const vector<double> & upper ) = 0;
+	virtual int initialise( const vector<double> & lower, const vector<double> & upper ) = 0;
 
 	/*! Initialises the optimisation problem for the first time.
-	 * 	Using richer data structure of Conf_Param which might include additional information
-	 * 	about the desired probability distribution of variables, besides upper and lower bound.
-	 * 	Not all algorithms will support those optional settings, so the default implementation
-	 * 	here just extracts the bounds and calls the above initialize() method.
-	 * 	Optimizers making use of the specifics of Conf_Param need to overwrite this method.
+	 * Using richer data structure of Conf_Param which might include additional information
+	 * about the desired probability distribution of variables, besides upper and lower bound.
+	 * Not all algorithms will support those optional settings, so the default implementation
+	 * here just extracts the bounds and calls the above initialize() method.
+	 * Optimizers making use of the specifics of Conf_Param need to overwrite this method.
 	 */
-	virtual	int	initialise( const vector<Conf_Param*> & params )
+	virtual int initialise( const vector<Conf_Param*> & params )
 	{
 		vector<double> lo, hi;
 		BOOST_FOREACH( Conf_Param* p, params ) {
-			if ( not p->fixed ) {
-				lo.push_back( p->min );
-				hi.push_back( p->max );
-			}
+			lo.push_back( p->min );
+			hi.push_back( p->max );
 		}
 		return initialise( lo, hi );
 	}

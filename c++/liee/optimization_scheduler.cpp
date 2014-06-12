@@ -55,14 +55,14 @@ Opti_Scheduler::Opti_Scheduler( string exp, int app_id )
 		if ( cnf.chain[i]->type.compare( "scheduler" ) == 0  &&  cnf.chain[i]->name.compare( "boinc" ) == 0  )
 		{
 			Conf_Module* boinc_param = cnf.chain[i];
-			priority = (int)boinc_param->getParam("priority")->value;
-			delay_bound = (int)boinc_param->getParam("delay_bound")->value;
-			min_quorum = (int)boinc_param->getParam("min_quorum")->value;
-			target_nresults = (int)boinc_param->getParam("target_nresults")->value;
-			max_error_results = (int)boinc_param->getParam("max_error_results")->value;
-			max_total_results = (int)boinc_param->getParam("max_total_results")->value;
-			max_success_results = (int)boinc_param->getParam("max_success_results")->value;
-			rsc_bandwidth_bound = (int)boinc_param->getParam("rsc_bandwidth_bound")->value;
+			priority = boinc_param->get_int("priority");
+			delay_bound = boinc_param->get_int("delay_bound");
+			min_quorum = boinc_param->get_int("min_quorum");
+			target_nresults = boinc_param->get_int("target_nresults");
+			max_error_results = boinc_param->get_int("max_error_results");
+			max_total_results = boinc_param->get_int("max_total_results");
+			max_success_results = boinc_param->get_int("max_success_results");
+			rsc_bandwidth_bound = boinc_param->get_int("rsc_bandwidth_bound");
 		}
 	}
 }
@@ -291,34 +291,34 @@ void Opti_Scheduler::initialize( int & flag )
 		opti = o;
 	}
 	else if ( oc->name.compare("particle_swarm") == 0 ) {
-		int popul = (int) oc->getParam("population")->value;
+		int popul = oc->get_int("population");
 		liee::opti::Particle_Swarm_Optimizer* o = new liee::opti::Particle_Swarm_Optimizer( popul );
-		o->hood_sz = (int) oc->getParam("neighbours")->value;
+		o->hood_sz = (int) oc->get_int("neighbours");
 		opti = o;
 	}
 	if ( oc->name.compare("shot_gun") == 0 ) {
-		int bullets = (int) oc->getParam("num_bullets")->value;
+		int bullets = oc->get_int("num_bullets");
 		liee::opti::Shot_Gun_Optimizer* o = new liee::opti::Shot_Gun_Optimizer( );
 		o->num_bullets_per_shot = bullets;
 		opti = o;
 	}
 	if ( oc->name.compare("rasterizer") == 0 ) {
 		liee::opti::Rasterizer* o;
-		if ( oc->getParam("vector_num_samples")->values.size() == 0 ) {
-			int unif = (int) oc->getParam("uniform_num_samples")->value;
+		if ( oc->get_array("vector_num_samples").size() == 0 ) {
+			int unif = oc->get_int("uniform_num_samples");
 			o = new liee::opti::Rasterizer( unif );
 		}
 		else {
-			o = new liee::opti::Rasterizer( oc->getParam("vector_num_samples")->values );
+			o = new liee::opti::Rasterizer( oc->get_array("vector_num_samples") );
 		}
 		opti = o;
 	}
 	else {}  //TODO error handling: unsupported optimizer
 
 	opti->type_name = oc->name;
-	opti->max_eval = (int)oc->getParam("max_eval")->value;
-	opti->tolerance = oc->getParam("conv_tol")->value;
-	opti->initialise( cnf.chain_params_merged );
+	opti->max_eval = oc->get_int("max_eval");
+	opti->tolerance = oc->get_int("conv_tol");
+	opti->initialise( cnf.get_Variables() );
 	cout << "Initialization done.\n";
 	store( false );
 	flag  = 0;
@@ -340,15 +340,14 @@ void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job,
 	}
 	string name = ss_name.str();
 	templ.wu = name;  // write wu-name into the config, so that the host-process can build the results-archive with a tailored path
-	// Create the input file.
-	// Put it at the right place in the download dir hierarchy
+	// create the input file.
+	// put it at the right place in the download dir hierarchy
 	flag = config.download_path( name.c_str(), path );
 	if ( flag ) return;	// TODO error handling
 
 	// insert requested values to template
-	//TODO move this functionality into class Config, since we fiddle with its data members
 	size_t param_index = 0;
-	BOOST_FOREACH( Conf_Param* p, templ.chain_params_merged ) {
+	BOOST_FOREACH( Conf_Param* p, templ.get_Variables() ) {
 		if ( not p->fixed )
 		{
 			if ( param_index == r.x.size() ) {
@@ -360,13 +359,12 @@ void Opti_Scheduler::make_job( const liee::opti::Request & r, DB_WORKUNIT & job,
 			p->text = ""; // clear p->text in order to force usage of p->value
 		}
 	}
-	templ.reevaluate_expressions();
+	templ.evaluate_expressions();
 
 	// let deployed modules estimate computational effort
 	double flops = 0;
 	double ram = 0;
 	double disk = 0;
-	vector<Module*> deps;
 	BOOST_FOREACH( Conf_Module* cm, templ.chain ) {
 		if ( cm->stage != 1 ) continue;  // the app is concerned with stage-1 only, e.g. tasks for compute-hosts
 		Module* m = Module_Factory::assemble( cm->type, cm->name, cm->serial );

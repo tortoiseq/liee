@@ -24,39 +24,35 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	counter = 0;
 	writtenLns = 0;
 	foundLns = 0;
-	do_square = config->getParam("square")->text.compare("true") == 0;
-	do_fourier = config->getParam("fourier")->text.compare("true") == 0;
-	do_normalize = config->getParam("normalize")->text.compare("true") == 0;
-	rel_change = config->getParam("rel_change")->text.compare("true") == 0;
-	do_average = config->getParam("average")->text.compare("true") == 0;
+	do_square = config->get_bool("square");
+	do_fourier = config->get_bool("fourier");
+	do_normalize = config->get_bool("normalize");
+	rel_change = config->get_bool("rel_change");
+	do_average = config->get_bool("average");
 	if ( do_average ) { rel_change = false; }
 
-	stringstream ss;
-	int digits = int( config->getParam("precision")->value );
-	if ( do_square ) {
-		ss << "%1." << digits << "g\t";
-	} else {
-		ss << "%1." << digits << "g\t%1." << digits << "g\t";
+	string digits = config->get_string("precision");  // untested if "precision" is integer
+	format = "%1." + digits + "g\t";
+	if ( not do_square ) {
+		format = format + format;  // twice the format-string for real- and imaginary part
 	}
-	format = ss.str();
 	stringstream range_info;
 	range_info << std::scientific << std::setprecision(8);
 
-	double dr = config->getParam("dr")->value / CONV_au_nm;
-	double r_range = config->getParam("r_range")->value / CONV_au_nm;
-	double r0 = ( config->getParam("obs_r0")->textual )  ?  0       :  config->getParam("obs_r0")->value / CONV_au_nm;
-	double r1 = ( config->getParam("obs_r1")->textual )  ?  r_range :  config->getParam("obs_r1")->value / CONV_au_nm;
+	double dr = config->get_double("dr") / CONV_au_nm;
+	double r0 = config->get_double("obs_r0") / CONV_au_nm;
+	double r1 = config->get_double("obs_r1") / CONV_au_nm;
 	ir0 = (int) (r0 / dr);
 	ir1 = (int) (r1 / dr);
 
 	if ( not do_fourier ) {
 		// prepare spatial downsampling
 		size_t Nr = 1.0 + ( r1 - r0 ) / dr;
-		step_r = floor( Nr / config->getParam("r_samples")->value );
+		step_r = floor( Nr / config->get_double("r_samples") );
 		if ( step_r < 1 ) { step_r = 1; }
 		if ( step_r > Nr ) { step_r = Nr; }
 		num_r = (Nr % step_r)  ?  Nr / step_r + 1  :  Nr / step_r;  // ceil( Nr/step_r )
-		config->getParam("r_samples")->value = num_r;
+		config->set_int("r_samples", num_r);
 		valrec.resize( num_r );
 		range_info << "##\t" << "r0=" << r0 * CONV_au_nm << ";\n";
 		range_info << "##\t" << "r1=" << r1 * CONV_au_nm << ";\n";
@@ -66,8 +62,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		double k_range = 0.5 / dr;  // previously: k_max = 1/(2 dr)
 		k_range *= 2.0 * CONST_PI;  // values were off by 2pi
 		double dk = 2.0 * k_range / ( (r1 - r0) / dr );
-		double k0 = ( config->getParam("obs_k0")->textual )  ?  -k_range  :  config->getParam("obs_k0")->value * CONV_au_nm;
-		double k1 = ( config->getParam("obs_k1")->textual )  ?  +k_range  :  config->getParam("obs_k1")->value * CONV_au_nm;
+		double k0 = config->param_is_nan("obs_k0")  ?  -k_range  :  config->get_double("obs_k0") * CONV_au_nm;
+		double k1 = config->param_is_nan("obs_k1")  ?  +k_range  :  config->get_double("obs_k1") * CONV_au_nm;
 		if ( k0 < -k_range ) { k0 = -k_range; }
 		if ( k1 < -k_range ) { k1 = -k_range; }
 		if ( k0 > +k_range ) { k0 = +k_range; }
@@ -77,32 +73,32 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		ik1 = (int) ( (k1 + k_range) / dk );
 
 		size_t Nk = 1.0 + ik1 - ik0;
-		step_k = floor( Nk / config->getParam("k_samples")->value );
+		step_k = floor( Nk / config->get_double("k_samples") );
 		if ( step_k < 1 ) { step_k = 1; }
 		if ( step_k > Nk ) { step_k = Nk; }
 		num_k = (Nk % step_k)  ?  Nk / step_k + 1  :  Nk / step_k;
-		config->getParam("k_samples")->value = num_k;
+		config->set_int("k_samples", num_k);
 		valrec.resize( num_k );
 		range_info << "##\t" << "k0=" << k0 / CONV_au_nm << ";\n";
 		range_info << "##\t" << "k1=" << k1 / CONV_au_nm << ";\n";
 		range_info << "##\t" << "Nk=" << num_k << ";\n";
 
 		Nfou = 1 + ir1 - ir0;
-		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * Nfou );
+		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * Nfou );  //TODO free this memory when done
 		plan = fftw_plan_dft_1d( Nfou, psi_fft, psi_fft, FFTW_FORWARD, FFTW_ESTIMATE );
 	}
 
 	// prepare temporal downsampling
-	t_range = config->getParam("t_range")->value / CONV_au_fs;
-	dt = config->getParam("dt")->value / CONV_au_fs;
-	t0 = ( config->getParam("obs_t0")->textual )  ?  0        :  config->getParam("obs_t0")->value / CONV_au_fs;
-	t1 = ( config->getParam("obs_t1")->textual )  ?  t_range  :  config->getParam("obs_t1")->value / CONV_au_fs;
+	t_range = config->get_double("t_range") / CONV_au_fs;
+	dt = config->get_double("dt") / CONV_au_fs;
+	t0 = config->get_double("obs_t0") / CONV_au_fs;
+	t1 = config->get_double("obs_t1") / CONV_au_fs;
 	size_t Nt = 1.0 + ( t1 - t0 ) / dt;
-	step_t = floor( Nt / config->getParam("t_samples")->value );
+	step_t = floor( Nt / config->get_double("t_samples") );
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
 	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
-	config->getParam("t_samples")->value = num_t;
+	config->set_int("t_samples",  num_t);
 	double v_g = num_t / (t1 - t0) * (r1 - r0);  // only relevant for spectrometer calibration by a runtime-correction-factor v/v_g {v_g being the velocity at which (on average) just one sample is taken while the wave-packet is passing the detector's length. Slower packets are oversampled by a factor of v_g/v. As long v remains below relativistic, v_g might be surpass the speed of light without causing problems.}
 
 	range_info << "##\t" << "t0=" << t0 * CONV_au_fs << ";\n";
@@ -115,7 +111,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	}
 	rel_change_ready = false;
 
-	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
+	boinc_resolve_filename_s( config->get_string("OUTFILE").c_str(), filename );
 	FILE* f = boinc_fopen( filename.c_str(), "w" );  // delete previous snapshot file
 	fprintf( f, "%s", range_info.str().c_str() );  // write range-information as comments
 	fclose( f );
@@ -125,14 +121,14 @@ void Obs_Snapshot_WF::reinitialize( Conf_Module* config, vector<Module*> depende
 {
 	GET_LOGGER( "liee.Obs_Snapshot_WF" );
 	// save the actual number of samples again
-	config->getParam("t_samples")->value = num_t;
+	config->set_int("t_samples", num_t);
 
 	if ( do_fourier ) {
-		config->getParam("k_samples")->value = num_k;
+		config->set_int("k_samples", num_k);
 		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * Nfou );
 		plan = fftw_plan_dft_1d( Nfou, psi_fft, psi_fft, FFTW_FORWARD, FFTW_ESTIMATE );
 	} else {
-		config->getParam("r_samples")->value = num_r;
+		config->set_int("r_samples", num_r);
 	}
 	valrec.resize( num_r );
 	if ( rel_change ) {
@@ -153,11 +149,11 @@ void Obs_Snapshot_WF::reinitialize( Conf_Module* config, vector<Module*> depende
 
 void Obs_Snapshot_WF::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double N = config->getParam("r_range")->value / config->getParam("dr")->value;
-	double Nt = config->getParam("t_range")->value / config->getParam("dt")->value;
-	double Nr = config->getParam("r_samples")->value;
-	int samples = (int) config->getParam("t_samples")->value;
-	bool sqr = config->getParam("square")->text.compare("true") == 0;
+	double N = config->get_double("r_range") / config->get_double("dr");
+	double Nt = config->get_double("t_range") / config->get_double("dt");
+	int Nr = config->get_int("r_samples");
+	int samples = config->get_int("t_samples");
+	bool sqr = config->get_bool("square");
 
 	flops += abs( 8 * Nt + samples * N * 20 );  // called Nt times without saving + sample times with saving
 	ram += 1024;
@@ -262,17 +258,17 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	foundFrames = 0;
 
 	// prepare temporal downsampling
-	t_range = config->getParam("t_range")->value / CONV_au_fs;
-	dt = config->getParam("dt")->value / CONV_au_fs;
-	t0 = ( config->getParam("obs_t0")->textual )  ?  0        :  config->getParam("obs_t0")->value / CONV_au_fs;
-	t1 = ( config->getParam("obs_t1")->textual )  ?  t_range  :  config->getParam("obs_t1")->value / CONV_au_fs;
+	t_range = config->get_double("t_range") / CONV_au_fs;
+	dt = config->get_double("dt") / CONV_au_fs;
+	t0 = config->get_double("obs_t0") / CONV_au_fs;
+	t1 = config->get_double("obs_t1") / CONV_au_fs;
 	size_t Nt = 1.0 + ( t1 - t0 ) / dt;
-	step_t = floor( Nt / config->getParam("t_samples")->value );
+	step_t = floor( Nt / config->get_double("t_samples") );
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
 	// save the actual number of samples
 	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
-	config->getParam("t_samples")->value = num_t;
+	config->set_int("t_samples", num_t);
 
 	double r_start = 0;
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
@@ -281,16 +277,16 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 			r_start = pot->get_r_start();
 		}
 	}
-	double r_end = r_start + config->getParam("r_range")->value / CONV_au_nm;
-	double dr = config->getParam("dr")->value / CONV_au_nm;
+	double r_end = r_start + config->get_double("r_range") / CONV_au_nm;
+	double dr = config->get_double("dr") / CONV_au_nm;
 	double kmax = CONST_PI / dr;
-	r0 = ( config->getParam("obs_r0")->textual )  ?  r_start  :  config->getParam("obs_r0")->value / CONV_au_nm;  //TODO regard simulation bounds
-	r1 = ( config->getParam("obs_r1")->textual )  ?  r_end    :  config->getParam("obs_r1")->value / CONV_au_nm;
-	k0 = ( config->getParam("obs_k0")->textual )  ?  -kmax    :  config->getParam("obs_k0")->value * CONV_au_nm;
-	k1 = ( config->getParam("obs_k1")->textual )  ?  +kmax    :  config->getParam("obs_k1")->value * CONV_au_nm;
+	r0 = ( config->param_is_nan("obs_r0") )  ?  r_start  :  config->get_double("obs_r0") / CONV_au_nm;  //TODO regard simulation bounds
+	r1 = ( config->param_is_nan("obs_r1") )  ?  r_end    :  config->get_double("obs_r1") / CONV_au_nm;
+	k0 = ( config->param_is_nan("obs_k0") )  ?  -kmax    :  config->get_double("obs_k0") * CONV_au_nm;
+	k1 = ( config->param_is_nan("obs_k1") )  ?  +kmax    :  config->get_double("obs_k1") * CONV_au_nm;
 
-	num_r = (int)config->getParam("r_samples")->value;
-	num_k = (int)config->getParam("k_samples")->value;
+	num_r = config->get_int("r_samples");
+	num_k = config->get_int("k_samples");
 
 	stringstream range_info;
 	range_info << std::scientific << std::setprecision(8);
@@ -304,12 +300,9 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	range_info << "##\t" << "k1=" << k1 / CONV_au_nm << ";\n";
 	range_info << "##\t" << "Nk=" << num_k << ";\n";
 
-	stringstream ss;
-	int digits = int( config->getParam("precision")->value );
-	ss << "%1." << digits << "g\t";
-	format = ss.str();
+	format = "%1." + config->get_string("precision") + "g\t";
 
-	boinc_resolve_filename_s( config->getParam("OUTFILE")->text.c_str(), filename );
+	boinc_resolve_filename_s( config->get_string("OUTFILE").c_str(), filename );
 	FILE* f = boinc_fopen( filename.c_str(), "w" );  // delete previous snapshot file
 	fprintf( f, "%s", range_info.str().c_str() );  // write range-information as comments
 	fclose( f );
@@ -319,7 +312,7 @@ void Obs_Wigner_Distribution::reinitialize( Conf_Module* config, vector<Module*>
 {
 	GET_LOGGER( "liee.Obs_Wigner_Distribution" );
 	// save the actual number of samples again
-	config->getParam("t_samples")->value = num_t;
+	config->set_int("t_samples", num_t);
 
 	// count the frames actually written to outfile (there might have been some appended between checkpoint-writing and program-exit)
 	foundFrames = 0;
@@ -333,11 +326,6 @@ void Obs_Wigner_Distribution::reinitialize( Conf_Module* config, vector<Module*>
 
 void Obs_Wigner_Distribution::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	//int Nrr = (int) round( config->getParam("r_range")->value / config->getParam("dr")->value );
-	//int Ntt = (int) round( config->getParam("t_range")->value / config->getParam("dt")->value );
-	//int Nr = (int)config->getParam("r_samples")->value;
-	//int Nk = (int)config->getParam("k_samples")->value;
-	//int Nt = (int)config->getParam("t_samples")->value;
 	//TODO estimate
 }
 
@@ -397,10 +385,10 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 			wf = dynamic_cast<Wave_Function*>( dependencies[i] );
 		}
 	}
-	filename = config->getParam("OUTFILE")->text;
-	is_objective = config->getParam("is_objective")->text.compare( "true" ) == 0;
-	dr = config->getParam("dr")->value / CONV_au_nm;
-	N = (int)config->getParam("int_samples")->value / CONV_au_nm;
+	filename = config->get_string("OUTFILE");
+	is_objective = config->get_bool("is_objective");
+	dr = config->get_double("dr") / CONV_au_nm;
+	N = config->get_int("int_samples");
 	r_end = V->get_r_phys_end();
 
 	//calculate E from curvature of WF: E = V - hbar^2/(2m Psi) d^2/dr^2 Psi
@@ -416,23 +404,23 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 	burst = false;
 
 	// temporal downsampling
-	// (code duplication with tunnel ratio observer)
-	t_range = config->getParam("t_range")->value / CONV_au_fs;
-	dt = config->getParam("dt")->value / CONV_au_fs;
+	//TODO lots of code duplication with other observers
+	t_range = config->get_double("t_range") / CONV_au_fs;
+	dt = config->get_double("dt") / CONV_au_fs;
 	counter = 0;
 	int Nt = 1.0 + t_range / dt;
-	step_t = floor( Nt / config->getParam("t_samples")->value );
+	step_t = floor( Nt / config->get_double("t_samples") );
 	dt *= step_t;
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
 	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
-	config->getParam("t_samples")->value = num_t;  // save the actual number of samples
+	config->set_int("t_samples", num_t);  // save the actual number of samples
 }
 
 void Obs_JWKB_Tunnel::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Obs_JWKB_Tunnel" );
-	config->getParam("t_samples")->value = num_t;  // save the actual number of samples again
+	config->set_int("t_samples", num_t);  // save the actual number of samples again
 	for ( size_t i = 0; i < dependencies.size(); i++ ) {
 		if ( dependencies[i]->type.compare( "potential" ) == 0 ) {
 			V = dynamic_cast<Potential*>( dependencies[i] );
@@ -442,9 +430,9 @@ void Obs_JWKB_Tunnel::reinitialize( Conf_Module* config, vector<Module*> depende
 
 void Obs_JWKB_Tunnel::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double Nr = config->getParam("r_range")->value / config->getParam("dr")->value;
-	double Nt = config->getParam("t_range")->value / config->getParam("dt")->value;
-	double N =  config->getParam("t_samples")->value;
+	double Nr = config->get_double("r_range") / config->get_double("dr");
+	double Nt = config->get_double("t_range") / config->get_double("dt");
+	int N =  config->get_int("t_samples");
 
 	flops += abs( 8 * Nt + N * Nr * 10 );  // called Nt times without saving + t_sample times to integrate over the squareroot of barrier hight
 	ram += 1024;
@@ -562,37 +550,38 @@ void Obs_Probability_Current::initialize( Conf_Module* config, vector<Module*> d
 		}
 	}
 
-	filename = config->getParam("OUTFILE")->text;
-	is_objective = config->getParam("is_objective")->text.compare( "true" ) == 0;
-	r_detect = config->getParam("r_detect")->value / CONV_au_nm;
+	filename = config->get_string("OUTFILE");
+	is_objective = config->get_bool("is_objective");
+	r_detect = config->get_double("r_detect") / CONV_au_nm;
 	if ( r_detect < 0 ) r_detect = 0;
 	if ( r_detect > r_range ) { r_detect = r_range; }
-	double dr = config->getParam("dr")->value / CONV_au_nm;
+	double dr = config->get_double("dr") / CONV_au_nm;
 	ri = (int)( 0.5 + r_detect / dr );
 	prefac = dcmplx( 0.0, 0.25 / dr );
 
 	// temporal downsampling
-	t_range = config->getParam("t_range")->value / CONV_au_fs;
-	dt = config->getParam("dt")->value / CONV_au_fs;
+	t_range = config->get_double("t_range") / CONV_au_fs;
+	dt = config->get_double("dt") / CONV_au_fs;
 	counter = 0;
 	int Nt = 1.0 + t_range / dt;
-	step_t = floor( Nt / config->getParam("t_samples")->value );
+	step_t = floor( Nt / config->get_double("t_samples") );
 	dt *= step_t;
 	if ( step_t < 1 ) { step_t = 1; }
 	if ( step_t > Nt ) { step_t = Nt; }
 	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
-	config->getParam("t_samples")->value = num_t;	// save the actual number of samples
+	config->set_int("t_samples", num_t);  // save the actual number of samples
 }
 
 void Obs_Probability_Current::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Probability_Current" );
+	config->set_int("t_samples", num_t); // save the actual number of samples again
 }
 
 void Obs_Probability_Current::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	double Nt = config->getParam("t_range")->value / config->getParam("dt")->value;
-	double N =  config->getParam("t_samples")->value;
+	double Nt = config->get_double("t_range") / config->get_double("dt");
+	int N =  config->get_int("t_samples");
 
 	flops += abs( 8 * Nt + N * 4 );  // called Nt times without saving + t_sample times to save a single complex number
 	ram += 8 * N;
