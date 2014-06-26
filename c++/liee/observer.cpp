@@ -3,11 +3,11 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
-#include <fftw3.h>
+#include "fftw3.h"
 
-#include <boost/foreach.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include "boost/foreach.hpp"
+#include "boost/function.hpp"
+#include "boost/bind.hpp"
 
 #include "my_util.hpp"
 #include "solver.hpp"

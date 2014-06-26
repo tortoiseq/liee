@@ -3,7 +3,7 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
-#include <boost/math/special_functions/erf.hpp>
+#include "boost/math/special_functions/erf.hpp"
 
 #include "potential.hpp"
 #include "wave_function.hpp"

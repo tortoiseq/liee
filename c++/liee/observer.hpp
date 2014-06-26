@@ -8,11 +8,11 @@
 #ifndef OBSERVER_HPP_
 #define OBSERVER_HPP_
 
-#include <fftw3.h>
+#include "fftw3.h"
 
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/vector.hpp>
+#include "boost/serialization/version.hpp"
+#include "boost/serialization/base_object.hpp"
+#include "boost/serialization/vector.hpp"
 
 #include "my_util.hpp"
 #include "module_config.hpp"

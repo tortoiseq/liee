@@ -20,7 +20,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 
 #include "boinc_db.h"
 #include "error_numbers.h"

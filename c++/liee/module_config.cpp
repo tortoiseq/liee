@@ -1,10 +1,10 @@
 #include <iomanip>
 #include <time.h>
 
-#include "filesys.h"
+#include <filesys.h>
 
-#include <boost/tokenizer.hpp>
-#include <boost/lexical_cast.hpp>
+#include "boost/tokenizer.hpp"
+#include "boost/lexical_cast.hpp"
 
 #include "module_config.hpp"
 #include "my_util.hpp"
@@ -277,7 +277,7 @@ Config::Config( string filename )
 								outfiles.push_back( p->text );
 							}
 						}
-						if ( ! p->fixed ) { num_variables++; }
+						if ( not p->fixed ) { num_variables++; }
 					}
 				}
 			}

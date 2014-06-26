@@ -29,9 +29,9 @@
 #include <fstream>
 #include <iomanip>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/interprocess/sync/file_lock.hpp>
-#include <boost/filesystem.hpp>
+#include "boost/lexical_cast.hpp"
+#include "boost/interprocess/sync/file_lock.hpp"
+#include "boost/filesystem.hpp"
 
 #include "boinc_db.h"
 #include "error_numbers.h"

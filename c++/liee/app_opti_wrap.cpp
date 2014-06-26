@@ -17,12 +17,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/filesystem.hpp>
+#include "boost/serialization/version.hpp"
+#include "boost/serialization/base_object.hpp"
+#include "boost/serialization/vector.hpp"
+#include "boost/archive/binary_oarchive.hpp"
+#include "boost/archive/binary_iarchive.hpp"
+#include "boost/filesystem.hpp"
 
 #include "boinc_api.h"
 
@@ -68,7 +68,6 @@ int main( int argc, char* argv[] )
 	log4cxx::LoggerPtr logger = init_logger_config( resolved_outfile_name );
 #endif
 	LOG_INFO( "Starting liee_worker");
-
 	srand( time(0) );
 	//srand( 100 );
 	boinc_init();

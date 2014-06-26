@@ -5,13 +5,13 @@
 
 #include "../alglib/specialfunctions.h"
 
-#include <fftw3.h>
+#include "fftw3.h"
 
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/math/special_functions/erf.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include "boost/foreach.hpp"
+#include "boost/lexical_cast.hpp"
+#include "boost/math/special_functions/erf.hpp"
+#include "boost/function.hpp"
+#include "boost/bind.hpp"
 
 #include "potential.hpp"
 #include "optimizer.hpp"

@@ -3,8 +3,8 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
+#include "boost/foreach.hpp"
+#include "boost/lexical_cast.hpp"
 
 #include "my_util.hpp"
 #include "noumerov.hpp"

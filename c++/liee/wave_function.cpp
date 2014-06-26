@@ -2,7 +2,7 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
-#include <boost/foreach.hpp>
+#include "boost/foreach.hpp"
 
 #include "my_util.hpp"
 #include "wave_function.hpp"

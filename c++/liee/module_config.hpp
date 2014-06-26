@@ -1,9 +1,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-
 #include <string>
-
 #include <vector>
 #include <map>
 #ifdef LOG_ENABLED
@@ -131,9 +129,7 @@ public:
 	 */
 	void evaluate_expressions();
 
-	/*!
-	 * returns the not-fixed parameters of this->merged
-	 */
+	/*! returns the not-fixed parameters of this->merged */
 	vector<Conf_Param*> get_Variables();
 };
 

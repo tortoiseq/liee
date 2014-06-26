@@ -1,9 +1,9 @@
 #ifndef POTENTIAL_H_
 #define POTENTIAL_H_
 
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/vector.hpp>
+#include "boost/serialization/version.hpp"
+#include "boost/serialization/base_object.hpp"
+#include "boost/serialization/vector.hpp"
 
 #include <limits>
 
