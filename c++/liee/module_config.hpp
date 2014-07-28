@@ -57,6 +57,7 @@ public:
 	int stage;
 	string type;
 	string name;
+	string includes;
 	map<string, Conf_Param*> param;
 
 	/*! Default constructor to create an uninitialised Conf_Module that will mark missing modules*/

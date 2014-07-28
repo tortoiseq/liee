@@ -39,12 +39,19 @@ extern "C" {
 	 * For convenience it writes the data as name=value pairs to a file of given name. Normally this
 	 * file is used as gnuplot-macro, which provides variable initialisation to the main routine.
 	 *
-	 * @param[outfile_name]         the filename to write to
+	 * outfile_name is currently hardcoded as "setparams.gp"
 	 * @param[module_id]            specify the module by its "serial" attribute in liee_parameter.xml
 	 */
-	void export_params( char *outfile_name, int module_id );
+	void export_params( int module_id );
 
-	void get_param( int module_id, char *param_name, char *text, double &value );
+	/*!
+	 * This...
+	 *
+	 * @param[module_id]      specify the module by its "serial" attribute in liee_parameter.xml. expected to be a plot-module. if module_id==-1,
+	 *                        all modules of type plot will be addressed.
+	 */
+	void plot( int module_id );
+
 }
 
 }

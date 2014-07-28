@@ -3,6 +3,7 @@
 
 #include <filesys.h>
 
+#include <boost/foreach.hpp>
 #include "boost/tokenizer.hpp"
 #include "boost/lexical_cast.hpp"
 
@@ -114,6 +115,7 @@ Conf_Module::Conf_Module(TiXmlElement* pModuleNode)
 	pModuleNode->QueryIntAttribute( "serial", &serial );
 	type = pModuleNode->Attribute( "type" );
 	name = pModuleNode->Attribute( "name" );
+	pModuleNode->QueryStringAttribute( "include", &includes );
 	pModuleNode->QueryIntAttribute( "stage", &stage );
 
 	// gather parameters
@@ -238,7 +240,6 @@ Config::Config( string filename )
 
 	hRoot = TiXmlHandle( pModuleNode );
 	num_variables = 0;
-	map<string, Conf_Param*> globals;
 
 	for( pModuleNode = hRoot.FirstChild( "module" ).Element() ; pModuleNode; pModuleNode = pModuleNode->NextSiblingElement() )
 	{
@@ -247,22 +248,33 @@ Config::Config( string filename )
 			Conf_Module* m = new Conf_Module( pModuleNode );
 			LOG_INFO( "Processing config-parameters of #" << m->serial );
 
-			// distribute global parameters to all other modules
-			if ( m->serial == 0 && m->type.compare("global") == 0 ) {
-				globals = m->param;  // fetch globals
-			} else {
-				map<string, Conf_Param*>::iterator iter;
-				for ( iter = globals.begin(); iter != globals.end(); ++iter ) {
-					m->param[iter->first] = iter->second;
+			// include parameters from other modules
+			if ( m->includes.length() > 0 ) {
+				boost::char_separator<char> sep(",");
+				boost::tokenizer<boost::char_separator<char> > tokens( m->includes, sep );
+				BOOST_FOREACH( const string& tok, tokens ) {
+					bool found = false;
+					int include_id = boost::lexical_cast<int>(tok);
+					for ( size_t i = 0; i < chain_members.size(); i++ ) {
+						if ( ( (int)chain_members[i] ) == include_id ) {
+							// add included parameters
+							found = true;
+							map<string, Conf_Param*>::iterator iter;
+							for ( iter = chain[i]->param.begin(); iter != chain[i]->param.end(); ++iter ) {
+								m->param[iter->first] = iter->second;
+							}
+						}
+					}
+					if ( not found ) throw ( Except__Preconditions_Fail( 6546 ) );  //TODO have more specific exception
 				}
 			}
 
-			// add the module to the right slot in execution chain
+			// add the module to the specific slot in execution chain
 			for ( size_t i = 0; i < chain_members.size(); i++ ) {
 				if ( ( (int)chain_members[i] ) == m->serial ) {
 					this->chain[i] = m;
 
-					// add the parameters of module m to the merged-perspective
+					// add the parameters of module m to the merged-perspective TODO prevent multiple additions of included parameters
 					map<string, Conf_Param*>::iterator iter;
 					for ( iter = m->param.begin(); iter != m->param.end(); ++iter ) {
 						Conf_Param* p = iter->second;
@@ -401,14 +413,21 @@ void Config::evaluate_expressions()
 			}
 		}
 
-		// check end conditions
-		if ( num_unresolved == 0 ) {
-			// done with numeric evaluations, now lastly check for strings with variable suffix, for e.g. numbered filenames
+		if ( num_unresolved == 0 ) { // check end condition
+			// done with numeric evaluations, now lastly check for strings pointing to other strings or have a variable integer-suffix
 			for ( iter = merged.begin(); iter != merged.end(); ++iter )
 			{
 				Conf_Param* p = iter->second;
-				// identify the hints for the syntax: string_$refInteger
-				size_t opos = p->text.find("_$");
+				if ( p->textual  && p->text[0] == '$' ) {  // without brackets, a pointer to another parameter can only refer to another string
+					string ref = p->text.substr(1, p->text.length() );
+					for ( map<string, Conf_Param*>::iterator it = merged.begin(); it != merged.end(); ++it ) {
+						if ( ref.compare( it->first ) == 0 ) {
+							p->text = it->second->text;
+						}
+					}
+				}
+
+				size_t opos = p->text.find("_$");  // find the syntax: string_$refInteger
 				if ( p->textual  &&  opos != p->text.npos ) {
 					string key = p->text.substr( opos + 2, p->text.npos );
 					if ( p->text.find("::") == p->text.npos ) {
@@ -419,7 +438,7 @@ void Config::evaluate_expressions()
 					p->text = "" + prefix + boost::lexical_cast<string>( (int)vars[key] );
 				}
 			}
-			break;
+			break;  // the loop for recursive evaluations, since num_unresolved is zero
 		}
 		if ( not num_unresolved < num_unres_last ) {
 			LOG_FATAL( "Could not evaluate all given expressions" );

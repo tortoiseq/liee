@@ -1,17 +1,9 @@
+#!/usr/bin/python2.7
 '''
 Created on Mar 1, 2014
 
-usage: 
-    python2.7 transpose.py input-file output-file
-
-Simply transposes matrix data of a given text file and writes the result to an output-file.
-(For some reason the used numpy routines work (here) only for python2.7) 
-
-Problem     commenting lines disappear
-Solution    grep '#' input-file >> output-file.dat
-
-Problem     File-size blows up by too high precision of printed numbers
-Solution    don't care (or look for savetxt() parameters)
+Provides some command line tools to help with gathering data and plotting the data from 
+runs of the liee_worker.
 
 @author: quark
 '''
@@ -29,9 +21,20 @@ CONV_au_fs = 2.418884326505e-2
 CONV_au_V_over_m = 5.1421e11
 CONV_au_V = CONV_au_V_over_m * CONV_au_m
 
+precision = 5
+lib = ctypes.cdll.LoadLibrary('/usr/local/lib/libliee.so')
+
+
+'''
+Simply transposes matrix data of a given text file and writes the result to an output-file.
+(For some reason the used numpy routines work (here) only for python2.7)
+
+Problem     commenting lines disappear
+Solution    grep '#' input-file >> output-file.dat
+'''
 def transpose( infile, outfile ):
     data = numpy.loadtxt( infile, numpy.float, '#', )
-    numpy.savetxt( outfile, data.transpose() )
+    numpy.savetxt( outfile, data.transpose(), fmt="%."+str(precision)+"g" )
     return
 
 def stats( infile, outfile):
@@ -56,7 +59,6 @@ def potential( r0, r1, Nr, t0, t1, Nt, outfile ):
         if Nt > 1:  dt = (t1 - t0) / (Nt - 1)
         else:       dt = 0
         
-        lib = ctypes.cdll.LoadLibrary('/usr/local/lib/libliee.so')
         lib.init_potential()
         pot = numpy.zeros( (Nr, Nt+1) )
         c_Vr = ctypes.c_double( 0.0 );
@@ -68,11 +70,24 @@ def potential( r0, r1, Nr, t0, t1, Nt, outfile ):
                 lib.calc_potential( c_r, c_t, ctypes.byref(c_Vr), ctypes.byref(c_Vi) )
                 if ti==0:   pot[ri][0] = c_r.value * CONV_au_nm
                 pot[ri][ti+1] = c_Vr.value * CONV_au_eV
-        numpy.savetxt( outfile, pot )
+        numpy.savetxt( outfile, pot, fmt="%."+str(precision)+"g" )
+
+def plot( module_id ):
+    if ( module_id == "all" ):
+        module_id = -1
+    plot_id = ctypes.c_int( int(module_id) )
+    lib.plot( plot_id )
+
 
 if __name__ == '__main__':
     if sys.argv[1] == "transpose":      transpose( sys.argv[2], sys.argv[3] )
     elif sys.argv[1] == "stats":        stats( sys.argv[2], sys.argv[3] )
     elif sys.argv[1] == "potential":    potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8] )
-
-
+    elif sys.argv[1] == "plot":         plot( sys.argv[2] )
+    else:
+        print("usage:\n" +
+              "* liee_tools transpose \t input-file output-file \n" +
+              "* liee_tools stats \t input-file output-file \n" +
+              "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile \n" +
+              "* liee_tools plot \t [all|module_serial]\n" +
+              "" )
