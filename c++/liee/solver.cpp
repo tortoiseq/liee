@@ -86,9 +86,9 @@ bool Solver::execute()
 
 				double current_speed = leap / wait;
 				double samples_per_s = current_speed * WORK;
-				double hours_remain = (1.0 - last_progress) / current_speed / 3600;
+				double minutes_remain = (1.0 - last_progress) / current_speed / 60.0;
 				count_tic = 1 + (int)abs( 10.0 * samples_per_s / Nr );  // check progress about once in 10s
-				INFO_SHOW4( count, last_progress, samples_per_s, hours_remain );
+				INFO_SHOW4( count, last_progress, samples_per_s, minutes_remain );
 			}
 		}
 	}
@@ -198,17 +198,20 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 void Crank_Nicholson::evolve_1step()
 {
 	//FILE *file;
-	//string filename = "pot_debug-" + boost::lexical_cast<string>( count );
-	//file = boinc_fopen( filename.c_str(), "a" );
+	//if ( count == 50000 ) {
+	//	string filename = "pot_debug-" + boost::lexical_cast<string>( count );
+	//	file = boinc_fopen( filename.c_str(), "a" );
+	//}
 
 	for (size_t j=0; j < Nr; j++) {
-		//fprintf( file, "%1.5g\t%1.5g\t%1.5g\n", dr*j*CONV_au_nm, psi[j].real(), psi[j].imag() );
 		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t );  //#(45)
-		//fprintf( file, "%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t )*CONV_au_eV );
+		//if ( count == 50000 ) {
+		//	fprintf( file, "%1.5g\t%1.5g\t%1.5g\n", dr*j*CONV_au_nm, psi[j].real(), psi[j].imag() );
+		//	fprintf( file, "%1.5g\t%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t ).imag() * CONV_au_eV, potential->V( potential->get_r_start() + j*dr, t ).imag() * CONV_au_eV );
+		//}
 	}
-	//fclose( file );
-	//if ( count > 3 ) {
-	//	exit(0);
+	//if ( count == 50000 ) {
+	//	fclose( file );
 	//}
 
 	alfa[0] = d[0];

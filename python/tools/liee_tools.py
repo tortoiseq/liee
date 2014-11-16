@@ -12,6 +12,7 @@ import sys
 import numpy
 #import math
 import ctypes
+import os
 
 CONV_au_m = 5.2917720859e-11
 CONV_au_nm = 5.2917720859e-2
@@ -81,13 +82,19 @@ def plot( module_id ):
 
 if __name__ == '__main__':
     if sys.argv[1] == "transpose":      transpose( sys.argv[2], sys.argv[3] )
-    elif sys.argv[1] == "stats":        stats( sys.argv[2], sys.argv[3] )
+    elif sys.argv[1] == "stats":
+        if ( len(sys.argv) > 4 and sys.argv[4] == "skipcol0"):
+            os.system("sed -e \"s/[\t[:space:]]\+/\t/g\" '"+ sys.argv[2] +"' | cut -f 2- - >'" + sys.argv[2] + ".skipcol0'")
+            stats( sys.argv[2]+".skipcol0", sys.argv[3] )
+        else:
+            stats( sys.argv[2], sys.argv[3] )
     elif sys.argv[1] == "potential":    potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8] )
     elif sys.argv[1] == "plot":         plot( sys.argv[2] )
     else:
         print("usage:\n" +
               "* liee_tools transpose \t input-file output-file \n" +
               "* liee_tools stats \t input-file output-file \n" +
+              "* liee_tools stats \t input-file output-file skipcol0\n" +
               "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile \n" +
               "* liee_tools plot \t [all|module_serial]\n" +
               "" )

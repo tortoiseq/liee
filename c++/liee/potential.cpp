@@ -305,16 +305,15 @@ void Potential::estimate_effort( Conf_Module* config, double & flops, double & r
 
 void Potential::summarize( map<string, string> & results )
 {
-	results["r_start"] = doub2str( r_start * CONV_au_nm ); //TODO boost convert
+	results["r_start"] = doub2str( r_start * CONV_au_nm );
 }
 
 dcmplx Potential::V( double r, double t )
 {
-	double z = (r - (r_start + r_range - wcap) ) / wcap;  // CAP coordinate
-	if (z > 0.0 && z <= 1.0)  // r is in CAP territory
+	double z = (r - r_cap ) / wcap;  // CAP coordinate
+	if (z > 0.0 && z <= 1.0)  // r is in CAP territory -> all other potential contributions kept constatnt
 	{
-		double r_ = r_start + r_range - wcap;
-		return dcmplx( well->V( r_ ) +  V_Fdc( r_, t ) + V_pulse( r_, t ), V_cap( z ) );
+		return dcmplx( well->V( r_cap ) +  V_Fdc( r_cap, t ) + V_pulse( r_cap, t ), V_cap( z ) );
 	}
 	else {
 		return dcmplx( well->V( r ) +  V_Fdc( r, t ) + V_pulse( r, t ), 0.0 );
@@ -323,16 +322,11 @@ dcmplx Potential::V( double r, double t )
 
 dcmplx Potential::V_indexed( size_t ri, double t )
 {
-	return cache_Vwell[ri];  //TODO remove this debug
-
 	// return without Vdc before it is switched on
 	if ( t < t_on ) { return cache_Vwell[ri] + V_pulse( grid_r[ri], t ); }
 
 	// while ramping up V_dc, it has to be re-calculated for each time-step
 	if ( t <= t_full ) {
-		if ( grid_r[ri] > r_cap ) {
-			return cache_Vwell[ri] + V_Fdc( r_cap, t ) + V_pulse( r_cap, t );  // inside the CAP, V_dc has the constant value from the left side of it
-		}
 		return cache_Vwell[ri] + V_Fdc( grid_r[ri], t ) + V_pulse( grid_r[ri], t );
 	}
 
@@ -348,9 +342,10 @@ void Potential::set_grid( double dr, size_t N )
 	cache_Vconst.clear();
 	for ( size_t i = 0; i < N; i++ ) {
 		double r = r_start + i * dr;
+		if ( r > r_cap ) { r = 1.000000001 * r_cap; }  // in the CAP-range, all normal contributions to the potential are kept constant at their value at r_cap
 		grid_r.push_back( r );
 
-		double z = ( r - r_cap ) / wcap;
+		double z = ( (r_start + i * dr) - r_cap ) / wcap;
 		if (z > 0.0  &&  z <= 1.0)  // r is in CAP territory
 		{
 			cache_Vconst.push_back( dcmplx( well->V( r_cap ) + V_Fdc( r_cap, t_full ), V_cap(z) ) );
@@ -627,7 +622,7 @@ inline double Pot_Piecewise::V( double r )
 		r = segs.back().end_r;
 	}
 	for ( size_t i = 0; i < segs.size(); i++ ) {
-		if ( r > segs[i].start_r  &&  r <= segs[i].end_r ) {
+		if ( r >= segs[i].start_r  &&  r <= segs[i].end_r ) {
 			if ( segs[i].sign == 0 ) {
 				return segs[i].m * r + segs[i].n;  // line segment
 			}
@@ -637,7 +632,7 @@ inline double Pot_Piecewise::V( double r )
 			return segs[i].cV + segs[i].sign * sqrt( SQR( segs[i].radius ) - SQR( r - segs[i].cr ) ) / scale_y;  // ellipse segment
 		}
 	}
-	LOG_ERROR( "Pot_Piecewise failed to be continuous at r=" << r )
+	LOG_ERROR( "Pot_Piecewise is not continuous at r = " << r )
 	return 0;
 }
 
@@ -853,7 +848,7 @@ void Chulkov_Image_Potential::initialize( Conf_Module* config, vector<Module*> d
 	// mit 41*2 Cos-Perioden im inneren und einer Wandstärke von 40*2 Perioden.
 	as = 3.387;
 	nlay = 41;
-	double dslab = 2 * as * nlay  +  40 * as;
+	//double dslab = 2 * as * nlay  +  40 * as;
 	shift = 0;
 	A10 = -18.750 / CONV_au_eV;
 	A1 = 6.2 / CONV_au_eV;

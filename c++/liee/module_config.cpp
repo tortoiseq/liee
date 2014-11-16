@@ -3,7 +3,7 @@
 
 #include <filesys.h>
 
-#include <boost/foreach.hpp>
+#include "boost/foreach.hpp"
 #include "boost/tokenizer.hpp"
 #include "boost/lexical_cast.hpp"
 

@@ -25,7 +25,7 @@ class Pot_const : public Module
 {
 public:
 	//! potential energy at position r
-	virtual inline double V( double r ) = 0;
+	virtual double V( double r ) = 0;
 
 	/*!
 	 * exposes the classical turning-points for a particle with energy E
@@ -121,7 +121,7 @@ class Laser_Field : public Module
 {
 public:
 	//! potential energy at position r and time t
-	virtual inline double electric_field( double t ) = 0;
+	virtual double electric_field( double t ) = 0;
 };
 
 

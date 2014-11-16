@@ -160,7 +160,7 @@ def main():
     else:
         outfile.close()
         
-    r_split = 0.0
+    r_split = 150.0
     i_split = int( ( r_split / CONV_au_nm - r_0 ) / dr )
     print( str(i_split) + " of "+ str(Nr) )
     V_of_t = numpy.zeros( Nt )  # @UndefinedVariable
@@ -300,7 +300,7 @@ def main():
     gp += "set obj 2 circle at second " + str( Vmax * CONV_au_eV ) + "," + str( tVmax_ ) + " size screen 0.008 front fillcolor rgb \"dark-magenta\" fillstyle solid 1.0 \n"
     gp += "set obj 3 circle at second " + str( tc_V * CONV_au_eV ) + "," + str( t_charge ) + " size screen 0.008 front fillcolor rgb \"black\" fillstyle solid 1.0 \n"
     gp += "plot 'pulse_shape.dat' using ($1 * " + str( CONV_au_eV ) + "):($0 * " + str( dt * CONV_au_fs ) + ") axis x2y2 title 'Pulse-Potential' with lines ls 1,"
-    gp +=       "'current.dat' using ($3 / " + str( CONV_au_fs ) + "):($1 * " + str( CONV_au_fs ) + ") axis x1y2 title 'Tunnel Strom' with lines ls 2\n"
+    gp +=       "'j(t).dat' using ($2 / " + str( CONV_au_fs ) + "):($1) axis x1y2 title 'Tunnel Strom' with lines ls 2\n"
 
     # Matrix
     gp += "reset \n"
@@ -322,6 +322,11 @@ def main():
         gp += "plot 'matrix.dat' matrix with image\n"
     else:
         gp += "plot 'matrix.dat' with image\n"
+
+    #debug
+    fdebug = open("multiplot.gp", "w")
+    fdebug.write(gp)
+    fdebug.close()
 
     proc = subprocess.Popen( "gnuplot", stdin=subprocess.PIPE, stdout=subprocess.PIPE )
     print proc.communicate( gp )[0]

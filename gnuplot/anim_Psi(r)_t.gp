@@ -1,30 +1,25 @@
 load 'set_vars.gp'
-set term png enhanced size 1366, 768
+set term png enhanced size width_plt, height_plt
 
-# extract some parameters from the datafile
-system( sprintf( "grep '##' 'wf(r,t).dat' | awk '{print $2}' > 'wf(r,t).param'" ) )
-load 'wf(r,t).param'
+# extract some parameters from the datafile and scan through data to find global extrema
+system( sprintf( "grep '##' '%s' | awk '{print $2}' > '%s.param'", data, data ) )
+system( sprintf( "liee_tools.py stats '%s' '%s.param'", data, data ) )
+load data.'.param'
 dr = (r1 - r0) / (Nr - 1)
 
-# scan through data to find global extrema
-system( sprintf( "liee_tools.py stats 'wf(r,t).dat' 'wf(r,t).param'" ) )
-load 'wf(r,t).param'
-
 # calculate potential data
-system( sprintf( "liee_tools.py potential %f %f %d %f %f %d 'potential.dat'", r0, r1, Nr, t0, t1, Nt) )
+system( sprintf( "liee_tools.py potential %f %f %d %f %f %d 'potential.dat'", r0, r1, Nr, t0, t1, Nt_plt) )
 
 # transpose data so that gnuplot can operate on columns instead of rows
-system( sprintf( "liee_tools.py transpose 'wf(r,t).dat' 'wf(r,t)_.dat'" ) )
-system( sprintf( "grep '#' 'wf(r,t).dat' >> 'wf(r,t)_.dat'" ) )
+system( sprintf( "liee_tools.py transpose '%s' '%s.t'", data, data ) )
+system( sprintf( "grep '#' '%s' >> '%s.t'", data, data ) )
 
-
-dt_plt = (t1_plt - t0_plt) / (Nt_plt - 1)
-
+dt_plt = ( t1_plt - t0_plt ) / ( Nt_plt - 1 )
 
 do for [frame=0 : Nt_plt-1]{
   t_plt = t0_plt + frame * dt_plt
   print "frame ".frame
-  set output sprintf( "%s.%d.%03d.png", template, serial, frame )
+  set output sprintf( "%s.%d.%05d.png", template, serial, frame )
 
   set lmargin at screen r0_scr
   set rmargin at screen r1_scr
@@ -34,8 +29,8 @@ do for [frame=0 : Nt_plt-1]{
 }
 
 
-system( sprintf( "mencoder 'mf://./%s'.%d.???.png -mf type=png:w=1366:h=768:fps=5 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o '%s'.%d.avi", template, serial, template, serial ) )
+system( sprintf( "mencoder 'mf://./%s'.%d.?????.png -mf type=png:w=800:h=600:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o '%s'.%d.avi", template, serial, template, serial ) )
 
 # clean up
-system( sprintf( "rm '%s'.%d.???.png", template, serial ) )
-system( sprintf( "rm 'wf(r,t)_.dat'" ) )
+system( sprintf( "rm '%s'.%d.?????.png", template, serial ) )
+#system( sprintf( "rm '%s.t'", data ) )

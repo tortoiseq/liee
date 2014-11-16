@@ -1,8 +1,9 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+#include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/path.hpp"
 namespace fs = boost::filesystem;
 
 #include "libliee.hpp"
@@ -67,6 +68,7 @@ extern "C" void export_params( int module_id )
 	Module_Factory factory;
 	ofstream myfile;
 	myfile.open ("set_vars.gp");
+	myfile << std::scientific << std::setprecision(14);
 	vector<Module*> deps;
 	for ( int i = 0; i < (int)cnf->chain.size(); i++ )
 	{
