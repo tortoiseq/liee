@@ -550,7 +550,7 @@ void Obs_Probability_Current::initialize( Conf_Module* config, vector<Module*> d
 		}
 	}
 
-	filename = config->get_string("OUTFILE");
+	boinc_resolve_filename_s( config->get_string("OUTFILE").c_str(), filename );
 	is_objective = config->get_bool("is_objective");
 	r_detect = config->get_double("r_detect") / CONV_au_nm;
 	if ( r_detect < 0 ) r_detect = 0;
@@ -570,6 +570,17 @@ void Obs_Probability_Current::initialize( Conf_Module* config, vector<Module*> d
 	if ( step_t > Nt ) { step_t = Nt; }
 	num_t = (Nt % step_t)  ?  Nt / step_t + 1  :  Nt / step_t;
 	config->set_int("t_samples", num_t);  // save the actual number of samples
+
+	stringstream range_info;
+	range_info << std::scientific << std::setprecision(8);
+	range_info << "##\t" << "t0=0.0;\n";
+	range_info << "##\t" << "t1=" << t_range * CONV_au_fs << ";\n";
+	range_info << "##\t" << "Nt=" << num_t << ";\n";
+	range_info << "##\t" << "r_detect=" << r_detect * CONV_au_nm << ";\n";
+
+	FILE* f = boinc_fopen( filename.c_str(), "w" );  // delete previous snapshot file
+	fprintf( f, "%s", range_info.str().c_str() );  // write range-information as comments
+	fclose( f );
 }
 
 void Obs_Probability_Current::reinitialize( Conf_Module* config, vector<Module*> dependencies )
@@ -591,12 +602,12 @@ void Obs_Probability_Current::estimate_effort( Conf_Module* config, double & flo
 void Obs_Probability_Current::summarize( map<string, string> & results )
 {
 	// save after getting the last sample
-	FILE* f = boinc_fopen( filename.c_str(), "w" );
+	FILE* f = boinc_fopen( filename.c_str(), "a" );
 	double sumJ = 0.0;
 	for ( size_t i = 0; i < j.size(); i++ )
 	{
 		sumJ += j[i];  // TODO use pairwise summation or Kahan summation
-		fprintf( f, "%1.6g\t%1.16g\n", i * dt * CONV_au_fs , j[i] );
+		fprintf( f, "%1.16g\n", j[i] );
 	}
 	fprintf( f, "\n" );
 	fclose( f );

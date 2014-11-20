@@ -246,7 +246,7 @@ Config::Config( string filename )
 		if ( strcmp( pModuleNode->Value(), "module" ) == 0 )
 		{
 			Conf_Module* m = new Conf_Module( pModuleNode );
-			LOG_INFO( "Processing config-parameters of #" << m->serial );
+			//LOG_DEBUG( "Processing config-parameters of #" << m->serial );
 
 			// include parameters from other modules
 			if ( m->includes.length() > 0 ) {
@@ -261,7 +261,9 @@ Config::Config( string filename )
 							found = true;
 							map<string, Conf_Param*>::iterator iter;
 							for ( iter = chain[i]->param.begin(); iter != chain[i]->param.end(); ++iter ) {
-								m->param[iter->first] = iter->second;
+								if ( m->param.find( iter->first ) == m->param.end() ) {  // local parameters of the same name have precedence
+									m->param[iter->first] = iter->second;
+								}
 							}
 						}
 					}

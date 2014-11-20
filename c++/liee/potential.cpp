@@ -432,6 +432,7 @@ inline double Potential::V_pulse( double r, double t )
 	}
 
 	double r_ = r - r_start;
+	if ( r_ < 0 ) { return 0.0; }
 	size_t i = floor( r_ / dx_sample );
 	if (i >= int_samples) {
 		return Pulse_samples[int_samples-1].y;

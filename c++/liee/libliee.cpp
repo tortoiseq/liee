@@ -68,7 +68,7 @@ extern "C" void export_params( int module_id )
 	Module_Factory factory;
 	ofstream myfile;
 	myfile.open ("set_vars.gp");
-	myfile << std::scientific << std::setprecision(14);
+	myfile << std::scientific << std::setprecision(8);
 	vector<Module*> deps;
 	for ( int i = 0; i < (int)cnf->chain.size(); i++ )
 	{

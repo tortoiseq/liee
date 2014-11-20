@@ -1,5 +1,3 @@
-(experimental and learning by doing)
-
 Overview:
 
 The BOINC Project "Laser Induced Electron Emission" is basically a Solver for

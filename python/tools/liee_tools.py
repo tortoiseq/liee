@@ -50,7 +50,9 @@ def stats( infile, outfile):
     fobj.close()
 
 
-def potential( r0, r1, Nr, t0, t1, Nt, outfile ):
+def potential( r0, r1, Nr, t0, t1, Nt, outfile, incl_r=0 ):
+    if not (incl_r==1 or incl_r==0):
+        exit(1)
     r0 = r0 / CONV_au_nm
     r1 = r1 / CONV_au_nm
     t0 = t0 / CONV_au_fs
@@ -61,7 +63,7 @@ def potential( r0, r1, Nr, t0, t1, Nt, outfile ):
     else:       dt = 0
     
     lib.init_potential()
-    pot = numpy.zeros( (Nr, Nt+1) )
+    pot = numpy.zeros( (Nr, Nt+incl_r) )
     c_Vr = ctypes.c_double( 0.0 );
     c_Vi = ctypes.c_double( 0.0 );
     V_min = 6e66
@@ -73,21 +75,27 @@ def potential( r0, r1, Nr, t0, t1, Nt, outfile ):
             c_r = ctypes.c_double( r0 + ri * dr );
             c_t = ctypes.c_double( t0 + ti * dt );
             lib.calc_potential( c_r, c_t, ctypes.byref(c_Vr), ctypes.byref(c_Vi) )
-            if ti==0:   pot[ri][0] = c_r.value * CONV_au_nm
-            pot[ri][ti+1] = c_Vr.value * CONV_au_eV
-            if pot[ri][ti+1] < V_min:
-                V_min = pot[ri][ti+1]
+            if incl_r==1 and ti==0:   pot[ri][0] = c_r.value * CONV_au_nm
+            pot[ri][ti+incl_r] = c_Vr.value * CONV_au_eV
+            if pot[ri][ti+incl_r] < V_min:
+                V_min = pot[ri][ti+incl_r]
                 V_min_t = ti
-            if pot[ri][ti+1] > V_max:
-                V_max = pot[ri][ti+1]
+            if pot[ri][ti+incl_r] > V_max:
+                V_max = pot[ri][ti+incl_r]
                 V_max_t = ti
     numpy.savetxt( outfile, pot, fmt="%."+str(precision)+"g" )
     os.system("sync")
     fobj = open( outfile, "a" )
-    fobj.write( "##\tV_min=" + str( V_min ) + ";\n" )
-    fobj.write( "##\tV_min_t=" + str( V_min_t ) + ";\n" )
-    fobj.write( "##\tV_max=" + str( V_max ) + ";\n" )
-    fobj.write( "##\tV_max_t=" + str( V_max_t ) + ";\n" )
+    fobj.write( "##\tt0=" + str( t0 * CONV_au_fs ) + ";\n" )
+    fobj.write( "##\tt1=" + str( t1 * CONV_au_fs ) + ";\n" )
+    fobj.write( "##\tNt=" + str( Nt ) + ";\n" )
+    fobj.write( "##\tr0=" + str( r0 * CONV_au_nm ) + ";\n" )
+    fobj.write( "##\tr1=" + str( r1 * CONV_au_nm ) + ";\n" )
+    fobj.write( "##\tNr=" + str( Nr ) + ";\n" )
+    fobj.write( "##\tVmin=" + str( V_min ) + ";\n" )
+    fobj.write( "##\tVmin_i=" + str( V_min_t ) + ";\n" )
+    fobj.write( "##\tVmax=" + str( V_max ) + ";\n" )
+    fobj.write( "##\tVmax_i=" + str( V_max_t ) + ";\n" )
     fobj.close()
 
 def plot( module_id ):
@@ -105,13 +113,21 @@ if __name__ == '__main__':
             stats( sys.argv[2]+".skipcol0", sys.argv[3] )
         else:
             stats( sys.argv[2], sys.argv[3] )
-    elif sys.argv[1] == "potential":    potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8] )
-    elif sys.argv[1] == "plot":         plot( sys.argv[2] )
+    elif sys.argv[1] == "potential":
+        if len(sys.argv) > 9:
+            if sys.argv[9].upper()=="TRUE":
+                potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8], 1 )
+            elif sys.argv[9].upper()=='FALSE':
+                potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8], 0 )
+        else:
+            potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8], 0 )
+    elif sys.argv[1] == "plot":
+        plot( sys.argv[2] )
     else:
         print("usage:\n" +
               "* liee_tools transpose \t input-file output-file \n" +
               "* liee_tools stats \t input-file output-file \n" +
               "* liee_tools stats \t input-file output-file skipcol0\n" +
-              "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile \n" +
+              "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile [true/false]\n" +
               "* liee_tools plot \t [all|module_serial]\n" +
               "" )
