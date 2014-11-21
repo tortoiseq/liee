@@ -1,11 +1,6 @@
 #!/usr/bin/python2.7
 '''
-Created on Mar 1, 2014
-
-Provides some command line tools to help with gathering data and plotting the data from 
-runs of the liee_worker.
-
-@author: quark
+Provides some command line tools to help with gathering data and plotting the data from experiment-runs. 
 '''
 
 import sys

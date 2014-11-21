@@ -1,7 +1,7 @@
 '''
+Old and busted, not sure if still applicable. Has been unused for a long time.
+Apparently for testing the swarm optimiser.
 Created on Nov 28, 2012
-
-@author: quark
 '''
 
 import numpy
@@ -43,7 +43,7 @@ def main():
         sys.exit(2)
 
     data = []
-    filename = "swarming.dat";        
+    filename = "swarming.dat";
     dims = [];
 
     for o, a in opts:
@@ -52,7 +52,7 @@ def main():
         elif o in ("-d", "--dims"):
             dims = re.findall( r'\w+', a )
             for di in range( len( dims ) ):
-                dims[di] = int( dims[di] )        
+                dims[di] = int( dims[di] )
         else:
             assert False, "unhandled option"
     dim = len( dims )  

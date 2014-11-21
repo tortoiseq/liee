@@ -1,7 +1,13 @@
 '''
-Created on Nov 26, 2012
+Extracts specific values from a set of finished results.
 
-@author: quark
+An LIEE-experiment typically runs many instances with modified parameters resulting in a bunch of directories
+in the servers upload-path containing the individual data-files. The input parameters and some results are listed
+in the "summary.txt" for each run. "extract_result_data" currently can only access those values listed in the summary file.
+
+Optionally predefined plotting routines can be executed within each result-directory. 
+
+The output is a table with a row for each experiment-run and the unnamed parameters in the given order ("params"-option)
 '''
 
 import numpy
@@ -16,20 +22,18 @@ import re
 def main():
     # parse arguments, load datafile, find maxima of Psi, minima of V
     try:
-        opts, args = getopt.getopt( sys.argv[1:], "e:p", ["experiment=","params=","plot-each","tiny=","huge="] )
+        opts, args = getopt.getopt( sys.argv[1:], "e:p", ["experiment=","params=","plot-each"] )
     except getopt.GetoptError, err:
         print str(err) # will print something like "option -a not recognized"
         sys.exit(2)
-        
+
     plot_each = False
-    ex = ""
-    ps = []
-    dirs = []
-    fi = -1
+    ex = ""  # experiment name
+    ps = []  # list of parameters to extract
+    dirs = []  # remember appropriate directories for the plotting
+    fi = -1  # file index
     data = []
-    tiny = "1e-9"
-    huge = "1e-1"
-        
+
     for o, a in opts:
         if o in ("-e", "--experiment"):
             ex = a
@@ -38,19 +42,15 @@ def main():
             print( ps )
         elif o in ("--plot-each",):
             plot_each = True        
-        elif o in ("--tiny",):
-            tiny = a        
-        elif o in ("--huge",):
-            huge = a        
         else:
             assert False, "unhandled option"
-    
-    
+
+
     for dirname, dirnames, filenames in os.walk( '.' ):
-    #filter directories according to experiment
+    # filter directories according to experiment
         if ( dirname.find( ex ) == -1 ):
             continue
-        
+
         for filename in filenames:
             if filename == "summary.txt":
                 fi += 1
@@ -69,24 +69,22 @@ def main():
                 
                 if plot_each:
                     dirs.append( dirname )
-                
-    # run snapshot plotter
+
+    # create the plots specified in liee_parameter.xml 
     if plot_each:
         for dir in dirs:
+            pass # nada
             sufix = "_"
             i = dir.find( "_" )
             if i > -1:
                 sufix = dir[ (i+1): ]
             print( dir )
             os.chdir( dir )
-            subprocess.call( [ "python", "/var/www/boinc/liee/bin/snapshot_plotter.py", "-f", "wf_evolution.dat",
-                               "--logscale", "--potential", 
-                               "--tiny="+tiny, "--huge="+huge ] )
-            #subprocess.call( [ "convert", "multiplot.ps", "multiplot" + sufix + ".png" ] )
+            #TODO use new plotting tools
             os.chdir( ".." )
-                
 
-    #print stdout
+
+    # OUTPUT: print to stdout
     for fi in range( len( data ) ):
         line = str( fi )
         for x in data[fi]:

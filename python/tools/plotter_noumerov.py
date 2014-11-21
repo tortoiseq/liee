@@ -1,9 +1,7 @@
 '''
+Old and busted, not sure if still applicable. Has been unused for a long time.
 Created on 04-Feb-2012
-
 Tool for plotting the wave functions from Noumerov debug scans
-
-@author: quark
 '''
 import numpy
 import subprocess

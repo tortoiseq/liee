@@ -19,8 +19,6 @@ unset ytics
 unset ylabel 
 set y2tics 
 set y2label 'Zeit in fs' 
-print(Nt)
-print(dt)
 set y2range [0: Nt*dt]
 
 set format x "%.1tx10^{%2T}"
@@ -30,7 +28,7 @@ set xrange[glob_min:glob_max]
 set xtics rotate 
 set x2tics rotate 
 set x2label 'Potential in eV' #offset 0,2 
-set x2range[Vmin:Vmax]
+set x2range[Vmin-1e9:Vmax+1e9]
 
 #set obj 1 circle at second Vmin*CONVeV, Vmin_t*dt*CONVfs  size screen 0.008 front fillcolor rgb "blue" fillstyle solid 1.0 
 #set obj 2 circle at second Vmax*CONVeV, Vmax_t*dt*CONVfs  size screen 0.008 front fillcolor rgb "dark-magenta" fillstyle solid 1.0 

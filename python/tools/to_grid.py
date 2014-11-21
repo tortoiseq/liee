@@ -1,9 +1,9 @@
 '''
-Created on Mar 7, 2013
-
-@author: quark
+Interpolates scattered data to project it onto a regular grid, which is useful for plotting.
+Limitations: - up to two dimensions of size (M,N)
+             - very slow for big grids and lots of input vectors
+Output to Stdout as a tab-separated table.
 '''
-
 
 import numpy
 import sys
@@ -17,7 +17,7 @@ def main():
     except getopt.GetoptError, err:
         print str(err) # will print something like "option -a not recognized"
         sys.exit(2)
-        
+
     #defaults
     x = 1
     y = 2
@@ -26,7 +26,7 @@ def main():
     M = 100
     ipr = 25     #interpolation range
     fname = "scatter.dat"
-                
+
     for o, a in opts:
         if o in ("-f", "--file"):
             fname = a
@@ -44,12 +44,12 @@ def main():
             ipr = int(a)
         else:
             assert False, "unhandled option"
-    
+
     xmin = 1e66
     xmax = -1e66
     ymin = xmin
     ymax = xmax
-    
+
     #get ranges in first pass
     fobj = open( fname, "r" )
     for line in fobj:
@@ -66,14 +66,14 @@ def main():
         if tmp < ymin:
             ymin = tmp
     fobj.close()
-    
+
     dx = (xmax-xmin)/(N-1)
     dy = (ymax-ymin)/(M-1)
-    
+
     grid = numpy.zeros( (N, M) )
     wsum = numpy.zeros( (N, M) )   # should be integers
     maxweight = 1e9
-        
+
     #second pass: gather points
     fobj = open( fname, "r" )
     for line in fobj:
@@ -94,17 +94,17 @@ def main():
                     else:
                         w = 1.0 / dist
                          
-                    grid[i][j] += w * zv  
+                    grid[i][j] += w * zv
                     wsum[i][j] += w
     fobj.close()
-                    
+
     #third pass: weight and print out
-    print("# xmin=" + str(xmin) )
-    print("# ymin=" + str(ymin) )
-    print("# xmax=" + str(xmax) )
-    print("# ymax=" + str(ymax) )
-    print("# dx=" + str(dx) )
-    print("# dy=" + str(dy) )
+    print("##\txmin=" + str(xmin) +";")
+    print("##\tymin=" + str(ymin) +";" )
+    print("##\txmax=" + str(xmax) +";" )
+    print("##\tymax=" + str(ymax) +";" )
+    print("##\tdx=" + str(dx) +";" )
+    print("##\tdy=" + str(dy) +";" )
     for i in range( N ):
         line = ""
         for j in range( M ):
@@ -113,8 +113,8 @@ def main():
                 zz = grid[i][j] / wsum[i][j]
             line += str(zz) + "\t"
         print( line )
-    
-    
+
+
 
 if __name__ == '__main__':
     main()

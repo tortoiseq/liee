@@ -2,7 +2,7 @@
 #------------------------------------------------------------------------------
 
 # calculate potential data
-maIN="V(r,t).dat"; ma_r0=r0; ma_r1=r1; ma_Nr=Nr; ma_t0=t0; ma_t1=t1; ma_Nt=Nt; @POTENTIAL
+maIN="V(r,t).dat"; ma_r0=r0_plt; ma_r1=r1_plt; ma_Nr=Nr_plt; ma_t0=t0; ma_t1=t1; ma_Nt=Nt; @POTENTIAL
 dr = (r1 - r0) / (Nr - 1)
 
 set xrange [r0_plt:r1_plt]

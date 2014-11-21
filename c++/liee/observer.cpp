@@ -39,9 +39,20 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	stringstream range_info;
 	range_info << std::scientific << std::setprecision(8);
 
+	double r_start = 0;  //TODO codedup. with Obs_Wigner
+	for ( size_t i = 0; i < dependencies.size(); i++ ) {
+		if ( dependencies[i]->type.compare("potential") == 0 ) {
+			Potential* pot = dynamic_cast<Potential*>( dependencies[i] );
+			r_start = pot->get_r_start();
+		}
+	}
+	double r_end = r_start + config->get_double("r_range") / CONV_au_nm;
+
 	double dr = config->get_double("dr") / CONV_au_nm;
 	double r0 = config->get_double("obs_r0") / CONV_au_nm;
 	double r1 = config->get_double("obs_r1") / CONV_au_nm;
+	if ( r0 < r_start ) { r0 = r_start; }
+	if ( r1 > r_end ) { r1 = r_end; }
 	ir0 = (int) (r0 / dr);
 	ir1 = (int) (r1 / dr);
 
@@ -280,10 +291,14 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	double r_end = r_start + config->get_double("r_range") / CONV_au_nm;
 	double dr = config->get_double("dr") / CONV_au_nm;
 	double kmax = CONST_PI / dr;
-	r0 = ( config->param_is_nan("obs_r0") )  ?  r_start  :  config->get_double("obs_r0") / CONV_au_nm;  //TODO regard simulation bounds
+	r0 = ( config->param_is_nan("obs_r0") )  ?  r_start  :  config->get_double("obs_r0") / CONV_au_nm;
+	if ( r0 < r_start ) { r0 = r_start; }
 	r1 = ( config->param_is_nan("obs_r1") )  ?  r_end    :  config->get_double("obs_r1") / CONV_au_nm;
+	if ( r1 > r_end ) { r1 = r_end; }
 	k0 = ( config->param_is_nan("obs_k0") )  ?  -kmax    :  config->get_double("obs_k0") * CONV_au_nm;
+	if ( k0 < -kmax ) { k0 = -kmax; }
 	k1 = ( config->param_is_nan("obs_k1") )  ?  +kmax    :  config->get_double("obs_k1") * CONV_au_nm;
+	if ( k1 > kmax ) { k1 = kmax; }
 
 	num_r = config->get_int("r_samples");
 	num_k = config->get_int("k_samples");
@@ -349,9 +364,6 @@ void Obs_Wigner_Distribution::observe( Module* state )
 		double r = r0 + ri * dr;
 		size_t rii = (size_t) round( (r - r_start) / s->dr );
 		size_t delta_max = min( rii, s->Nr - 1 - rii );
-		if ( rii + delta_max >= s->Nr  ||  rii - delta_max < 0 ) {
-			DEBUG_SHOW4("Wigner out of range!", rii, delta_max, s->Nr );
-		}
 
 		for ( size_t ki = 0; ki < num_k; ki++ )
 		{
@@ -360,6 +372,13 @@ void Obs_Wigner_Distribution::observe( Module* state )
 			double sum = 0;
 			for ( size_t delta_i = 0; delta_i <= delta_max; delta_i++ ) {
 				double delta_r = s->dr * delta_i;
+				//TODO after sufficient testing, this range check might be dropped
+				if ( rii + delta_i >= s->Nr || rii + delta_i < 0 || rii - delta_i >= s->Nr || rii - delta_i < 0 ) {
+					LOG_ERROR("Desaster! Wigner tries an out-of-bounds access on psi[]" << rii << " " << delta_i << " " << s->Nr );
+					fclose( file );
+					return;
+				}
+
 				sum += real( conj( s->psi[rii + delta_i] ) * s->psi[rii - delta_i] * exp( kx2i * delta_r ) );
 			}
 			fprintf( file, format.c_str(), sum / CONST_PI );
