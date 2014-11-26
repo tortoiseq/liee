@@ -19,11 +19,11 @@ dk = (k1 - k0) / (Nk - 1)
 dt_plt = ( t1_plt - t0_plt ) / ( Nt_plt - 1 )
 
 #do for [frame=0 : Nt_plt-1]{
-do for [frame=0 : 100]{
+do for [frame=0 : 4]{
   t_plt = t0_plt + frame * dt_plt
   set output sprintf( "%d.%05d.png", serial, frame )
   load '/usr/local/src/gnuplot/sub_matrix-wigner_@t.gp'
 }
 
-system( sprintf( "mencoder 'mf://./%d.?????.png' -mf type=png:w=%d:h=%d:fps=%d -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o '%s.%d.avi'", serial, width_plt, height_plt, fps_plt, template, serial ) )
+#system( sprintf( "mencoder 'mf://./%d.?????.png' -mf type=png:w=%d:h=%d:fps=%d -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o '%s.%d.avi'", serial, width_plt, height_plt, fps_plt, template, serial ) )
 #system( sprintf( "rm %d.?????.png", serial ) )  # clean up

@@ -70,8 +70,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		range_info << "##\t" << "Nr=" << num_r << ";\n";
 	} else {
 		// prepare spectral downsampling
-		double k_range = 0.5 / dr;  // previously: k_max = 1/(2 dr)
-		k_range *= 2.0 * CONST_PI;  // values were off by 2pi
+		double k_range = 0.5 / dr;
+		k_range *= 2.0 * CONST_PI;
 		double dk = 2.0 * k_range / ( (r1 - r0) / dr );
 		double k0 = config->param_is_nan("obs_k0")  ?  -k_range  :  config->get_double("obs_k0") * CONV_au_nm;
 		double k1 = config->param_is_nan("obs_k1")  ?  +k_range  :  config->get_double("obs_k1") * CONV_au_nm;
@@ -195,7 +195,6 @@ void Obs_Snapshot_WF::observe( Module* state )
 
 	//TODO optional smoothing of data before sub-sampling
 	if ( do_fourier ) {
-		//fac = sqrt( s->dr / Nfou) );
 		fac = s->dr / sqrt( 2.0 * CONST_PI );
 		for ( size_t i = ik0, j = 0; i <= ik1 && j < valrec.size(); i += step_k, j++ ) {
 			// ring-looping necessary because fftw places positive frequencies in the first half before the negative frequencies in output-array.
@@ -355,6 +354,8 @@ void Obs_Wigner_Distribution::observe( Module* state )
 	double dr = ( r1 - r0 ) / ( num_r - 1 );
 	double dk = ( k1 - k0 ) / ( num_k - 1 );
 	dcmplx two_i = dcmplx( 0, 2 );
+	double sdr = s->dr;
+	size_t sNr = s->Nr;
 
 	FILE *file;
 	file = boinc_fopen( filename.c_str(), "a" );
@@ -362,24 +363,18 @@ void Obs_Wigner_Distribution::observe( Module* state )
 	for ( size_t ri = 0; ri < num_r; ri++ )
 	{
 		double r = r0 + ri * dr;
-		size_t rii = (size_t) round( (r - r_start) / s->dr );
-		size_t delta_max = min( rii, s->Nr - 1 - rii );
+		size_t rii = (size_t) floor( (r - r_start) / sdr );
 
 		for ( size_t ki = 0; ki < num_k; ki++ )
 		{
 			dcmplx kx2i = two_i * ( k0 + ki * dk );
-			// TODO use pairwise summation or Kahan summation to reduce numeric errors from adding small and large values
-			double sum = 0;
-			for ( size_t delta_i = 0; delta_i <= delta_max; delta_i++ ) {
-				double delta_r = s->dr * delta_i;
-				//TODO after sufficient testing, this range check might be dropped
-				if ( rii + delta_i >= s->Nr || rii + delta_i < 0 || rii - delta_i >= s->Nr || rii - delta_i < 0 ) {
-					LOG_ERROR("Desaster! Wigner tries an out-of-bounds access on psi[]" << rii << " " << delta_i << " " << s->Nr );
-					fclose( file );
-					return;
-				}
+			double sum = 0;  // TODO use pairwise summation or Kahan summation to reduce numeric errors from adding small and large values
+			int left = rii;
+			size_t right = rii;
 
-				sum += real( conj( s->psi[rii + delta_i] ) * s->psi[rii - delta_i] * exp( kx2i * delta_r ) );
+			for (size_t delta_i = 0; left >= 0 && right < sNr; left--, right++, delta_i++ ) {
+				double delta_r = sdr * delta_i;
+				sum += real( conj( s->psi[right] ) * s->psi[left] * exp( kx2i * delta_r ) );
 			}
 			fprintf( file, format.c_str(), sum / CONST_PI );
 		}

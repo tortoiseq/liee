@@ -8,10 +8,10 @@ INITIAL WFs	20::numerov		21::wf_reader		22::wave_packet
 OBSERVERs	30::wf_snapshots	32::jwkb_tunnel		33::wigner_phasespace	34::probability_current
 SOLVERs		40::crank_nicholson
 OPTIMIZERs	500::boinc		50::down_simplex	51::particle_swarm	52::rasterizer		53::shot_gun
-PLOTS		600::defaults		60::potential_V(r)	61::anim_Psi(r)_t
+PLOTS		61::anim_Psi(r,t)	62::overview_Psi(r,t)	63::anim_wigner
 -->
 
-<plan version="1.25" project="liee" experiment="template" wu="WU" exec_chain="{0,11,110,10,20,21,300,34,40,500,600,60,61}">
+<plan version="1.25" project="liee" experiment="template" wu="WU" exec_chain="{0,11,110,10,20,21,300,34,40,500,600,62}">
 
   <module serial="0" type="global" name="global"><!--Global parameters (required serial==0)-->
     <param name="dr" 			value="12.00e-3"	default="6.00e-3" 	variable="no" lower="" upper=""/> 	<!--space resolution (in nm)-->
@@ -119,8 +119,8 @@ PLOTS		600::defaults		60::potential_V(r)	61::anim_Psi(r)_t
     <param name="obs_t1"		value=""	default="($0::t_range)"	variable="no" lower="" upper=""/>	<!--time to end the recording -->
     <param name="obs_r0"		value=""	default="0"		variable="no" lower="" upper=""/>	<!--start-position of recording range (left-most pos is 0)-->
     <param name="obs_r1"		value=""	default="($0::r_range)"	variable="no" lower="" upper=""/>	<!--end-position of recording range (left-most pos is 0)-->
-    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--(only if fourier) start of kinetic-energy-window (in eV, negative for negative velocity)-->
-    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--(only if fourier) end of kinetic-energy-window (in eV, negative for negative velocity)-->
+    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--smallest wavenumber to record (in 1/nm, signed value, only for fourier)-->
+    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--largest wavenumber to record (in 1/nm, signed value, only for fourier)-->
   </module>
 
   <module serial="301" type="observer" name="wf_snapshots" stage="1" include="0"><!--Records snapshots of the wave function in regular intervals over the simulated time-->
@@ -139,8 +139,8 @@ PLOTS		600::defaults		60::potential_V(r)	61::anim_Psi(r)_t
     <param name="obs_t1"		value=""	default="($0::t_range)"	variable="no" lower="" upper=""/>	<!--time to end the recording -->
     <param name="obs_r0"		value=""	default="0"		variable="no" lower="" upper=""/>	<!--start-position of recording range (left-most pos is 0)-->
     <param name="obs_r1"		value=""	default="($0::r_range)"	variable="no" lower="" upper=""/>	<!--end-position of recording range (left-most pos is 0)-->
-    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--(only if fourier) start of kinetic-energy-window (in eV, negative for negative velocity)-->
-    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--(only if fourier) end of kinetic-energy-window (in eV, negative for negative velocity)-->
+    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--smallest wavenumber to record (in 1/nm, signed value, only for fourier)-->
+    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--largest wavenumber to record (in 1/nm, signed value, only for fourier)-->
   </module>
 
   <module serial="302" type="observer" name="wf_snapshots" stage="1" include="0"><!--Records snapshots of the wave function in regular intervals over the simulated time-->
@@ -159,8 +159,8 @@ PLOTS		600::defaults		60::potential_V(r)	61::anim_Psi(r)_t
     <param name="obs_t1"		value=""	default="($0::t_range)"	variable="no" lower="" upper=""/>	<!--time to end the recording -->
     <param name="obs_r0"		value=""	default="0"		variable="no" lower="" upper=""/>	<!--start-position of recording range (left-most pos is 0)-->
     <param name="obs_r1"		value=""	default="($0::r_range)"	variable="no" lower="" upper=""/>	<!--end-position of recording range (left-most pos is 0)-->
-    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--(only if fourier) start of kinetic-energy-window (in eV, negative for negative velocity)-->
-    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--(only if fourier) end of kinetic-energy-window (in eV, negative for negative velocity)-->
+    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--smallest wavenumber to record (in 1/nm, signed value, only for fourier)-->
+    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--largest wavenumber to record (in 1/nm, signed value, only for fourier)-->
   </module>
 
   <module serial="32" type="observer" name="jwkb_tunnel" stage="1" include="0"><!--the time-dependent potential is used for the JWKB approximation of the quasi-stationary tunnel rate by integrating over the barrier-->
@@ -177,14 +177,14 @@ PLOTS		600::defaults		60::potential_V(r)	61::anim_Psi(r)_t
     <param name="t_samples" 		value=""	default="100" 		variable="no" lower="" upper=""/>	<!--number of recordings of the wave-function-->
     <param name="r_samples" 		value=""	default="100" 		variable="no" lower="" upper=""/>	<!--number of position-samples for each recorded time-->
     <param name="k_samples" 		value=""	default="100" 		variable="no" lower="" upper=""/>	<!--number of momenta-samples for each recorded time-->
-    <param name="precision"		value=""	default="4"		variable="no" lower="" upper=""/>	<!--number of significant digits to round (reduce file size)-->
+    <param name="precision"		value=""	default="3"		variable="no" lower="" upper=""/>	<!--number of significant digits to round (reduce file size)-->
     <param name="normalize" 		value=""	default="false" 	variable="no" lower="" upper=""/>	<!--normalize every snapshot to a total probability==1 if 'true'-->
     <param name="obs_t0"		value=""	default="0"		variable="no" lower="" upper=""/>	<!--time to start the recording (for all 4 obs_window-parameters: empty string means maximum observation region)-->
     <param name="obs_t1"		value=""	default="($0::t_range)"	variable="no" lower="" upper=""/>	<!--time to end the recording -->
     <param name="obs_r0"		value=""	default="0"		variable="no" lower="" upper=""/>	<!--start-position of recording range (left-most pos is 0)-->
     <param name="obs_r1"		value=""	default="($0::r_range)"	variable="no" lower="" upper=""/>	<!--end-position of recording range (left-most pos is 0)-->
-    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--smallest momentum of recording range (default: -pi/dr )-->
-    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--largest momentum of recording range (default: +pi/dr )-->
+    <param name="obs_k0"		value=""	default=""		variable="no" lower="" upper=""/>	<!--smallest wavenumber to record (in 1/nm, signed value, default: -pi/dr)-->
+    <param name="obs_k1"		value=""	default=""		variable="no" lower="" upper=""/>	<!--largest wavenumber to record (in 1/nm, signed value, default: -pi/dr)-->
   </module>
 
   <module serial="34" type="observer" name="probability_current" stage="1" include="0"><!--Samples the probability current at position r_detect like: [i h_bar/(2m) (Y(d/dr)Y* - Y*(d/dr)Y)]-->
@@ -241,27 +241,40 @@ PLOTS		600::defaults		60::potential_V(r)	61::anim_Psi(r)_t
 
   <!-- ================================  PLOTS  ===================================================-->
 
-  <module serial="600" type="plot" name="defaults" stage="2" include="0"><!--some plotting parameters are used in various plots, in order to not getting too repetitiv, they will have general defaults here, which can be overwritten in a particular plot-->
+  <module serial="600" type="plot" name="defaults" stage="2" include=""><!--some plotting parameters are used in various plots, which defaults are set here, but also can be overwritten in a particular plot-->
+    <param name="width_plt" 		value=""	default="1200"/>		<!-- width of the plot in pixels -->
+    <param name="height_plt" 		value=""	default="800"/>			<!-- height of the plot in pixels -->
+    <param name="fps_plt" 		value=""	default="24"/>			<!-- frames per second for animations -->
     <param name="t0_plt" 		value=""	default="0"/>			<!-- minimum t to plot -->
     <param name="t1_plt" 		value=""	default="($0::t_range)"/>	<!-- maximum t to plot -->
     <param name="r0_plt" 		value=""	default="0"/>			<!-- minimum r to plot -->
     <param name="r1_plt" 		value=""	default="($0::r_range)"/>	<!-- maximum r to plot -->
-    <param name="Nt_plt" 		value=""	default="100"/>			<!-- number of frames / time-steps -->
-    <param name="r0_scr" 		value=""	default="0.1"/>			<!-- screen position for r0 -->
+    <param name="Nt_plt" 		value=""	default="500"/>			<!-- number of frames / time-steps -->
+    <param name="Nr_plt" 		value=""	default="1000"/>		<!-- number of spatial samples -->
+    <param name="r0_scr" 		value=""	default="0.15"/>		<!-- screen position for r0 -->
     <param name="r1_scr" 		value=""	default="0.9"/>			<!-- screen position for r1 -->
   </module>
 
-  <module serial="60" type="plot" name="potential_V(r)" stage="2" include="0,600"><!--simply the potential for a given time-->
-    <param name="template" 		value=""	default="potential_V(r)"/>	<!-- gnuplot-file to execute -->
-    <param name="t_plt" 		value=""	default="0"/>			<!-- -->
-    <param name="V0_plt" 		value=""	default="-1"/>			<!-- -->
-    <param name="V1_plt" 		value=""	default="11"/>			<!-- -->
+  <module serial="61" type="plot" name="anim_Psi(r,t)" stage="2" include="0,600"><!--animation of the time-evolution of the WF in its potential-->
+    <param name="template"	value=""	default="anim__Psi(r),V(r)__(t).gp"/>	<!-- gnuplot-file to execute -->
+    <param name="data"		value=""	default="$300::OUTFILE"/>		<!-- name of data-file to plot from-->
   </module>
 
-  <module serial="61" type="plot" name="anim_Psi(r)_t" stage="2" include="0,600"><!--animation of the time-evolution of the WF in its potential-->
-    <param name="template"	value=""	default="anim_Psi(r)_t"/>	<!-- gnuplot-file to execute -->
-    <param name="data"		value=""	default="$301::OUTFILE"/>	<!-- name of data-file to plot from-->
+  <module serial="62" type="plot" name="overview_Psi(r,t)" stage="2" include="0,600"><!--overview matrix-plot of the WF-->
+    <param name="template"	value=""	default="multiplot.gp"/>		<!-- gnuplot-file to execute -->
+    <param name="data_Psi"	value=""	default="$300::OUTFILE"/>		<!-- name of data-file to plot wave-function-->
+    <param name="data_Jt"	value=""	default="$34::OUTFILE"/>		<!-- name of data-file to plot tunnel current-->
+    <param name="width_plt" 	value=""	default="1920"/>			<!-- width of the plot in pixels -->
+    <param name="height_plt" 	value=""	default="1200"/>			<!-- height of the plot in pixels -->
+    <param name="Psi_huge" 	value=""	default="1e-2"/>			<!-- cut off, maximum exposure for Psi's color scale -->
+    <param name="Psi_tiny" 	value=""	default="1e-4"/>			<!-- log-plot needs a floor, therefore Psi^2 < tiny is drawn as tiny -->
+    <param name="r0_scr" 	value=""	default="0.15"/>			<!-- screen position for r0 -->
+    <param name="r1_scr" 	value=""	default="0.7"/>				<!-- screen position for r1 -->
   </module>
-  
+
+  <module serial="63" type="plot" name="anim_wigner" stage="2" include="0,600"><!--animation of the time-evolution of the WF in its potential-->
+    <param name="template"	value=""	default="anim__wigner.gp"/>		<!-- gnuplot-file to execute -->
+    <param name="data"		value=""	default="$33::OUTFILE"/>		<!-- name of data-file to plot from-->
+  </module>
+
 </plan>
-
