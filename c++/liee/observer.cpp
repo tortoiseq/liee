@@ -53,8 +53,8 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	double r1 = config->get_double("obs_r1") / CONV_au_nm;
 	if ( r0 < r_start ) { r0 = r_start; }
 	if ( r1 > r_end ) { r1 = r_end; }
-	ir0 = (int) (r0 / dr);
-	ir1 = (int) (r1 / dr);
+	ir0 = (int) ( (r0-r_start) / dr);
+	ir1 = (int) ( (r1-r_start) / dr);
 
 	if ( not do_fourier ) {
 		// prepare spatial downsampling
@@ -95,7 +95,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 		range_info << "##\t" << "Nk=" << num_k << ";\n";
 
 		Nfou = 1 + ir1 - ir0;
-		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * Nfou );  //TODO free this memory when done
+		psi_fft = (fftw_complex*) fftw_malloc( sizeof(fftw_complex) * Nfou );
 		plan = fftw_plan_dft_1d( Nfou, psi_fft, psi_fft, FFTW_FORWARD, FFTW_ESTIMATE );
 	}
 
@@ -470,7 +470,7 @@ void Obs_JWKB_Tunnel::summarize( map<string, string> & results )
 	fprintf( f, "\n" );
 	fclose( f );
 
-	results["jwkb_J"] = doub2str( sum_j ); //TODO boost conversion
+	results["jwkb_J"] = doub2str( sum_j );
 	results["jwkb_burst"] = burst==true ? "true" : "false";
 	if ( is_objective ) {
 		results["objective"] = doub2str( sum_j );
@@ -627,7 +627,7 @@ void Obs_Probability_Current::summarize( map<string, string> & results )
 	fclose( f );
 
 	double J = sumJ * dt;
-	results["sum_over_j(t)"] = doub2str( J );  //TODO boost conversion
+	results["sum_over_j(t)"] = doub2str( J );
 	if ( is_objective ) {
 		results["objective"] = doub2str( J );
 	}

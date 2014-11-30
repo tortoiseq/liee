@@ -295,10 +295,9 @@ string get_html_page( const string& host, const string& item, long timeout = 60 
 
 
 /*!
- * wraps sprintf("%1.15g", d) to return strings with full double precision
- * TODO this is silly!
+ * wraps around  std::ostringstream to return strings with desired precision, default precision is 15
  */
-string doub2str( double d );
+string doub2str( double d, size_t precision=15 );
 
 /*!
  * Parses the string representation of an array and appends the values to a given vector of double.

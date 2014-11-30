@@ -6,11 +6,13 @@
 
 maIN=data; @EXTREMA
 
+dr = (r1 - r0) / (Nr - 1)
+dt = (t1 - t0) / (Nt - 1)
 
-unset xtics 
-unset ytics 
-set xrange [0:Nr]
-set yrange [0:Nt]
+#unset xtics 
+#unset ytics 
+set xrange [r0_plt:r1_plt]
+set yrange [t0_plt:t1_plt]
 
 set cbrange [log10(Psi_tiny):log10(Psi_huge)] 
 #set colorbox horizontal user origin (d1+cbar_hborder),(sz-d4+cbar_vborder) size (sz-m-d1-2*cbar_hborder), (d4-2*cbar_vborder) front 
@@ -20,7 +22,7 @@ unset key
 set pm3d map 
 set palette defined( log10(Psi_tiny) 1 1 1, (log10(Psi_huge)-0.03) 0 0 0, log10(Psi_huge) 1 0.8 0.8 ) 
 
-plot data matrix using 1:2:($3<Psi_tiny?log10(Psi_tiny):($3>Psi_huge?log10(Psi_huge):log10($3)) ) with image
+plot data matrix using (r0+$1*dr):(t0+$2*dt):($3<Psi_tiny?log10(Psi_tiny):($3>Psi_huge?log10(Psi_huge):log10($3)) ) with image
 
 
 

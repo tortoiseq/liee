@@ -14,6 +14,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <cstdlib>
 #include <string.h>
@@ -446,12 +447,10 @@ string get_html_page( const string& host, const string& item, long timeout )
 	return content;
 }
 
-string doub2str( double d )
-{
-	char buff[25];
-	sprintf( buff, "%1.15g", d );
-	std::string buffAsStdStr = buff;
-	return buffAsStdStr;
+string doub2str( double d, size_t precision ){
+	ostringstream ss;
+	ss << std::scientific << std::setprecision( precision ) << d;
+	return ss.str();
 }
 
 

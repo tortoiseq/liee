@@ -80,6 +80,15 @@ public:
 	fftw_plan plan;            ///< prepared fftw plan
 	fftw_complex *psi_fft;     ///< array for the fftw in-place transform
 
+	Obs_Snapshot_WF(): Nfou(0) {}
+	~Obs_Snapshot_WF() {
+		if ( Nfou > 0 ) {
+			fftw_free( psi_fft );
+			fftw_destroy_plan( plan );
+			fftw_cleanup();
+		}
+	}
+
 	virtual void observe( Module* state );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
