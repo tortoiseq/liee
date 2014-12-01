@@ -36,8 +36,9 @@ public:
 	double  t_last;     ///< time of last measurement
 	int     counter;
 	double  dt;         ///< time resolution of experiment
+	size_t  target;     ///< module id of the observation target (normally the solver)
 
-	SERIALIZE( N & t_range & counter & filename & t_last & dt )
+	SERIALIZE( N & t_range & counter & filename & t_last & dt & target )
 
 	//! state should point to a Solver
 	virtual void observe( Module* state ) = 0;
@@ -47,8 +48,7 @@ public:
  * This Observer can be used together with a Solver of time-dependent Schroedinger equation.
  * It records the whole wave function (WV) N times during the course of the simulation and writes it
  * to a text file. The file contains the WV-samples as rows, with spatial samples in tab-separated columns.
- * If complex values are stored, real and imaginary part are separated by a comma.
- * TODO better interlaced: row-a real, row-b imag, ...
+ * If complex values are stored, real and imaginary parts are stored in separate columns
  */
 class Obs_Snapshot_WF : public Observer
 {

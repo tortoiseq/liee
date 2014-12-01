@@ -24,6 +24,7 @@ void Obs_Snapshot_WF::initialize( Conf_Module* config, vector<Module*> dependenc
 	counter = 0;
 	writtenLns = 0;
 	foundLns = 0;
+	target = config->get_int("target");
 	do_square = config->get_bool("square");
 	do_fourier = config->get_bool("fourier");
 	do_normalize = config->get_bool("normalize");
@@ -268,6 +269,7 @@ void Obs_Wigner_Distribution::initialize( Conf_Module* config, vector<Module*> d
 	foundFrames = 0;
 
 	// prepare temporal downsampling
+	target = config->get_int("target");
 	t_range = config->get_double("t_range") / CONV_au_fs;
 	dt = config->get_double("dt") / CONV_au_fs;
 	t0 = config->get_double("obs_t0") / CONV_au_fs;
@@ -340,7 +342,7 @@ void Obs_Wigner_Distribution::reinitialize( Conf_Module* config, vector<Module*>
 
 void Obs_Wigner_Distribution::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	//TODO estimate
+	//TODO implement
 }
 
 void Obs_Wigner_Distribution::observe( Module* state )
@@ -368,15 +370,15 @@ void Obs_Wigner_Distribution::observe( Module* state )
 		for ( size_t ki = 0; ki < num_k; ki++ )
 		{
 			dcmplx kx2i = two_i * ( k0 + ki * dk );
-			double sum = 0;  // TODO use pairwise summation or Kahan summation to reduce numeric errors from adding small and large values
+			Kahan_Summator<double> sum;
 			int left = rii;
 			size_t right = rii;
 
 			for (size_t delta_i = 0; left >= 0 && right < sNr; left--, right++, delta_i++ ) {
 				double delta_r = sdr * delta_i;
-				sum += real( conj( s->psi[right] ) * s->psi[left] * exp( kx2i * delta_r ) );
+				sum.add( real( conj( s->psi[right] ) * s->psi[left] * exp( kx2i * delta_r ) ) );
 			}
-			fprintf( file, format.c_str(), sum / CONST_PI );
+			fprintf( file, format.c_str(), sum.get_sum() / CONST_PI );
 		}
 		fprintf( file, "\n" );
 	}
@@ -399,6 +401,7 @@ void Obs_JWKB_Tunnel::initialize( Conf_Module* config, vector<Module*> dependenc
 			wf = dynamic_cast<Wave_Function*>( dependencies[i] );
 		}
 	}
+	target = config->get_int("target");
 	filename = config->get_string("OUTFILE");
 	is_objective = config->get_bool("is_objective");
 	dr = config->get_double("dr") / CONV_au_nm;
@@ -564,6 +567,7 @@ void Obs_Probability_Current::initialize( Conf_Module* config, vector<Module*> d
 		}
 	}
 
+	target = config->get_int("target");
 	boinc_resolve_filename_s( config->get_string("OUTFILE").c_str(), filename );
 	is_objective = config->get_bool("is_objective");
 	r_detect = config->get_double("r_detect") / CONV_au_nm;
@@ -617,16 +621,17 @@ void Obs_Probability_Current::summarize( map<string, string> & results )
 {
 	// save after getting the last sample
 	FILE* f = boinc_fopen( filename.c_str(), "a" );
-	double sumJ = 0.0;
+	Kahan_Summator<double> sum;
+
 	for ( size_t i = 0; i < j.size(); i++ )
 	{
-		sumJ += j[i];  // TODO use pairwise summation or Kahan summation
+		sum.add( j[i] );
 		fprintf( f, "%1.16g\n", j[i] );
 	}
 	fprintf( f, "\n" );
 	fclose( f );
 
-	double J = sumJ * dt;
+	double J = sum.get_sum() * dt;
 	results["sum_over_j(t)"] = doub2str( J );
 	if ( is_objective ) {
 		results["objective"] = doub2str( J );

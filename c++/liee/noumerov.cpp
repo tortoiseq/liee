@@ -61,9 +61,10 @@ void Noumerov1d::reinitialize( Conf_Module* config, vector<Module*> dependencies
 
 void Noumerov1d::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
+	//TODO implement
 	//double N = config->get_double("r_end"]->value / config->get_double("dr"]->value;
-	flops += 0; //TODO(impl.)
-	ram += 0; //TODO(impl.)
+	flops += 0;
+	ram += 0;
 }
 
 void Noumerov1d::summarize( map<string, string> & results )
@@ -366,10 +367,10 @@ void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
 	if ( ir.leftwards.size() == 0 || ir.rightwards.size() == 0 ) {
 		evaluate_energy( ir );  // have to reevaluate if data got cleared
 	}
-	//TODO-performance cache the midpoint index instead of finding it again, or at least use phone-book strategy
+	//TODO (perf.) cache the midpoint index instead of finding it again, or at least use phone-book strategy
 	int midi_left;
 	double closest = ir.b - ir.a;
-	for( size_t i = 0; i < ir.leftwards.size(); i++ ) {  // dumb but surely effective, elaborate above TODO if overall plan has worked out
+	for( size_t i = 0; i < ir.leftwards.size(); i++ ) {  // dumb but surely effective, TODO elaborate above if simple plan has worked out
 		if ( abs( ir.leftwards[i].x - ir.middle ) < closest ) {
 			midi_left = i;
 			closest = abs( ir.leftwards[i].x - ir.middle );
@@ -377,17 +378,17 @@ void Noumerov1d::scale_to_matching_midpoint( Integration_Rec& ir )
 	}
 	int midi_right;
 	closest = ir.b - ir.a;
-	for( size_t i = 0; i < ir.rightwards.size(); i++ ) {  // dumb but surely effective, elaborate above TODO if overall plan has worked out
+	for( size_t i = 0; i < ir.rightwards.size(); i++ ) {  // dumb but surely effective, TODO elaborate above if simple plan has worked out
 		if ( abs( ir.rightwards[i].x - ir.middle ) < closest ) {
 			midi_right = i;
 			closest = abs( ir.rightwards[i].x - ir.middle );
 		}
 	}
 
-	double mid_offset = ir.leftwards[midi_left].x - ir.rightwards[midi_right].x;
+	//double mid_offset = ir.leftwards[midi_left].x - ir.rightwards[midi_right].x;
 	double scale = ir.leftwards[midi_left].y / ir.rightwards[midi_right].y;
-	DEBUG_SHOW3( ir.middle, mid_offset, (scale-1.0) );
-	return;  // testing ...TODO huh, still testing??
+	//DEBUG_SHOW3( ir.middle, mid_offset, (scale-1.0) );
+	//return;  // testing
 
 	// only scale if reasonably close match (last polish)
 	if ( abs(scale - 1) < 1e-3 ) {

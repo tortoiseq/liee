@@ -125,7 +125,7 @@ protected:
 	virtual void convergence_test( const vector<Request> & population );
 	virtual void convergence_test_( const vector<Request*> & population ) { return; }
 };
-//BOOST_CLASS_VERSION(Asynch_Optimizer, 0) TODO
+//TODO BOOST_CLASS_VERSION(Asynch_Optimizer, 0)
 
 
 /*!
@@ -156,7 +156,7 @@ public:
 	virtual int generate_requests( vector<Request> & work );
 	virtual int assimilate_results( const vector<Request> & result );
 };
-//BOOST_CLASS_VERSION(Shot_Gun_Optimizer, 0) TODO
+//TODO BOOST_CLASS_VERSION(Shot_Gun_Optimizer, 0)
 
 
 class Particle : public Request {
@@ -217,7 +217,7 @@ public:
 	virtual int assimilate_results( const vector<Request> & result );
 	virtual void convergence_test( const vector<Particle> & population );
 };
-//BOOST_CLASS_VERSION(Shot_Gun_Optimizer, 0) TODO
+//TODO BOOST_CLASS_VERSION(Shot_Gun_Optimizer, 0)
 
 
 /*!
@@ -227,9 +227,9 @@ public:
  * Asynch_Optimizer interface.
  *
  * All work is requested in a single batch, make sure not to ask for more samples than you can handle!
- * Possible improvements reluctantly envisaged:
+ * TODO Possible improvements reluctantly envisaged:
  * - smaller configurable batches
- * - random (or interlaced) ordering of requests to make early overview-plots over the whole range possible //TODO this one!
+ * - random (or interlaced) ordering of requests to make early overview-plots over the whole range possible (!!)
  */
 class Rasterizer : public Asynch_Optimizer
 {

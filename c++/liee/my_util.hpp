@@ -65,6 +65,7 @@
 #include <vector>
 #include <map>
 #include <complex>
+#include <quadmath.h>
 #include <assert.h>
 
 #include "boost/serialization/access.hpp"
@@ -219,7 +220,6 @@ struct Linear_Interpolant
 alglib::spline1dinterpolant to_cubic_spline( vector<Point>& data );
 
 /*! complex error function from product series */
-//TODO use "boost/math/special_functions/erf.hpp"
 dcmplx cerf( dcmplx z );
 
 /*! real-valued Lambert W-function */
@@ -242,7 +242,11 @@ public:
 	unsigned long long  v;  //< current position in the number-loop
 
 	//! Initialise with a constant seed to have repeatable results or with time-stamp or a true random number otherwise.
-	Ranq1(unsigned long long seed);
+	Ranq1(unsigned long long seed) {
+		v = 4101842887655102017LL;
+		v ^= seed;
+		v = int64();
+	}
 
 	//! Draw the next random int64.
 	inline unsigned long long int64(){
@@ -251,6 +255,7 @@ public:
 		v ^= v >> 4;
 		return v * 2685821657736338717LL;
 	}
+
 	//! Draw the next random and convert to double.
 	inline double doub() {
 		return 5.42101086242752217e-20 * int64();
@@ -261,6 +266,34 @@ public:
 		return (unsigned int) int64();
 	}
 };
+
+/*!
+ * To sum over a series of numbers.
+ * Reducing numerical errors which result from discarding low-order bits when the sum becomes larger than the additions.
+ * (see http://en.wikipedia.org/wiki/Kahan_summation_algorithm)
+ */
+template <class T>
+class Kahan_Summator
+{
+private:
+	T sum;
+	T compensation;
+
+public:
+	Kahan_Summator(): sum(0), compensation(0) {}
+
+	void add(T x) {
+		T x_ = x - compensation;
+		T temp = sum + x_;  // Alas, sum is big, x_ small, so low-order digits of x_ are lost.
+		compensation = (temp - sum) - x_;  // (temp - sum) recovers the high-order part of x_; subtracting x_ recovers -(low part of x_)
+		sum = temp;  // Algebraically, compensation should always be zero. Beware overly-aggressive optimizing compilers!
+	}
+	// Next time around, the lost low part will be added to x in a fresh attempt.
+
+	T get_sum() { return sum; }
+};
+
+//---------------------------Exception Types-------------------------------------------------------------
 
 struct Except__Preconditions_Fail {
 	int specification_code;
@@ -289,15 +322,15 @@ void tar_gz_files( const string& dir_prefix, const vector<string>& files, const 
  * very minimalist HTTP-GET call, which doesn't care what went wrong if anything
  * unexpected happened and just returns an empty string in that case, the content otherwise.
  * no checks for file-size. it is assumed that the server does not bomb us with a GB of
- * content here.
+ * content here. //TODO set a sane limit for received length
 */
 string get_html_page( const string& host, const string& item, long timeout = 60 );
 
 
 /*!
- * wraps around  std::ostringstream to return strings with desired precision, default precision is 15
+ * wraps around  std::ostringstream to return strings with desired precision, default precision is 9
  */
-string doub2str( double d, size_t precision=15 );
+string doub2str( double d, size_t precision=9 );
 
 /*!
  * Parses the string representation of an array and appends the values to a given vector of double.
@@ -334,59 +367,19 @@ double offgrid( double pos, double step );
 double simple_integrate( const vector<Point> data, double a, double b );
 
 
-//----------------------------very basic juggling-------------------------------------------------------------
-
+/*! swaps a with b, if a > b */
 template <class T> void sort2( T & a, T & b) {
 	if ( a > b ) {
 		std::swap( a, b );
 	}
 }
 
+/*! achieves a <= b <= c by swapping values if necessary */
 template <class T> void sort3( T & a, T & b, T & c) {
 	sort2( a, b );
 	sort2( b, c );
 	sort2( a, b );
 }
-
-/*!
- * Applying pairwise summation to a stream of doubles of unknown length.
- * Reduces numerical errors.
- */
-struct Summator {
-	vector<double> subtotal;
-	vector<bool> occuped;
-	size_t N;
-
-	Summator( size_t initial_size ) {
-		N = initial_size;
-		subtotal.resize( N, 0 );
-		subtotal.resize( N, false );
-	}
-	Summator() {
-		N = 8;
-		subtotal.resize( N, 0 );
-		subtotal.resize( N, false );
-	}
-	void add( double x ) {
-		//TODO FAULTY INCOMPLETE implementation
-		if (x==0) return;
-		int i = 0;
-		while ( occuped[i] ) {
-			subtotal[i+1] = subtotal[i] + x;
-			occuped[i] = false;
-			occuped[i+1] = true;
-			i++;
-		}
-		subtotal[i] = x;
-	}
-	double get_sum() {
-		//TODO FAULTY INCOMPLETE implementation
-		return 0;
-	}
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize( Archive & ar, const unsigned int version ) { ar & N; ar & subtotal; ar & occuped; }
-};
 
 //----------------------------Expression Parser-------------------------------------------------------------
 

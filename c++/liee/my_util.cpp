@@ -31,13 +31,6 @@ using namespace std;
 using namespace liee;
 namespace liee {
 
-Ranq1::Ranq1(unsigned long long seed)
-{
-	v = 4101842887655102017LL;
-	v ^= seed;
-	v = int64();
-}
-
 ExpressionParser::ExpressionParser()
 {
 	operators.push_back( Operator("exp", 3, true,  &expOP) );
@@ -85,7 +78,7 @@ double ExpressionParser::eval_expression( string ex, const std::map<string, doub
 		{
 			bracket_level--;
 			if ( bracket_level < 0 ) {
-				throw new Except__Preconditions_Fail( 101 );  //TODO give it exceptions of its own
+				throw new Except__Preconditions_Fail( 101 );  //TODO error handling: have more specific exception
 			}
 
 			if ( bracket_level == 0 ) {
@@ -101,7 +94,7 @@ double ExpressionParser::eval_expression( string ex, const std::map<string, doub
 		}
 	}
 	if ( bracket_level != 0 ) { // brackets don't match
-		throw new Except__Preconditions_Fail( 102 );  //TODO give it exceptions of its own
+		throw new Except__Preconditions_Fail( 102 );  //TODO error handling: have more specific exception
 	}
 	// now, there should be no more brackets left
 
@@ -200,7 +193,7 @@ double ExpressionParser::eval_operand( string &ex, const std::map<string, double
 				return vars.find(ex)->second;
 			}
 			// ...negative -> undefined variable
-			throw new Except__Preconditions_Fail( 106 );  //TODO give it exceptions of its own
+			throw new Except__Preconditions_Fail( 106 );  //TODO error handling: have more specific exception
 		}
 		if ( i < ex.npos ) {
 			if ( i >= operands.size() ) throw new Except__Preconditions_Fail( 107 );

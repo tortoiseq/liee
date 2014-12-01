@@ -221,7 +221,7 @@ int main( int argc, char* argv[] )
 		//just in case:  boost::filesystem::path full_path( boost::filesystem::current_path() );
 	}
 	catch( boost::filesystem::filesystem_error &e ) {
-		//TODO oops! what to do?
+		//TODO error handling filesystem_error
 	}
 #endif
 

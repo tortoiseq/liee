@@ -38,6 +38,7 @@ public:
 	double dt_;            ///< backup of the actual dt while changing time-steps for adiabatic activation
 	int count;
 	string outfile;        ///< optionally write final state to this file
+	size_t my_id;          ///< own module id
 
 	SERIALIZE( psi & Nr & r_range & dr & t & t_end & dt & dt_ & count & exec_done & outfile )
 };

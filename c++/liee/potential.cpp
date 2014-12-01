@@ -563,12 +563,12 @@ void Spatial_Light_Modificator::initialize( Conf_Module* config, vector<Module*>
 
 void Spatial_Light_Modificator::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
 {
-	//TODO
+	//TODO implement
 }
 
 void Spatial_Light_Modificator::summarize( map<string, string> & results )
 {
-	//TODO
+	//TODO implement
 }
 
 //------------------------------------------------------------------------------------------------------------

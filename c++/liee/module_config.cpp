@@ -78,7 +78,7 @@ Conf_Param::Conf_Param(TiXmlElement* pParamNode, int parent)
  * Generates an XML representation for the parameter, which omits ranges and comments.
  * Its supposed to go into the work-unit definition where only name->value pairs are of concern.
  */
-TiXmlElement* Conf_Param::minimal_xml_element()
+TiXmlElement* Conf_Param::skeleton_xml_element()
 {
 	TiXmlElement* param = new TiXmlElement( "param" );
 	param->SetAttribute( "name", this->name.c_str() );
@@ -88,9 +88,8 @@ TiXmlElement* Conf_Param::minimal_xml_element()
 	}
 	else {
 		if ( this->values.size() > 0 ) {
-			//TODO put the conversion in a to_string() function
 			ostringstream ss;
-			ss << "{" << setprecision( 15 );    //TODO investigate more into portable and exact string representation of doubles
+			ss << "{" << setprecision( 15 );
 			for ( size_t i = 0; i < values.size(); i++ ) {
 				if ( i == values.size() - 1 ) {
 					ss << values[i] << "}";
@@ -149,10 +148,10 @@ double Conf_Module::get_double( const char* id  )
 int Conf_Module::get_int( const char* id  )
 {
 	check_param_exists(id);
-	if ( param[id]->textual && param[id]->evaluated == false ) {
+	if ( ( param[id]->textual && param[id]->evaluated == false ) ||
+	     ( param[id]->value > numeric_limits<int>::max() || param[id]->value < numeric_limits<int>::min() ) ) {
 		throw Except__bad_config( "Parameters value is not an integer", name, id );
 	}
-	//TODO sanity check if value is a reasonable integer
 	return (int)param[id]->value;
 }
 
@@ -192,7 +191,7 @@ vector<double>& Conf_Module::get_array( const char* id )
 }
 
 
-TiXmlElement* Conf_Module::minimal_xml_element() //TODO the name minimal is misleading: refacture
+TiXmlElement* Conf_Module::skeleton_xml_element()
 {
 	TiXmlElement* module = new TiXmlElement( "module" );
 	module->SetAttribute( "serial", this->serial );
@@ -202,7 +201,7 @@ TiXmlElement* Conf_Module::minimal_xml_element() //TODO the name minimal is misl
 
 	map<string, Conf_Param*>::iterator iter;
 	for ( iter = this->param.begin(); iter != this->param.end(); ++iter ) {
-		module->LinkEndChild( iter->second->minimal_xml_element() );
+		module->LinkEndChild( iter->second->skeleton_xml_element() );
 	}
 	return module;
 }
@@ -216,7 +215,7 @@ Config::Config( string filename )
 
 	if ( doc.LoadFile() == false ) {
 		LOG_FATAL( "Couldn't load work-unit file: " << filename );
-		throw Except__Preconditions_Fail( 6544 );  //TODO have more specific exception
+		throw Except__Preconditions_Fail( 6544 );  //TODO error handling: have more specific exception
 	}
 	TiXmlHandle hDoc( &doc );
 	TiXmlElement* pModuleNode;
@@ -225,7 +224,7 @@ Config::Config( string filename )
 	pModuleNode = hDoc.FirstChildElement().Element();
 	if ( not pModuleNode ) {  // should always have a valid root
 		LOG_FATAL( "work-unit is malformed XML: " << filename );
-		throw ( Except__Preconditions_Fail( 6545 ) );  //TODO have more specific exception
+		throw ( Except__Preconditions_Fail( 6545 ) );  //TODO error handling: have more specific exception
 	}
 
 	this->version = pModuleNode->Attribute( "version" );
@@ -267,7 +266,7 @@ Config::Config( string filename )
 							}
 						}
 					}
-					if ( not found ) throw ( Except__Preconditions_Fail( 6546 ) );  //TODO have more specific exception
+					if ( not found ) throw ( Except__Preconditions_Fail( 6546 ) );  //TODO error handling: have more specific exception
 				}
 			}
 
@@ -321,7 +320,7 @@ void Config::save_file( string & filename )
 	plan9->SetAttribute( "exec_chain", exec_chain.c_str() );
 
 	for ( size_t i = 0; i < chain.size(); i++) {
-		plan9->LinkEndChild( chain[i]->minimal_xml_element() );
+		plan9->LinkEndChild( chain[i]->skeleton_xml_element() );
 	}
 
 	doc.LinkEndChild( plan9 );
@@ -331,7 +330,7 @@ void Config::save_file( string & filename )
 void Config::save_text( string filename, map<string, string> & results )
 {
 	FILE* f = boinc_fopen( filename.c_str(), "w" );
-	fprintf( f, "%s\n", "Info" );	//TODO stop using c-style printf
+	fprintf( f, "%s\n", "Info" );
 	fprintf( f, "%20s\t%s\n", "version", this->version.c_str() );
 	fprintf( f, "%20s\t%s\n", "project", this->project.c_str() );
 	fprintf( f, "%20s\t%s\n", "experiment", this->experiment.c_str() );

@@ -82,7 +82,7 @@ void Opti_Scheduler::load()
 
 		if ( opti != NULL ) delete opti;
 		// read optimiser state using serialisation
-		ifstream ifs( state_file_name.c_str() );  //TODO handle more IO errors
+		ifstream ifs( state_file_name.c_str() );  //TODO error handling: handle more IO errors
 		boost::archive::binary_iarchive iarch( ifs );
 
 		{ // issues with abstract types and serialisation

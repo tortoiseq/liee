@@ -46,7 +46,7 @@ public:
 	 * Assembles a minimal xml-element from the stored data, containing only name-value-pairs
 	 * and ignores attributes: fixed, lower, higher, because those are not required for a simple evaluation.
 	 */
-	TiXmlElement* minimal_xml_element();
+	TiXmlElement* skeleton_xml_element();
 };
 
 class Conf_Module {
@@ -70,7 +70,7 @@ public:
 	 * Generates an XML representation for the module, which omits ranges and comments in (children) parameter definitions.
 	 * Its supposed to go into the work-unit where only name->value pairs are of concern.
 	 */
-	TiXmlElement* minimal_xml_element();
+	TiXmlElement* skeleton_xml_element();
 
 	void check_param_exists( const char* id );
 	double get_double( const char* id );

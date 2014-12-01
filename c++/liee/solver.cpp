@@ -41,12 +41,12 @@ double Solver::integrate_psi_sqr( double a, double b )
 	size_t ib = b / dr;
 	if ( ib >= psi.size() ) { ib = psi.size()-1; }
 
-	//TODO pairwise summation to reduce rounding error
-	double sum = -0.5 * real( psi[ia] * conj( psi[ia] ) ) - 0.5 * real( psi[ib] * conj( psi[ib] ) );  //end-points have only half the weight
+	Kahan_Summator<double> sum;
+	sum.add( -0.5 * real( psi[ia] * conj( psi[ia] ) ) - 0.5 * real( psi[ib] * conj( psi[ib] ) ) );  //end-points have only half the weight
 	for ( size_t i = ia; i <= ib; i++ ) {
-		sum += real( psi[i] * conj( psi[i] ) );
+		sum.add( real( psi[i] * conj( psi[i] ) ) );
 	}
-	return dr * sum;
+	return dr * sum.get_sum();
 }
 
 bool Solver::execute()
@@ -139,9 +139,11 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 			}
 		}
 		else if ( dependencies[i]->type.compare("observer") == 0 ) {
-			//TODO check, if observer's->target matches this->serial
-			LOG_DEBUG( "registered observer: " << dependencies[i]->name );
-			obs.push_back( dynamic_cast<Observer*>( dependencies[i] ) );
+			Observer* observer = dynamic_cast<Observer*>( dependencies[i] );
+			if ( observer->target == my_id ) {
+				obs.push_back( observer );
+				LOG_DEBUG( "registered observer: " << dependencies[i]->name );
+			}
 		}
 	}
 }
@@ -150,6 +152,7 @@ void Crank_Nicholson::register_dependencies( vector<Module*> dependencies )
 void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Crank_Nicholson" );
+	my_id = config->serial;
 	dr = config->get_double("dr") / CONV_au_nm;
 	t_end = config->get_double("t_range") / CONV_au_fs;
 	r_range = config->get_double("r_range") / CONV_au_nm;

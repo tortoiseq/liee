@@ -316,7 +316,7 @@ private:
 
 	double shift;  ///< shift to the right (to be able to stay in the positive domain for moderate quantum numbers)
 
-	SERIALIZE( A20 ) //TODO
+	SERIALIZE( A20 ) //TODO serialise all non-recoverable data-members
 };
 
 /*!
@@ -331,8 +331,8 @@ public:
 
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies );
-	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  //TODO
-	virtual void summarize( map<string, string> & results ) {}  //TODO
+	virtual void estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk ) {}  //TODO implement
+	virtual void summarize( map<string, string> & results ) {}  //TODO implement
 
 private:
 	struct Segment{

@@ -220,7 +220,7 @@ int Downhill_Simplex::assimilate_results( const vector<Request> & result )
 				//cout << "trial returned " << vec2str( trial.x ) << "->" << trial.y << "\n";
 			}
 			else {
-				cout << "DESASTER \n";	//TODO something for corrupt results
+				cout << "DESASTER \n";	//TODO error handling: something for corrupt results
 			}
 			break;
 		}
@@ -236,7 +236,7 @@ int Downhill_Simplex::assimilate_results( const vector<Request> & result )
 					simplex[v].flag = 0;
 				}
 				else {
-					cout << "DESASTER \n"; //TODO something for corrupt results
+					cout << "DESASTER \n"; //TODO error handling:  something for corrupt results
 				}
 				break;
 			}

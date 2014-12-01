@@ -104,7 +104,7 @@ int opti::Shot_Gun_Optimizer::assimilate_results( const vector<Request> & result
 					in_flight[bi].flag = 0;
 				}
 				else {
-					//TODO something for corrupt results
+					//TODO error handling: something for corrupt results
 				}
 				break;
 			}
@@ -227,7 +227,7 @@ int opti::Particle_Swarm_Optimizer::assimilate_results( const vector<Request> & 
 						}
 					}
 				}
-				else { } //TODO
+				else { } //TODO implement
 				//TODO time-out for late results
 			}
 		}
