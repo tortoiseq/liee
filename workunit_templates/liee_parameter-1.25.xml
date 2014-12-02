@@ -52,10 +52,8 @@ PLOTS		61::anim_Psi(r,t)	62::overview_Psi(r,t)	63::anim_wigner
  <module serial="13" type="pot_const" name="piecewise_linear" stage="1" include=""><!--a potential composed of concatenated linear sections-->
     <param name="epsilon"		value=""	default="1e-3" 		variable="no" lower="" upper=""/>	<!--steps (two consecutive equal r-coordinates) are resolved continuously by adding epsilon to the latter r (in nm)-->
     <param name="ellipse"		value="" 	default="{10,2}" 	variable="no" lower="" upper=""/>	<!--defines the requested radius of curvature (at segment contact points) in the appropriate units {nm,eV}. purpose: to smooth the kinks between line-segments, ellipses with the respective half-axis are inserted-->
-    <param name="r_list" 		value=""	default="{   0,  10,10,90,  90, 100}"	variable="no" lower="" upper=""/>	
-    <!-- r(i): list of r-coordinates (in nm)-->
-    <param name="V_list" 		value=""	default="{1000,1000, 0, 0,1000,1000}"	variable="no" lower="" upper=""/>	
-    <!-- V( r(i) ): list of potential energies at the positions in r_list (in eV)-->
+    <param name="r_list" 		value=""	default="{   0,  10,10,90,  90, 100}"	variable="no" lower="" upper=""/> <!-- r(i): list of r-coordinates (in nm)-->
+    <param name="V_list" 		value=""	default="{1000,1000, 0, 0,1000,1000}"	variable="no" lower="" upper=""/> <!-- V( r(i) ): list of potential energies at the positions in r_list (in eV)-->
   </module>
 
   <!-- ================================ LASER PULSEs  ================================================-->

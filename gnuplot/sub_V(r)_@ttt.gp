@@ -9,7 +9,7 @@ set xrange [r0_plt:r1_plt]
 set xlabel "r in nm"
 set xtics
 set ytics
-set yrange [Vmin - 0.03*(Vmax - Vmin) : Vmax + 0.03*(Vmax - Vmin)]
+set yrange [(Vmin-1e-6) - 0.03*(Vmax - Vmin) : (Vmax+1e-6) + 0.03*(Vmax - Vmin)]
 set ylabel "potential in eV"
 set ytics nomirror
 unset key

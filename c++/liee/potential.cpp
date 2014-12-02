@@ -10,6 +10,7 @@
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/math/special_functions/erf.hpp"
+
 #include "boost/function.hpp"
 #include "boost/bind.hpp"
 
@@ -256,9 +257,14 @@ void Potential::initialize( Conf_Module* config, vector<Module*> dependencies )
 
 	r_range = config->get_double("r_range") / CONV_au_nm;
 	double inner_cutoff = config->get_double("inner_cutoff") / CONV_au_eV;
-	double dummy;
-	well->get_outer_turningpoints( inner_cutoff, r_start, dummy );  // set r_start where the inner_cutoff-Energy is reached
-	LOG_INFO( "rstart: " << r_start << "  " << dummy << "\t" << inner_cutoff );
+	double unused;
+	well->get_outer_turningpoints( inner_cutoff, r_start, unused );  // set r_start where the inner_cutoff-Energy is reached
+	if ( isnan(r_start) ) {
+		r_start = 0;
+		LOG_INFO( "Potential remains below cut-off value --> r_start = 0" );
+	} else {
+		LOG_INFO( "r_start: " << r_start << "\t( @ " << inner_cutoff << ")" );
+	}
 
 	F_dc = -1 * config->get_double("F_dc") / (CONV_au_V / CONV_au_nm);
 	gamma = config->get_double("near_amplf");
@@ -634,7 +640,7 @@ inline double Pot_Piecewise::V( double r )
 		}
 	}
 	LOG_ERROR( "Pot_Piecewise is not continuous at r = " << r )
-	return 0;
+	exit(1);
 }
 
 void Pot_Piecewise::get_outer_turningpoints( const double E, double & leftmost, double & rightmost )
@@ -688,9 +694,13 @@ void Pot_Piecewise::initialize( Conf_Module* config, vector<Module*> dependencie
 	scale_y = rounding / ( config->get_array("ellipse")[1] / CONV_au_eV );
 	X = config->get_array("r_list");
 	Y = config->get_array("V_list");
-	if ( X.size() != Y.size() ) {
-		LOG_ERROR( "r_list and V_list are required to have the same number of elements. exiting" )
+	if ( X.size() != Y.size() || X.size() == 0 ) {
+		LOG_ERROR( "r_list and V_list are required to have the same size with at least 1 element." )
 		exit(1);
+	}
+	if ( X.size() == 1 ) {  // constant potential
+		X.push_back( X[0] + config->get_double("r_range") );
+		Y.push_back( Y[0] );
 	}
 
 	for ( size_t i = 0; i < X.size(); i++ ) {
@@ -705,15 +715,14 @@ void Pot_Piecewise::initialize( Conf_Module* config, vector<Module*> dependencie
 		}
 	}
 
+	Segment first;
+	first.line( X[0], X[1], Y[0], Y[1] );
+	segs.push_back( first );
+
 	for ( size_t i = 1; i < X.size()-1; i++ )
 	{
 		Segment left, right;
-		if ( i == 1 ) {
-			left.line( X[i-1], X[i], Y[i-1], Y[i] );
-			segs.push_back( left );
-		} else {
-			left = segs.back();
-		}
+		left = segs.back();
 		right.line( X[i], X[i+1], Y[i], Y[i+1] );
 
 		if ( rounding > 0  &&  left.m != right.m ) {
