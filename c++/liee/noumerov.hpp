@@ -52,7 +52,7 @@ struct Integration_Rec
 		leftwards.clear();
 	}
 
-	inline bool operator> ( const Integration_Rec& that ) {
+	bool operator> ( const Integration_Rec& that ) {
 		return ( this->E  > that.E );
 	}
 };

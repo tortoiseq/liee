@@ -8,10 +8,8 @@
  * both simple and generic to help reuse and avoid duplication.
  */
 
-
 #ifndef MY_UTIL_H_
 #define MY_UTIL_H_
-
 
 #ifdef LOG_ENABLED
 	#define DEBUG_SHOW(a) LOG4CXX_DEBUG(logger, #a << "=" << (a) );
@@ -60,7 +58,6 @@
 
 
 #include <algorithm>
-
 #include <string>
 #include <vector>
 #include <map>
@@ -72,8 +69,7 @@
 #include "boost/serialization/split_free.hpp"
 #include "boost/function.hpp"
 
-#ifdef LOG_ENABLED
-	// include log4cxx header files.
+#ifdef LOG_ENABLED  // include log4cxx header files.
 	#include "log4cxx/logger.h"
 	#include "log4cxx/basicconfigurator.h"
 	#include "log4cxx/propertyconfigurator.h"
@@ -82,6 +78,10 @@
 
 #include "../alglib/ap.h"
 #include "../alglib/interpolation.h"
+
+using std::vector;
+using std::string;
+
 
 #define SERIALIZE( stream ) \
 	friend class boost::serialization::access;\
@@ -99,7 +99,6 @@ double const CONV_au_fs = 2.418884326505e-2;
 double const CONV_au_V_over_m = 5.1421e11;
 double const CONV_au_V = CONV_au_V_over_m * CONV_au_m;
 
-// ------------------------- std::complex<double> addons ----------------------
 
 typedef std::complex<double> dcmplx;
 
@@ -123,6 +122,7 @@ void load(Archive & ar, dcmplx & z, const unsigned int version)
 }} //namespace boost::serialization
 BOOST_SERIALIZATION_SPLIT_FREE(dcmplx)
 
+
 template <typename T>
 int sgn(T val)
 {
@@ -135,9 +135,6 @@ int sign(T val)
 	if ( val >= T(0) ) return T(1);
 	return T(-1);
 }
-
-using std::vector;
-using std::string;
 
 namespace liee {
 
@@ -152,7 +149,7 @@ struct Point {
 
 struct less_than_point_x
 {
-	inline bool operator() (const Point& p1, const Point& p2)
+	bool operator() (const Point& p1, const Point& p2)
 	{
 		return ( p1.x  < p2.x );
 	}
@@ -249,7 +246,7 @@ public:
 	}
 
 	//! Draw the next random int64.
-	inline unsigned long long int64(){
+	unsigned long long int64(){
 		v ^= v >> 21;
 		v ^= v << 35;
 		v ^= v >> 4;
@@ -257,12 +254,12 @@ public:
 	}
 
 	//! Draw the next random and convert to double.
-	inline double doub() {
+	double doub() {
 		return 5.42101086242752217e-20 * int64();
 	}
 
 	//! Draw the next and clip to int32.
-	inline unsigned int int32() {
+	unsigned int int32() {
 		return (unsigned int) int64();
 	}
 };

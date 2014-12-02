@@ -50,7 +50,7 @@ public:
 	virtual double get_Vmin_pos();
 
 protected:
-	inline double deltaV( double r, double E ) { return E - V(r); }
+	double deltaV( double r, double E ) { return E - V(r); }
 	bool been_there;
 	double r_min;
 };
@@ -58,7 +58,7 @@ protected:
 class Pot_Round_Well_wImage : public Pot_const
 {
 public:
-	virtual inline double V( double r );
+	virtual double V( double r );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "liee.Module.Pot_Round_Well_wImage" );
@@ -88,7 +88,7 @@ protected:
 class Pot_Experimental : public Pot_const
 {
 public:
-	virtual inline double V( double r );
+	virtual double V( double r );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "Pot_Experimental" );
@@ -128,7 +128,7 @@ public:
 class Gaussian_Pulse : public Laser_Field
 {
 public:
-	virtual inline double electric_field( double t );
+	virtual double electric_field( double t );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
 		GET_LOGGER( "liee.Module.Gaussian_Pulse" );
@@ -155,7 +155,7 @@ private:
 class Spatial_Light_Modificator : public Laser_Field
 {
 public:
-	virtual inline double electric_field( double t );
+	virtual double electric_field( double t );
 	void register_dependencies( vector<Module*> dependencies );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void reinitialize( Conf_Module* config, vector<Module*> dependencies ) {
@@ -208,7 +208,7 @@ public:
 	//! starting-position of CAP is the physical end of the experiment
 	double get_r_phys_end() { return r_range + r_start - wcap; }
 
-	inline double deltaV( double r, double t, double E ) { return E - V(r, t).real(); }
+	double deltaV( double r, double t, double E ) { return E - V(r, t).real(); }
 
 	void register_dependencies( vector<Module*> dependencies );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
@@ -243,11 +243,11 @@ private:
 	size_t int_samples;
 	vector<Point> Pulse_samples;
 
-	inline double V_cap( double r );
-	inline double V_Fdc( double r, double t );
-	inline double F_pulse( double r, double t );
-	inline double V_pulse( double r, double t );
-	inline double integral_gauss_x_oscill( double t_a, double t_b );
+	double V_cap( double r );
+	double V_Fdc( double r, double t );
+	double F_pulse( double r, double t );
+	double V_pulse( double r, double t );
+	double integral_gauss_x_oscill( double t_a, double t_b );
 
 	SERIALIZE( reg_serials & t_on & t_full & ini_erf & deltaDC & deltaAC & r_range & r_start
 			& wcap & r_cap & F_dc & gamma & s2 & int_samples )
@@ -261,7 +261,7 @@ private:
 class Pot_Harm_Oscillator : public Pot_const
 {
 public:
-	virtual inline double V( double r );
+	virtual double V( double r );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
 	virtual double get_Vmin_pos();
@@ -286,7 +286,7 @@ private:
 class Chulkov_Image_Potential : public Pot_const
 {
 public:
-	virtual inline double V( double r );
+	virtual double V( double r );
 	virtual void initialize( Conf_Module* config, vector<Module*> dependencies );
 	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
 	virtual double get_Vmin_pos();
@@ -325,7 +325,7 @@ private:
 class Pot_Piecewise : public Pot_const
 {
 public:
-	virtual inline double V( double r );
+	virtual double V( double r );
 	virtual void get_outer_turningpoints( const double E, double & leftmost, double & rightmost );
 	virtual double get_Vmin_pos();
 

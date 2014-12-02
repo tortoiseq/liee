@@ -10,7 +10,6 @@
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/math/special_functions/erf.hpp"
-
 #include "boost/function.hpp"
 #include "boost/bind.hpp"
 
@@ -140,7 +139,7 @@ double Pot_Round_Well_wImage::get_Vmin_pos()
  * width and constant depth. For r > width the potential is governed by
  * the image charge effect.
 */
-inline double Pot_Round_Well_wImage::V( double r )
+double Pot_Round_Well_wImage::V( double r )
 {
 	double r_ = r - shift_mirror;
 	if ( r_ < 0 )
@@ -149,7 +148,7 @@ inline double Pot_Round_Well_wImage::V( double r )
 		return -0.25 / r ;  // mirror charge
 }
 
-inline double Pot_Experimental::V( double r )
+double Pot_Experimental::V( double r )
 {
 	double r_ = r - shift_mirror;
 	if ( r_ < 0 ) {
@@ -211,7 +210,7 @@ void Gaussian_Pulse::initialize( Conf_Module* config, vector<Module*> dependenci
 	theta0 = config->get_double("chirp") * CONV_au_fs * CONV_au_fs;
 }
 
-inline double Gaussian_Pulse::electric_field( double t )
+double Gaussian_Pulse::electric_field( double t )
 {
 	double t_ = t - t_ofs;
 	double t2 = pow(t_, 2.0);
@@ -380,7 +379,7 @@ double Potential::Vr( double r, double t )
  * will be damped to zero to avoid reflection at the simulation edge.
  * @param z the coordinate spanning the CAP region, range: 0..1
 */
-inline double Potential::V_cap( double z )
+double Potential::V_cap( double z )
 {
 	return -6.13899 * pow(z, 4);
 }
@@ -390,7 +389,7 @@ inline double Potential::V_cap( double z )
  * new version: constant F, linear V
  * new new version: exponential decay into negative range, adiabatic activation redux
  */
-inline double Potential::V_Fdc( double r, double t )
+double Potential::V_Fdc( double r, double t )
 {
 	if ( t < t_on ) return 0;
 
@@ -407,7 +406,7 @@ inline double Potential::V_Fdc( double r, double t )
 	return V;
 }
 
-inline double Potential::F_pulse( double r, double t )
+double Potential::F_pulse( double r, double t )
 {
 	double F = 0;
 	double t_ = t + r / 137.0;
@@ -419,7 +418,7 @@ inline double Potential::F_pulse( double r, double t )
 	return amp * F * exp( r / deltaAC );
 }
 
-inline double Potential::V_pulse( double r, double t )
+double Potential::V_pulse( double r, double t )
 {
 	if ( t != t_now ) {
 		// new time-step -> need to recalculate the integral samples using Simpson's rule
@@ -450,7 +449,7 @@ inline double Potential::V_pulse( double r, double t )
 
 //------------------------------------------------------------------------------------------------------------
 
-inline double Spatial_Light_Modificator::electric_field( double t )
+double Spatial_Light_Modificator::electric_field( double t )
 {
 	return 0;
 }
@@ -582,7 +581,7 @@ void Spatial_Light_Modificator::summarize( map<string, string> & results )
 /*!
  * parabolic potential
  */
-inline double Pot_Harm_Oscillator::V( double r )
+double Pot_Harm_Oscillator::V( double r )
 {
 	return 0.5 * k * pow( r - shift, 2.0 );
 }
@@ -620,7 +619,7 @@ double Pot_Harm_Oscillator::analytic_eigenfunction( int n, double x )
 
 //------------------------------------------------------------------------------------------------------------
 
-inline double Pot_Piecewise::V( double r )
+double Pot_Piecewise::V( double r )
 {
 	if ( r < segs.front().start_r ) {
 		r = segs.front().start_r;
@@ -772,7 +771,7 @@ void Pot_Piecewise::reinitialize( Conf_Module* config, vector<Module*> dependenc
 /*!
  * the potential
  */
-inline double Chulkov_Image_Potential::V( double r )
+double Chulkov_Image_Potential::V( double r )
 {
 	r = abs( r );
 	double V = 0;

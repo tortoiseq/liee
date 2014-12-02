@@ -14,22 +14,17 @@ using namespace std;
 namespace liee {
 
 /*!
-* Just the square of x. (for readability)
-*/
-inline double sqr( double x ) { return x * x; }
-
-/*!
 * The generalised Rosenbrock's Function is a test for multivariant optimisation.
 * The minimum is y_min(1, ..., 1) = 0.
 * The coordinates should be bound by the interval [-30;30].
 * @param x      point in search space as vector of double
 * @return       the value of the objective function at x
 */
-inline double rosenbrock( const vector<double> & x )
+double rosenbrock( const vector<double> & x )
 {
 	double result = 0;
 	for ( size_t i = 0; i < x.size()-1; i++ ) {
-		result += 100 * sqr( x[i+1] - sqr( x[i] ) ) + sqr( x[i] - 1 );
+		result += 100 * SQR( x[i+1] - SQR( x[i] ) ) + SQR( x[i] - 1 );
 	}
 	return result;
 }
@@ -42,11 +37,11 @@ inline double rosenbrock( const vector<double> & x )
 * @param x      point in search space as vector of double
 * @return       the value of the objective function at x
 */
-inline double rastrigin( const vector<double> & x )
+double rastrigin( const vector<double> & x )
 {
 	double result = 10.0 * x.size();
 	for ( size_t i = 0; i < x.size()-1; i++ ) {
-		result += sqr( x[i] ) - 10.0 * cos( 2 * PI * x[i] );
+		result += SQR( x[i] ) - 10.0 * cos( 2 * PI * x[i] );
 	}
 	return result;
 }
@@ -57,16 +52,16 @@ inline double rastrigin( const vector<double> & x )
 * @param x      point in search space as vector of double
 * @return       the value of the objective function at x
 */
-inline double paraboloid( const vector<double> & x )
+double paraboloid( const vector<double> & x )
 {
 	double result = 0;
 	for ( size_t i = 0; i < x.size(); i++ ) {
-		result += sqr( 1 - x[i] );
+		result += SQR( 1 - x[i] );
 	}
 	return result;
 }
 
-inline double equation_solving( const vector<double> & x )
+double equation_solving( const vector<double> & x )
 {
 	double err = 0.0;
 
