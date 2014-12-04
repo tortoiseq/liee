@@ -160,18 +160,18 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	dt_ = dt;
 	Nr = 1 + r_range / dr;
 	LOG_INFO( "Problem size (Nr x Nt): " << Nr << " x " << (int)(t_end / dt) << " = " << (Nr * t_end / dt) );
-	jb = Nr - 1;
-	c = dcmplx( 0.0, -dt / ( 8.0 * dr*dr ) );  //(44)
+	c1 = dcmplx( 0.0, -dt / ( 8.0 * SQR(dr) ) );  //(44)
+	c3 = dcmplx( 0.0,  dt / 4.0 );
 	alfa.resize(Nr);
 	gamma.resize(Nr);
 	g.resize(Nr);
 	phi.resize(Nr);
-	d.resize(Nr);
+	//d.resize(Nr);
 	count = 0;
 	exec_done = false;
 	register_dependencies( dependencies );
 	renormalize();
-	potential->set_grid( dr, Nr );
+	potential->set_grid_CN( dr, dt, Nr );
 	outfile = config->get_string("OUTFILE");
 }
 
@@ -182,9 +182,9 @@ void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> depende
 	gamma.resize(Nr);
 	g.resize(Nr);
 	phi.resize(Nr);
-	d.resize(Nr);
+	//d.resize(Nr);
 	register_dependencies( dependencies );
-	potential->set_grid( dr, Nr );
+	potential->set_grid_CN( dr, dt, Nr );
 }
 
 void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, double & ram, double & disk )
@@ -200,41 +200,19 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 
 void Crank_Nicholson::evolve_1step()
 {
-	//FILE *file;
-	//if ( count == 50000 ) {
-	//	string filename = "pot_debug-" + boost::lexical_cast<string>( count );
-	//	file = boinc_fopen( filename.c_str(), "a" );
-	//}
-
-	for (size_t j=0; j < Nr; j++) {
-		d[j] = dcmplx( 0.5, dt / (4.0 * pow(dr, 2)) ) + dcmplx( 0.0, dt / 4.0 ) * potential->V_indexed( j, t );  //#(45)
-		//if ( count == 50000 ) {
-		//	fprintf( file, "%1.5g\t%1.5g\t%1.5g\n", dr*j*CONV_au_nm, psi[j].real(), psi[j].imag() );
-		//	fprintf( file, "%1.5g\t%1.5g\t%1.5g\n", dr*j*CONV_au_nm, potential->V_indexed( j, t ).imag() * CONV_au_eV, potential->V( potential->get_r_start() + j*dr, t ).imag() * CONV_au_eV );
-		//}
-	}
-	//if ( count == 50000 ) {
-	//	fclose( file );
-	//}
-
-	alfa[0] = d[0];
-	gamma[0] = c / alfa[0];
-	for (int j=1; j < jb+1; j++) {
-		alfa[j] = d[j] - c * gamma[j-1];  //#(50)
-		gamma[j] = c / alfa[j];  //#(49)
-	}
-
+	alfa[0] = c3 * potential->V_indexed( 0, t );
+	gamma[0] = c1 / alfa[0];
 	g[0] = psi[0] / alfa[0];  //#(52)
-	for (int j=1; j < jb+1; j++) {
-		g[j] = ( psi[j] - c * g[j-1] ) / alfa[j];  //#(53)
+	for (size_t j=1; j < Nr; j++) {
+		alfa[j] = c3 * potential->V_indexed( j, t ) - c1 * gamma[j-1];  //#(45),#(50)
+		gamma[j] = c1 / alfa[j];  //#(49)
+		g[j] = ( psi[j] - c1 * g[j-1] ) / alfa[j];  //#(53)
 	}
 
-	phi[jb] = g[jb];  //#(55)
-	for (int j=jb-1; j > -1; j--) {
+	phi[Nr-1] = g[Nr-1];  //#(55)
+	psi[Nr-1] = phi[Nr-1] - psi[Nr-1];  //#(39)
+	for (int j=Nr-2; j >= 0; j--) {
 		phi[j] = g[j] - gamma[j] * phi[j+1];  //#(56)
-	}
-
-	for (int j=0; j <= jb; j++) {
 		psi[j] = phi[j] - psi[j];  //#(39)
 	}
 }

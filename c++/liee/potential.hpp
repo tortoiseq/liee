@@ -199,6 +199,11 @@ public:
 	 */
 	void set_grid( double dr, size_t N );
 
+	/*! same as set_grid(), but incorporates one additive constant specific to our Crank-Nicolson
+	 *  implementation into the cache
+	 */
+	void set_grid_CN( double dr, double dt, size_t N );
+
 	//! grant access to the static potential
 	Pot_const* getPot_const() { return well; }
 	//! total range including CAP

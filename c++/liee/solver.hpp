@@ -54,15 +54,14 @@ public:
 	virtual void summarize( map<string, string> & results ){}
 private:
 	// compute variables
-	int jb;
 	vector<dcmplx> alfa;
 	vector<dcmplx> gamma;
 	vector<dcmplx> g;
 	vector<dcmplx> phi;
-	vector<dcmplx> d;
-	dcmplx c;
+	//vector<dcmplx> d;
+	dcmplx c1, c3;
 
-	SERIALIZE( boost::serialization::base_object<Solver>( *this ) & jb & c )
+	SERIALIZE( boost::serialization::base_object<Solver>( *this ) & c1 & c3 )
 };
 
 //------------------------------------------------------------------------------------------------

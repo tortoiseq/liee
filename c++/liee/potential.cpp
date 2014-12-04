@@ -363,6 +363,16 @@ void Potential::set_grid( double dr, size_t N )
 	}
 }
 
+void Potential::set_grid_CN( double dr, double dt, size_t N )
+{
+	set_grid( dr, N );
+	dcmplx c = dcmplx( 0.5, dt / (4.0 * SQR(dr)) )  /  dcmplx( 0.0, dt / 4.0 );
+	for ( size_t i = 0; i < N; i++ ) {
+		cache_Vwell[i]  += c;
+		cache_Vconst[i] += c;
+	}
+}
+
 /*!
  * Returns only the real part, e.g. without the complex absorbing potential.
  */
@@ -420,6 +430,7 @@ double Potential::F_pulse( double r, double t )
 
 double Potential::V_pulse( double r, double t )
 {
+	if ( pulses.size() == 0 ) { return 0.0; }
 	if ( t != t_now ) {
 		// new time-step -> need to recalculate the integral samples using Simpson's rule
 		Pulse_samples[0].y = 0;

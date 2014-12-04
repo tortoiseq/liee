@@ -33,6 +33,16 @@ def transpose( infile, outfile ):
     numpy.savetxt( outfile, data.transpose(), fmt="%."+str(precision)+"g" )
     return
 
+def matrix_sums( infile, outfile ):
+    data = numpy.loadtxt( infile, numpy.float, '#', )
+    fobj = open( outfile, "w" )
+    for ti in range( data.shape[0] ):
+        sum = 0.0
+        for i in range( data.shape[1] ):
+            sum += data[ti][i]
+        fobj.write( str(sum) + "\n" )
+    fobj.close()
+
 def stats( infile, outfile):
     glob_min = 6e66
     glob_max = -6e66
@@ -101,13 +111,16 @@ def plot( module_id ):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == "transpose":      transpose( sys.argv[2], sys.argv[3] )
+    if sys.argv[1] == "transpose":
+        transpose( sys.argv[2], sys.argv[3] )
+
     elif sys.argv[1] == "stats":
         if ( len(sys.argv) > 4 and sys.argv[4] == "skipcol0"):
             os.system("sed -e \"s/[\t[:space:]]\+/\t/g\" '"+ sys.argv[2] +"' | cut -f 2- - >'" + sys.argv[2] + ".skipcol0'")
             stats( sys.argv[2]+".skipcol0", sys.argv[3] )
         else:
             stats( sys.argv[2], sys.argv[3] )
+
     elif sys.argv[1] == "potential":
         if len(sys.argv) > 9:
             if sys.argv[9].upper()=="TRUE":
@@ -116,8 +129,13 @@ if __name__ == '__main__':
                 potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8], 0 )
         else:
             potential( float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), int(sys.argv[7]), sys.argv[8], 0 )
+
     elif sys.argv[1] == "plot":
         plot( sys.argv[2] )
+
+    elif sys.argv[1] == "sums":
+        matrix_sums( sys.argv[2], sys.argv[3] )
+
     else:
         print("usage:\n" +
               "* liee_tools transpose \t input-file output-file \n" +
@@ -125,4 +143,5 @@ if __name__ == '__main__':
               "* liee_tools stats \t input-file output-file skipcol0\n" +
               "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile [true/false]\n" +
               "* liee_tools plot \t [all|module_serial]\n" +
+              "* liee_tools sums \t input-file output-file \n" +
               "" )
