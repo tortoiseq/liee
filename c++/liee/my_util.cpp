@@ -280,6 +280,15 @@ dcmplx cerf( dcmplx z )
 	return CONST_2_OVER_SQRT_PI * z__;
 }
 
+double me3eep(double y) {
+	double x;
+	size_t N = (5 + ( (size_t)( 10* drand48() ) ) ) * 1000*1000;
+	for ( unsigned long i = 0; i < N; i++ ) {
+		x = sin(x + y);
+	}
+	return x;
+}
+
 /*!
  * implementation after http://www.whim.org/nebula/math/lambertw.html
  */

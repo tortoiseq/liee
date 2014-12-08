@@ -122,7 +122,6 @@ void load(Archive & ar, dcmplx & z, const unsigned int version)
 }} //namespace boost::serialization
 BOOST_SERIALIZATION_SPLIT_FREE(dcmplx)
 
-
 template <typename T>
 int sgn(T val)
 {
@@ -213,6 +212,9 @@ struct Linear_Interpolant
 		return yi + (x-xi) * (yj-yi) / (xj-xi);
 	}
 };
+
+/*! expensive way to wait about 2.5s while crunching numbers */
+double me3eep(double y);
 
 alglib::spline1dinterpolant to_cubic_spline( vector<Point>& data );
 

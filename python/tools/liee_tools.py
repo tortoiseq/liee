@@ -5,7 +5,6 @@ Provides some command line tools to help with gathering data and plotting the da
 
 import sys
 import numpy
-#import math
 import ctypes
 import os
 
@@ -33,16 +32,28 @@ def transpose( infile, outfile ):
     numpy.savetxt( outfile, data.transpose(), fmt="%."+str(precision)+"g" )
     return
 
-def matrix_sums( infile, outfile ):
+'''
+sums over rows (default) or columns of a matrix given by a textual data-file
+'''
+def matrix_sums( infile, outfile, sum_rows=True ):
     data = numpy.loadtxt( infile, numpy.float, '#', )
     fobj = open( outfile, "w" )
-    for ti in range( data.shape[0] ):
+    N = data.shape[0] if sum_rows else data.shape[1]
+    M = data.shape[1] if sum_rows else data.shape[0]
+    separator = "\n" if sum_rows else "\t"
+
+    for i in range( N ):
         sum = 0.0
-        for i in range( data.shape[1] ):
-            sum += data[ti][i]
-        fobj.write( str(sum) + "\n" )
+        for j in range( M ):
+            sum += ( data[i][j] if sum_rows else data[j][i] )
+        fobj.write( str(sum) + separator )
+    fobj.write("\n")
     fobj.close()
 
+'''
+interprets infile as a flat stream of numbers and finds the global minimum and maximum.
+the result is stored in outfile such as to be accessed via the gnuplot 'load' command.
+'''
 def stats( infile, outfile):
     glob_min = 6e66
     glob_max = -6e66
@@ -134,14 +145,20 @@ if __name__ == '__main__':
         plot( sys.argv[2] )
 
     elif sys.argv[1] == "sums":
-        matrix_sums( sys.argv[2], sys.argv[3] )
+        if len(sys.argv) > 4:
+            if sys.argv[4].upper()=="ROWS":
+                matrix_sums( sys.argv[2], sys.argv[3], True )
+            if sys.argv[4].upper()=="COLS":
+                matrix_sums( sys.argv[2], sys.argv[3], False )
+        else:
+            matrix_sums( sys.argv[2], sys.argv[3] )
 
     else:
         print("usage:\n" +
               "* liee_tools transpose \t input-file output-file \n" +
               "* liee_tools stats \t input-file output-file \n" +
               "* liee_tools stats \t input-file output-file skipcol0\n" +
-              "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile [true/false]\n" +
+              "* liee_tools potential \t r0 r1 Nr t0 t1 Nt outfile [true|false]\n" +
               "* liee_tools plot \t [all|module_serial]\n" +
-              "* liee_tools sums \t input-file output-file \n" +
+              "* liee_tools sums \t input-file output-file [rows|cols]\n" +
               "" )
