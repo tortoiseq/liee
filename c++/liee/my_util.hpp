@@ -213,7 +213,7 @@ struct Linear_Interpolant
 	}
 };
 
-/*! expensive way to wait about 2.5s while crunching numbers */
+/*! expensive way to wait about half a second while crunching numbers */
 double me3eep(double y);
 
 alglib::spline1dinterpolant to_cubic_spline( vector<Point>& data );

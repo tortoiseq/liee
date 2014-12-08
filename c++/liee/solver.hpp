@@ -58,11 +58,9 @@ public:
 	virtual void summarize( map<string, string> & results ){ }
 private:
 	// compute variables
-	vector<dcmplx> alfa;
 	vector<dcmplx> gamma;
 	vector<dcmplx> d;
 	vector<dcmplx> g;
-	vector<dcmplx> phi;
 	dcmplx c1, c3;
 	// multi-thread infrastructure
 	bool multithreaded;

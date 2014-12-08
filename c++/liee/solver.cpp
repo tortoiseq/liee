@@ -165,10 +165,8 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 	LOG_INFO( "Problem size (Nr x Nt): " << Nr << " x " << (int)(t_end / dt) << " = " << (Nr * t_end / dt) );
 	c1 = dcmplx( 0.0, -dt / ( 8.0 * SQR(dr) ) );  //(44)
 	c3 = dcmplx( 0.0,  dt / 4.0 );
-	alfa.resize(Nr);
 	gamma.resize(Nr);
 	g.resize(Nr);
-	phi.resize(Nr);
 	count = 0;
 	exec_done = false;
 	register_dependencies( dependencies );
@@ -192,10 +190,8 @@ void Crank_Nicholson::initialize( Conf_Module* config, vector<Module*> dependenc
 void Crank_Nicholson::reinitialize( Conf_Module* config, vector<Module*> dependencies )
 {
 	GET_LOGGER( "liee.Crank_Nicholson" );
-	alfa.resize(Nr);
 	gamma.resize(Nr);
 	g.resize(Nr);
-	phi.resize(Nr);
 	register_dependencies( dependencies );
 	potential->set_grid_CN( dr, dt, Nr );
 	if (multithreaded) {
@@ -217,7 +213,7 @@ void Crank_Nicholson::estimate_effort( Conf_Module* config, double & flops, doub
 	double Nt = config->get_double("t_range") / config->get_double("dt");
 
 	flops += abs( Nt * N * ( 6*6 + 5*2 + 3*4 + 3) );  // 6 complex(*) + 5 complex(+) + 3 double(/^2) + 3 double(+)  ... for every cell and every step
-	ram += abs( 7 * sizeof( dcmplx ) * N + 256 );
+	ram += abs( 3 * sizeof( dcmplx ) * N + 256 );
 	disk += 0;
 }
 
@@ -310,53 +306,50 @@ void Crank_Nicholson::evolve_1step_MT()
 				mutex_d_buffer.unlock();
 		}
 
-		alfa[i] = d[i] - c1 * gamma[i-1];  //#(50)
-		gamma[i] = c1 / alfa[i];  //#(49)
-		g[i] = ( psi[i] - c1 * g[i-1] ) / alfa[i];  //#(53)
+		dcmplx alfa = d[i] - c1 * gamma[i-1];  //#(50)
+		gamma[i] = c1 / alfa;  //#(49)
+		g[i] = ( psi[i] - c1 * g[i-1] ) / alfa;  //#(53)
 	}
 	// done here, set consumer_pos for the next time-step
 	mutex_d_buffer.lock();
 		consumer_pos = my_pos;
 	mutex_d_buffer.unlock();
 
-	alfa[0] = d[0];
-	gamma[0] = c1 / alfa[0];
-	g[0] = psi[0] / alfa[0];  //#(52)
+	dcmplx alfa = d[0];
+	gamma[0] = c1 / alfa;
+	g[0] = psi[0] / alfa;  //#(52)
 	for (size_t j=1; j < Nr; j++) {
-		alfa[j] = d[j] - c1 * gamma[j-1];  //#(50)
-		gamma[j] = c1 / alfa[j];  //#(49)
-		g[j] = ( psi[j] - c1 * g[j-1] ) / alfa[j];  //#(53)
+		alfa = d[j] - c1 * gamma[j-1];  //#(50)
+		gamma[j] = c1 / alfa;  //#(49)
+		g[j] = ( psi[j] - c1 * g[j-1] ) / alfa;  //#(53)
 	}
 
-	phi[Nr-1] = g[Nr-1];  //#(55)
-	psi[Nr-1] = phi[Nr-1] - psi[Nr-1];  //#(39)
+	dcmplx phi = g[Nr-1];  //#(55)
+	psi[Nr-1] = phi - psi[Nr-1];  //#(39)
 	for (int j=Nr-2; j >= 0; j--) {
-		phi[j] = g[j] - gamma[j] * phi[j+1];  //#(56)
-		psi[j] = phi[j] - psi[j];  //#(39)
+		phi = g[j] - gamma[j] * phi;  //#(56)
+		psi[j] = phi - psi[j];  //#(39)
 	}
 }
 
 void Crank_Nicholson::evolve_1step()
 {
-	if ( multithreaded ) {
-		evolve_1step_MT();
-		return;
-	}
+	//if ( multithreaded ) { evolve_1step_MT(); return; }
 
-	alfa[0] = c3 * potential->V_indexed( 0, t );
-	gamma[0] = c1 / alfa[0];
-	g[0] = psi[0] / alfa[0];  //#(52)
+	dcmplx alfa = c3 * potential->V_indexed( 0, t );
+	gamma[0] = c1 / alfa;
+	g[0] = psi[0] / alfa;  //#(52)
 	for (size_t j=1; j < Nr; j++) {
-		alfa[j] = c3 * potential->V_indexed( j, t ) - c1 * gamma[j-1];  //#(45),#(50)
-		gamma[j] = c1 / alfa[j];  //#(49)
-		g[j] = ( psi[j] - c1 * g[j-1] ) / alfa[j];  //#(53)
+		alfa = c3 * potential->V_indexed( j, t ) - c1 * gamma[j-1];  //#(45),#(50)
+		gamma[j] = c1 / alfa;  //#(49)
+		g[j] = ( psi[j] - c1 * g[j-1] ) / alfa;  //#(53)
 	}
 
-	phi[Nr-1] = g[Nr-1];  //#(55)
-	psi[Nr-1] = phi[Nr-1] - psi[Nr-1];  //#(39)
+	dcmplx phi = g[Nr-1];  //#(55)
+	psi[Nr-1] = phi - psi[Nr-1];  //#(39)
 	for (int j=Nr-2; j >= 0; j--) {
-		phi[j] = g[j] - gamma[j] * phi[j+1];  //#(56)
-		psi[j] = phi[j] - psi[j];  //#(39)
+		phi = g[j] - gamma[j] * phi;  //#(56)
+		psi[j] = phi - psi[j];  //#(39)
 	}
 }
 
