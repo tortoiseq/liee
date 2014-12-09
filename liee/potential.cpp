@@ -3,8 +3,7 @@
 #include "filesys.h"
 #include "boinc_api.h"
 
-#include "../alglib/specialfunctions.h"
-
+#include "specialfunctions.h"  // from alglib
 #include "fftw3.h"
 
 #include "boost/foreach.hpp"

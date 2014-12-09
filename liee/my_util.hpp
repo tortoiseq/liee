@@ -76,8 +76,8 @@
 	#include "log4cxx/helpers/exception.h"
 #endif
 
-#include "../alglib/ap.h"
-#include "../alglib/interpolation.h"
+#include "ap.h"  // from alglib
+#include "interpolation.h"  // from alglib
 
 using std::vector;
 using std::string;

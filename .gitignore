@@ -1,0 +1,25 @@
+# autotools products in root
+autom4te.cache/
+aclocal.m4
+config.h
+config.h.in
+config.log
+config.status
+configure
+depcomp
+install-sh
+missing
+stamp-h1
+
+
+# autotools products in subdirs
+**/.deps/
+**/Makefile
+**/Makefile.in
+
+
+# binaries
+**/*.o
+liee/liee_worker
+liee/lib/libliee.so
+liee/lib/testlib
