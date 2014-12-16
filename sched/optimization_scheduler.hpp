@@ -1,8 +1,4 @@
-/*
- * optimization_scheduler.hpp
- *
- *  Created on: 15-Jan-2012
- *      Author: quark
+/*! optimization_scheduler.hpp
  */
 
 #ifndef WORK_GENERATOR_HELPER_HPP_

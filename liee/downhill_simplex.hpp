@@ -1,8 +1,4 @@
-/*!
- * downhill_simplex.hpp
- *
- *  Created on: 24-Jan-2012
- *      Author: quark
+/*! downhill_simplex.hpp
  *
  * Implementation of the downhill simplex optimization method
  * by Nelder and Mead  algorithm along the lines of the implementation
@@ -10,7 +6,6 @@
  *
  * TODO request all 3 possible relocations of the worst point at once to exploit parallel (partially wasted) execution for higher cadence. (then psum cache is of no use also)
  */
-
 #ifndef DOWNHILLSIMPLEX_H_
 #define DOWNHILLSIMPLEX_H_
 

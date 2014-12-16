@@ -1,10 +1,5 @@
-/*
- * noumerov.hpp
- *
- *  Created on: 05-Mar-2012
- *      Author: quark
+/*! noumerov.hpp
  */
-
 #ifndef NOUMEROV_HPP_
 #define NOUMEROV_HPP_
 

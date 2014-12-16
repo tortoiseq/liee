@@ -1,8 +1,4 @@
-/*!
- * my_util.cpp
- *
- *  Created on: 6-Jan-2012
- *      Author: quark
+/*! my_util.cpp
  *
  * Contains a rather unstructured collection of utility routines, which are
  * both simple and generic to help reuse and avoid duplication.

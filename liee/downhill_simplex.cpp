@@ -1,13 +1,8 @@
-/*!
- * downhill_simplex.cpp
- *
- *  Created on: 24-Jan-2012
- *      Author: quark
+/*! downhill_simplex.cpp
  *
  * Implementation of the downhill simplex optimization method
  * by Nelder and Mead  algorithm along the lines of the implementation
  * from Numerical Recipes Webnote No. 15, Rev.1.
- *
  */
 
 #include "downhill_simplex.hpp"

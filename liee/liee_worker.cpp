@@ -1,15 +1,8 @@
-/*!
- * app_opti_wrapp.cpp
- *
- *  Created on: 28-Jan-2012
- *      Author: quark
- *
+/*! app_opti_wrapp.cpp
  */
-
 #include <iostream>
 #include <fstream>
 
-/* for using libarchive */
 #include <sys/types.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -33,8 +26,9 @@
 using namespace std;
 using namespace liee;
 
-string VERSION = "1.25";    ///< the parameter file is required to have the same version identifier
-
+#ifndef VERSION
+	#define VERSION "1.25";    ///< the parameter file is required to have the same version identifier
+#endif
 
 #ifdef LOG_ENABLED
 static log4cxx::LoggerPtr init_logger_config( string & resolved_name )

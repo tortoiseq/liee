@@ -1,8 +1,8 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = liee
+SUBDIRS = lib liee
 
 buildlib:
-	cd liee/lib && make buildlib
+	cd lib && make buildlib
 .PHONY: buildlib
 
 all: buildlib

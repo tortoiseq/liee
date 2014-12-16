@@ -1,12 +1,7 @@
-/*!
- * optimizer.hpp
+/*! optimizer.hpp
  *
  * Definition of generic structures and interfaces used by various optimisation algorithms.
- *
- *  Created on: 10-Jan-2012
- *      Author: quark
  */
-
 #ifndef OPTIMIZER_H_
 #define OPTIMIZER_H_
 
@@ -21,7 +16,6 @@
 
 #include "my_util.hpp"
 #include "module_config.hpp"
-
 
 using namespace std;
 namespace liee {

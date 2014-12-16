@@ -1,8 +1,4 @@
-/*
- * optimization_tester.cpp
- *
- *  Created on: 24-Jan-2012
- *      Author: quark
+/*! optimization_tester.cpp
  */
 
 #include <string>

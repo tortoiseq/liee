@@ -1,10 +1,5 @@
-/*
- * module_factory.hpp
- *
- *  Created on: 29-Jan-2012
- *      Author: quark
+/*! module_factory.hpp
  */
-
 #ifndef MODULE_FACTORY_HPP_
 #define MODULE_FACTORY_HPP_
 

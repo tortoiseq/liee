@@ -3,6 +3,7 @@ autom4te.cache/
 aclocal.m4
 config.h
 config.h.in
+config.h.in~
 config.log
 config.status
 configure
@@ -21,5 +22,5 @@ stamp-h1
 # binaries
 **/*.o
 liee/liee_worker
-liee/lib/libliee.so
-liee/lib/testlib
+lib/libliee.so
+lib/testlib

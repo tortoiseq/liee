@@ -1,15 +1,13 @@
-/*!
- * my_util.hpp
- *
- *  Created on: 6-Jan-2012
- *      Author: quark
+/*! my_util.hpp
  *
  * Contains a rather unstructured collection of utility routines, which are
  * both simple and generic to help reuse and avoid duplication.
  */
-
 #ifndef MY_UTIL_H_
 #define MY_UTIL_H_
+#ifdef HAVE_CONFIG_H
+	#include "../config.h"
+#endif
 
 #ifdef LOG_ENABLED
 	#define DEBUG_SHOW(a) LOG4CXX_DEBUG(logger, #a << "=" << (a) );

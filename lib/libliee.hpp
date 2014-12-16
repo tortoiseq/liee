@@ -1,12 +1,7 @@
-/*
- * libliee.hpp
- *
- *  Created on: Oct 31, 2012
- *      Author: quark
+/*! libliee.hpp
  *
  *  Interface to provide some essential stuff to external programs like the Python plotters.
  */
-
 #ifndef LIBLIEE_HPP_
 #define LIBLIEE_HPP_
 

@@ -1,11 +1,55 @@
-INSTALLING
-Run:
-$ ./configure
+Required Libraries
+~~~~~~~~~~~~~~~~~~
+    - log4cxx
+    - archive, z, bz2
+    - tinyxml
+    - boost (regex, serialization, system, thread, filesystem)
+    - fftw3
+    - alglib
+    - pthread
+
+Boinc-src
+~~~~~~~~~
+    The BOINC software needs to be compiled from its sources.
+    Check the BOINC Project for dependencies.
+    http://boinc.berkeley.edu/trac/wiki/ServerIntro
+    
+    Short cheat-sheet for downloading and compiling BOINC:
+    
+    $ git clone git://boinc.berkeley.edu/boinc-v2.git boinc-src
+    $ cd boinc-src
+    $ git pull
+    $ ./_autosetup
+    $ ./configure
+    $ make
+
+Building LIEE
+~~~~~~~~~~~~~
+$ ./autogen.sh
+$ ./configure --with-boinc="ENTER_PATH_TO_BOINC_SOURCES"
 $ make
-# make install
+
+No proper installation routine yet.
+To install, copy or link:
+    liee/liee_worker --> /usr/local/bin/
+    lib/libliee.so --> /usr/local/lib/
+(or to the appropriate paths)
 
 
-UNINSTALLING
-For uninstalling, run:
-# make uninstall
-from the top folder of this package
+Remarks for OS X
+~~~~~~~~~~~~~~~
+Most requirements can be met by installing macports-packages.
+Alas, there is no mac-port for alglib. You can download the
+sourcecode of the current free edition from http://www.alglib.net
+
+Building and installing the alglib-library can be achieved by
+using the CMakeLists.txt from the Gentoo-package of the appropriate
+version. This file is part of the portage-tree and can be downloaded
+via rsync from one of the mirrors without the need of a running
+Gentoo system (sci-libs/alglib/files/CMakeLists.txt*):
+
+    $ copy 'CMakeLists.txt' to alglib/cpp/
+    $ cd alglib/cpp
+    $ cmake .
+    $ make
+    $ make install

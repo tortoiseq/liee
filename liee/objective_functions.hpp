@@ -1,14 +1,11 @@
-/*!
- * objective_functions.hpp
- *
- *  Created on: 6-Jan-2012
- *      Author: quark
+/*! objective_functions.hpp
  *
  * A collection of standard test problems for optimisation problems.
  */
-
 #ifndef TESTOBJECTIVE_H_
 #define TESTOBJECTIVE_H_
+
+#include "my_util.hpp"
 
 using namespace std;
 namespace liee {

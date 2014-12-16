@@ -1,11 +1,6 @@
-/*!
- * optimizer.cpp
- *
- *  Created on: 12-Jan-2012
- *      Author: quark
+/*! optimizer.cpp
  *
  *  Implementation of sample optimiser(s).
- *
  */
 
 #include <time.h>

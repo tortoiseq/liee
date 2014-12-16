@@ -1,10 +1,5 @@
-/*
- * observer.hpp
- *
- *  Created on: 30-Jan-2012
- *      Author: quark
+/*! observer.hpp
  */
-
 #ifndef OBSERVER_HPP_
 #define OBSERVER_HPP_
 
