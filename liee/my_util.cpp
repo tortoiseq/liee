@@ -5,7 +5,6 @@
  */
 
 #include <math.h>
-
 #include <sys/stat.h>
 #include <archive.h>
 #include <archive_entry.h>
@@ -14,11 +13,11 @@
 #include <fstream>
 #include <cstdlib>
 #include <string.h>
+#include <curl/curl.h>
 
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/asio.hpp"
-#include "boost/asio/ip/tcp.hpp"
 #include "boost/regex.hpp"
 
 #include "my_util.hpp"
@@ -248,32 +247,30 @@ alglib::spline1dinterpolant to_cubic_spline( vector<Point> & data )
 	return spline;
 }
 
-double const PI = 4.0 * atan( 1.0 );
-double const CONST_2_OVER_SQRT_PI = 2.0 / sqrt( PI );
-
-dcmplx cerf( dcmplx z )
+vector<double> cerf_cache;
+dcmplx cerf( dcmplx z, size_t max_iter=100 ) //TODO testing
 {
-	//TODO (perf.) cache the products to sum over
-	//TODO (perf.) break summation if last addend is TINY relative to the sum
-	int MAX_ITER = 100;
-	//double TINY = 1e-15;
-
+	if ( max_iter > cerf_cache.size() ) {
+		cerf_cache.resize( max_iter );
+		for ( size_t k = 1; k < max_iter; k++ ) {
+			cerf_cache[k] = -(2*k - 1) / ( k * (2*k + 1) );
+		}
+	}
 	dcmplx z_ = z;
 	dcmplx z__ = 0;
 	dcmplx z2 = z * z;
-	cout << "...in cerf() \t" << MAX_ITER << "\t" << z << "\n";
 
-	for ( int n = 0; n < MAX_ITER; n++ )
+	for ( size_t n = 0; n < max_iter; n++ )
 	{
 		z_ = z;
-		for ( double k = 1; k <= n; k++ )
-		{
-			double a = -(2*k - 1) / ( k * (2*k + 1) );
-			z_ *= a * z2;
+		for ( double k = 1; k <= n; k++ ) {
+			z_ *= cerf_cache[k] * z2;
 		}
-		z__ += z_;
+		dcmplx test = z__ + z_;
+		if ( test ==  z__ ) break;
+		z__ = test;
 	}
-	return CONST_2_OVER_SQRT_PI * z__;
+	return M_2_SQRTPI * z__;
 }
 
 double me3eep(double y) {
@@ -347,8 +344,14 @@ void linear_fit( const vector<Point>& data, double& m, double& n, double& dm, do
 	double xy = 0.0;
 	int N = data.size();
 
-	if (N < 3) {
-		m = n = dm = dn = 0; //TODO for N=2 can give the line parameters with zero error
+	if (N == 2) {
+		m = ( data[1].y - data[0].y ) / ( data[1].x - data[0].x );
+		n = data[0].y - m * data[0].x;
+		dm = dn = 0;  // this error margins does not include floating-point inaccuracies
+		return;
+	}
+	if (N < 2) {
+		m = n = dm = dn = 0;
 		return;
 	}
 
@@ -419,30 +422,6 @@ void tar_gz_files( const string& dir_prefix, const vector<string>& files, const 
 	}
 	archive_write_close( a );
 	//archive_write_free( a ); not declared
-}
-
-string get_html_page( const string& host, const string& item, long timeout )
-{
-	boost::asio::ip::tcp::iostream stream;
-	stream.expires_from_now( boost::posix_time::seconds( timeout ) );
-	stream.connect( host, "http" );
-	stream << "GET " << item << " HTTP/1.0\r\n";
-	stream << "Host: " << host << "\r\n";
-	stream << "Accept: */*\r\n";
-	stream << "Connection: close\r\n\r\n";
-	stream.flush();
-	stringstream stuff;
-	string content = "";
-	if ( stream.bad() ) return content;
-	stuff << stream.rdbuf();
-	content = stuff.str();
-	size_t header_end_pos = content.find( "\r\n\r\n" );
-	if ( content.find( "200 OK" ) < header_end_pos ) {
-		content.erase( 0, header_end_pos + 4 );
-	} else { // not "200 OK"
-		content = "";
-	}
-	return content;
 }
 
 string doub2str( double d, size_t precision ){

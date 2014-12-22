@@ -27,7 +27,8 @@ using namespace std;
 using namespace liee;
 
 #ifndef VERSION
-	#define VERSION "1.25";    ///< the parameter file is required to have the same version identifier
+	// the parameter file is required to have the same version identifier
+	#define VERSION "1.25"
 #endif
 
 #ifdef LOG_ENABLED
@@ -91,25 +92,25 @@ int main( int argc, char* argv[] )
 
 #ifdef LOG_ENABLED
 	// try to fetch latest logg4cxx.conf (enables the admin to improve debug information for a running experiment, in case of unexpected errors)
-	string host = "lieeathome.dyndns.org";
-	string site = "/boinc/liee/download/" + cnf.experiment + "_log-conf";
-	string html = get_html_page( host, site );
+	string url = "http://lieeathome.de/boinc/liee/download/" + cnf.experiment + "_log-conf";
+	string log_conf = "";  //TODO http_wget( url );
+
 	ofstream ofs( "log4cxx.conf" );
-	if ( html.find( "log4j.rootLogger" ) != html.npos ) {
+	if ( log_conf.find( "log4j.rootLogger" ) != log_conf.npos ) {
 		// substitute resolved path for OUTFILE
-		size_t pos = html.find( "liee_outfile" );
-		html.erase( pos, 12 );
-		html.insert( pos, resolved_outfile_name );
-		LOG_INFO( "Logger update found at " << host );
+		size_t pos = log_conf.find( "liee_outfile" );
+		log_conf.erase( pos, 12 );
+		log_conf.insert( pos, resolved_outfile_name );
+		LOG_INFO( "Logger update found at " << url );
 	} else {
-	// write default log4cxx.conf
-		html = "log4j.rootLogger=DEBUG, FA\n";
-		html += "log4j.appender.FA=org.apache.log4j.FileAppender\n";
-		html += "log4j.appender.FA.File=" + resolved_outfile_name + "\n";
-		html += "log4j.appender.FA.layout=org.apache.log4j.PatternLayout\n";
-		html += "log4j.appender.FA.layout.ConversionPattern=%-4r [%t] %-5p %c %x - %m%n\n";
+	// download failed write default log4cxx.conf
+		log_conf = "log4j.rootLogger=DEBUG, FA\n";
+		log_conf += "log4j.appender.FA=org.apache.log4j.FileAppender\n";
+		log_conf += "log4j.appender.FA.File=" + resolved_outfile_name + "\n";
+		log_conf += "log4j.appender.FA.layout=org.apache.log4j.PatternLayout\n";
+		log_conf += "log4j.appender.FA.layout.ConversionPattern=%-4r [%t] %-5p %c %x - %m%n\n";
 	}
-	ofs << html;
+	ofs << log_conf;
 	ofs.close();
 
 	// activate log( resolved_name )

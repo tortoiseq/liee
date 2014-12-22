@@ -22,7 +22,7 @@ set xtics
 set ylabel "probability density"
 set ytics nomirror
 set y2tics
-set y2range [Vmin - 0.03*(Vmax - Vmin) : Vmax + 0.03*(Vmax - Vmin)]
+set y2range [Vmin - 0.03*(Vmax - Vmin) - 1e6 : Vmax + 0.03*(Vmax - Vmin) + 1e6]
 set y2label "potential in eV"
 
 plot data using (r0 + $0*dr):t_idx with lines title sprintf( "{/Symbol Y}(r, %.3f fs)", t_plt ),\

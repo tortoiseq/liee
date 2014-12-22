@@ -38,9 +38,6 @@ bin_PROGRAMS = testlib
 testlib_SOURCES = $(module_files) libliee.hpp libliee.cpp testlib.cpp my_util.hpp my_util.cpp optimizer.hpp optimizer.cpp
 testlib_LDADD = $(boinc_objects)
 
-#	-lboost_filesystem -lboost_thread -lboost_system -lboost_serialization -lboost_regex
-#	-lalglib -lfftw3 -ltinyxml -larchive -lbz2 -lz -llog4cxx -lpthread
-
 libliee.so: $(liee_objects)
 	g++ -shared -Wl,-soname,libliee.so -o libliee.so \
 	    $(liee_objects) $(boinc_objects) \
@@ -48,5 +45,3 @@ libliee.so: $(liee_objects)
 	    -lalglib -lfftw3 -ltinyxml -larchive -lbz2 -lz -llog4cxx -lpthread
 
 buildlib: libliee.so
-
-#-lcurl

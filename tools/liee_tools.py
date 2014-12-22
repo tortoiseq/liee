@@ -151,7 +151,7 @@ if __name__ == '__main__':
             if sys.argv[4].upper()=="COLS":
                 matrix_sums( sys.argv[2], sys.argv[3], False )
         else:
-            matrix_sums( sys.argv[2], sys.argv[3] )
+            matrix_sums( sys.argv[2], sys.argv[3], True )
 
     else:
         print("usage:\n" +

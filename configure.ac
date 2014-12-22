@@ -7,7 +7,6 @@ AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([config.h])
 
 # boinc-src
-bs="meep"
 AC_ARG_WITH(boinc, [  --with-boinc            enable boinc])
 if test "$with_boinc" == "yes"
 then

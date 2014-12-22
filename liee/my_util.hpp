@@ -217,7 +217,7 @@ double me3eep(double y);
 alglib::spline1dinterpolant to_cubic_spline( vector<Point>& data );
 
 /*! complex error function from product series */
-dcmplx cerf( dcmplx z );
+dcmplx cerf( dcmplx z, size_t max_iter );
 
 /*! real-valued Lambert W-function */
 double lambert_w( double x, bool principal = true );
@@ -314,15 +314,6 @@ struct Except__Too_Far_Out {
  * @see https://github.com/libarchive/libarchive/wiki/Examples
  */
 void tar_gz_files( const string& dir_prefix, const vector<string>& files, const string& archive_name );
-
-/*!
- * very minimalist HTTP-GET call, which doesn't care what went wrong if anything
- * unexpected happened and just returns an empty string in that case, the content otherwise.
- * no checks for file-size. it is assumed that the server does not bomb us with a GB of
- * content here. //TODO set a sane limit for received length
-*/
-string get_html_page( const string& host, const string& item, long timeout = 60 );
-
 
 /*!
  * wraps around  std::ostringstream to return strings with desired precision, default precision is 9

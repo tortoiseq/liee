@@ -22,6 +22,3 @@ bin_PROGRAMS = liee_worker
 
 liee_worker_SOURCES =  liee_worker.cpp my_util.hpp my_util.cpp optimizer.hpp optimizer.cpp $(module_files)
 liee_worker_LDADD = $(boinc_objects)
-
-#-lboost_filesystem -lboost_thread -lboost_system -lboost_serialization -lboost_regex
-#-lalglib -lfftw3 -ltinyxml -larchive -lbz2 -lz -llog4cxx -lpthread
