@@ -324,9 +324,8 @@ int opti::Rasterizer::generate_requests( vector<Request> & work )
 {
 	cout << "...opti::Rasterizer::generate_requests() \n";
 	if ( discharged ) {
-		//TODO 1) use logger in #else case 2) really critical or maybe just warning level?
 		#ifdef SERVER
-			log_messages.printf( MSG_CRITICAL, "This Rasterizer created all its jobs already. Re-initialize if you want to play again! \n" );
+			log_messages.printf( MSG_ERROR, "This Rasterizer created all its jobs already. Re-initialize if you want to play again! \n" );
 		#else
 			cout << "This Rasterizer created all its jobs already. Re-initialize if you want to play again! \n";
 		#endif

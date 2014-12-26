@@ -833,7 +833,7 @@ void Chulkov_Image_Potential::get_outer_turningpoints( const double E, double & 
 				double offset = acos( (E - A10) / A1 );
 				if ( not isnan(offset) ) {
 					double r_last = 0;
-					for ( int k = 0; k < 3 * nlay; k++ ) {  //TODO(perf.) instead of stupid iteration from the beginning, start from the end
+					for ( int k = 0; k < 3 * nlay; k++ ) {
 						for ( int sign = -1; sign <= 1; sign += 2 ) {
 							double r = ( sign * offset + k * 2 * PI ) * as /2.0 /PI;
 							if ( r > D ) {

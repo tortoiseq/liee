@@ -69,12 +69,12 @@ int Downhill_Simplex::initialise( const vector<double> & lower, const vector<dou
 	psum.resize( mpts );
 
 	simplex.resize( mpts );
-	for ( int v = 0; v < mpts; v++ ) {
+	for ( size_t v = 0; v < mpts; v++ ) {
 		simplex[v].flag = -1;
 		simplex[v].id = -1;
 		simplex[v].x.resize( dim );
 		simplex[v].x_new.resize( dim );
-		for ( int d=0; d < dim; d++ ) {
+		for ( size_t d=0; d < dim; d++ ) {
 			if ( d == v ) simplex[v].x[d] = upper_bounds[d];
 			else          simplex[v].x[d] = lower_bounds[d];
 		}
@@ -105,7 +105,7 @@ int Downhill_Simplex::generate_requests( vector<Request> & work )
 
 	if (evaluations == 0) {
 		// During the first run, the function needs to be evaluated at all vertices of the simplex
-		for ( int v = 0; v < mpts; v++ ) {
+		for ( size_t v = 0; v < mpts; v++ ) {
 			simplex[v].id = next_id++;
 			simplex[v].x_new = simplex[v].x;
 			work.push_back( simplex[v] );
@@ -122,7 +122,7 @@ int Downhill_Simplex::generate_requests( vector<Request> & work )
 		// If reflected trial point is better than the current worst, than replace the highest.
 		//cout << "trial accepted \n";
 		simplex[ihi].y = trial.y;
-		for ( int d = 0; d < dim; d++ ) {
+		for ( size_t d = 0; d < dim; d++ ) {
 			psum[d] += trial.x[d] - simplex[ihi].x[d];  //alter cached sum accordingly {ptry[d] - p[ihi*ndim+d];}
 			simplex[ihi].x[d] = trial.x[d];
 		}
@@ -180,10 +180,10 @@ int Downhill_Simplex::generate_requests( vector<Request> & work )
 		if ( trial.y >= ysave ) {
 			// Can't seem to get rid of that high point. Better contract around the lowest (best) point.
 			//cout << "\tCONTRACT\n";
-			for ( int v = 0; v < mpts; v++) {
+			for ( size_t v = 0; v < mpts; v++) {
 				if (v != ilo)
 				{
-					for ( int d = 0; d < dim; d++ ) {
+					for ( size_t d = 0; d < dim; d++ ) {
 						simplex[v].id = next_id++;
 						simplex[v].x_new[d] = sigma * ( simplex[v].x[d] + simplex[ilo].x[d] );
 					}
@@ -220,7 +220,7 @@ int Downhill_Simplex::assimilate_results( const vector<Request> & result )
 			break;
 		}
 
-		for ( int v = 0; v < mpts; v++ )	{
+		for ( size_t v = 0; v < mpts; v++ )	{
 			if ( simplex[v].id == result[r].id )
 			{
 				simplex[v].id = -1; // free slot!
@@ -254,7 +254,7 @@ void Downhill_Simplex::request_reflected_vertex( double fac, vector<Request> & w
 {
 	double fac1 = (1.0 - fac) / dim;
 	double fac2 = fac1 - fac;
-	for ( int d = 0; d < dim; d++ ) {
+	for ( size_t d = 0; d < dim; d++ ) {
 		trial.x_new[d] = psum[d] * fac1 - simplex[ihi].x[d] * fac2;
 	}
 	trial.id = next_id++;
@@ -266,10 +266,10 @@ void Downhill_Simplex::request_reflected_vertex( double fac, vector<Request> & w
 
 void Downhill_Simplex::recalculate_psum()
 {
-	for ( int d = 0; d < dim; d++ )
+	for ( size_t d = 0; d < dim; d++ )
 	{
 		double sum = 0.0;
-		for ( int v = 0; v < mpts; v++ ) {
+		for ( size_t v = 0; v < mpts; v++ ) {
 			sum += simplex[v].x[d];
 		}
 		psum[d] = sum;
@@ -291,7 +291,7 @@ void Downhill_Simplex::fluctuate_extrema()
 		ylo = ynhi;
 	}
 
-	for ( int v = 2; v < mpts; v++ )
+	for ( size_t v = 2; v < mpts; v++ )
 	{
 		double yflu = simplex[v].y - temperature * log( random->doub() );
 		if (yflu <= ylo)	{
@@ -314,7 +314,7 @@ bool Downhill_Simplex::is_waiting_for_results()
 {
 	//TODO replace by counter for outstanding results
 	if ( trial.id != -1 ) return true;
-	for ( int v = 0; v < mpts; v++ ) {
+	for ( size_t v = 0; v < mpts; v++ ) {
 		if ( simplex[v].id != -1 ) return true;
 	}
 	return false;

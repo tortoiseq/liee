@@ -25,7 +25,7 @@ namespace opti {
  */
 class Downhill_Simplex : public Asynch_Optimizer {
 public:
-	int     mpts;       ///< The number of points of the simplex.
+	size_t  mpts;       ///< The number of points of the simplex.
 	double  alfa;       ///< reflection coefficient
 	double  gamma;      ///< expansion coefficient
 	double  roh;        ///< contraction coefficient
@@ -36,9 +36,9 @@ public:
 	Request trial;      ///< to try a single reflection point
 	Ranq1 * random;     ///< random number generator
 
-	int     ihi;        ///< index of highest (worst) vertex
-	int     inhi;       ///< index of next-highest vertex
-	int     ilo;        ///< index of lowest (best) vertex
+	size_t     ihi;        ///< index of highest (worst) vertex
+	size_t     inhi;       ///< index of next-highest vertex
+	size_t     ilo;        ///< index of lowest (best) vertex
 
 	double  ylo;        ///< lowest function value incl. fluctuation)
 	double  yhi;        ///< highest function value incl. fluctuation)

@@ -41,11 +41,11 @@ public:
 class Asynch_Optimizer
 {
 public:
-	int             dim;            ///< number of dimensions
+	size_t          dim;            ///< number of dimensions
 	vector<double>  lower_bounds;   ///< lower limits indexed by dimension
 	vector<double>  upper_bounds;   ///< upper limits indexed by dimension
-	int             evaluations;    ///< umber of _requested_ evaluations
-	int             max_eval;       ///< end condition if not converging
+	size_t          evaluations;    ///< number of _requested_ evaluations
+	size_t          max_eval;       ///< end condition if not converging
 	int             next_id;        ///< next id (serial to match request and results) to send out
 
 	double          global_min;     ///< the so-far lowest value found
@@ -53,8 +53,8 @@ public:
 	vector<double>  global_min_pos; ///< domain vector for global_min
 	vector<double>  current_min_pos;///< domain vector for current_min
 	vector<double>  history;
-	int             history_sz;
-	int             history_i;
+	size_t          history_sz;
+	size_t          history_i;
 
 	double          tolerance;      ///< convergence tolerance
 	double          histo_var;      ///< convergence
@@ -119,8 +119,6 @@ protected:
 	virtual void convergence_test( const vector<Request> & population );
 	virtual void convergence_test_( const vector<Request*> & population ) { return; }
 };
-//TODO BOOST_CLASS_VERSION(Asynch_Optimizer, 0)
-
 
 /*!
  * Example implementation for Asynch_Optimiser.
@@ -150,8 +148,6 @@ public:
 	virtual int generate_requests( vector<Request> & work );
 	virtual int assimilate_results( const vector<Request> & result );
 };
-//TODO BOOST_CLASS_VERSION(Shot_Gun_Optimizer, 0)
-
 
 class Particle : public Request {
 public:
@@ -211,8 +207,6 @@ public:
 	virtual int assimilate_results( const vector<Request> & result );
 	virtual void convergence_test( const vector<Particle> & population );
 };
-//TODO BOOST_CLASS_VERSION(Shot_Gun_Optimizer, 0)
-
 
 /*!
  * The Rasterizer scans the search space in a regular fashion, its intended use is to

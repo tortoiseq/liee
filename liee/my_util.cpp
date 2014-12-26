@@ -251,8 +251,9 @@ dcmplx cerf( dcmplx z, size_t max_iter )
 {
 	if ( max_iter > cerf_cache.size() ) {
 		cerf_cache.resize( max_iter );
-		for ( size_t k = 1; k < max_iter; k++ ) {
-			cerf_cache[k] = -(2*k - 1) / ( k * (2*k + 1) );
+		for ( size_t i = 1; i < max_iter; i++ ) {
+			double k = i;
+			cerf_cache[i] = -(2*k - 1) / ( k * (2*k + 1) );
 		}
 	}
 	dcmplx z_ = z;
@@ -262,11 +263,14 @@ dcmplx cerf( dcmplx z, size_t max_iter )
 	for ( size_t n = 0; n < max_iter; n++ )
 	{
 		z_ = z;
-		for ( double k = 1; k <= n; k++ ) {
+		for ( size_t k = 1; k <= n; k++ ) {
 			z_ *= cerf_cache[k] * z2;
 		}
 		dcmplx test = z__ + z_;
-		if ( test ==  z__ ) break;
+		if ( test ==  z__ ) {
+			//cout << "cerf converged at n = " << n << "\n";
+			break;
+		}
 		z__ = test;
 	}
 	return M_2_SQRTPI * z__;
