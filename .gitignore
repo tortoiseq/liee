@@ -22,5 +22,6 @@ stamp-h1
 # binaries
 **/*.o
 liee/liee_worker
+liee/liee_tests
 lib/libliee.so
 lib/testlib

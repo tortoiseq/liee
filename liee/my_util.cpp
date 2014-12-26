@@ -13,7 +13,6 @@
 #include <fstream>
 #include <cstdlib>
 #include <string.h>
-#include <curl/curl.h>
 
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
@@ -248,7 +247,7 @@ alglib::spline1dinterpolant to_cubic_spline( vector<Point> & data )
 }
 
 vector<double> cerf_cache;
-dcmplx cerf( dcmplx z, size_t max_iter=100 ) //TODO testing
+dcmplx cerf( dcmplx z, size_t max_iter )
 {
 	if ( max_iter > cerf_cache.size() ) {
 		cerf_cache.resize( max_iter );

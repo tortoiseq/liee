@@ -10,14 +10,14 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "boinc_api.h"
+
 #include "boost/serialization/version.hpp"
 #include "boost/serialization/base_object.hpp"
 #include "boost/serialization/vector.hpp"
 #include "boost/archive/binary_oarchive.hpp"
 #include "boost/archive/binary_iarchive.hpp"
 #include "boost/filesystem.hpp"
-
-#include "boinc_api.h"
 
 #include "module_config.hpp"
 #include "module_factory.hpp"
@@ -54,6 +54,7 @@ static log4cxx::LoggerPtr init_logger_config( string & resolved_name )
 /*!
  * Main function with no parameters.
  */
+//#ifndef BOOST_TEST_MAIN
 int main( int argc, char* argv[] )
 {
 	string resolved_outfile_name;
@@ -75,7 +76,7 @@ int main( int argc, char* argv[] )
 		LOG_ERROR( "Version of config-file is incompatible. " << VERSION << " required!" );
 		exit(1);
 	}
-	LOG_INFO( "Config done" );
+	LOG_INFO( "Config done." );
 	vector<Module*> deps;
 	int last_i_stored = -1;
 	map<string, string> results;
@@ -224,3 +225,4 @@ int main( int argc, char* argv[] )
 	boinc_end_critical_section();
 	boinc_finish(0);
 }
+//#endif

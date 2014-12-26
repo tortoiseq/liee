@@ -61,7 +61,6 @@
 #include <map>
 #include <complex>
 #include <quadmath.h>
-#include <assert.h>
 
 #include "boost/serialization/access.hpp"
 #include "boost/serialization/split_free.hpp"
