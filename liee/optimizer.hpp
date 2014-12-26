@@ -165,12 +165,12 @@ public:
 class Particle_Swarm_Optimizer : public Asynch_Optimizer
 {
 public:
-	int     swarm_sz;  ///< population size
+	size_t  swarm_sz;  ///< population size
 	double  inertia;   ///< inertia weight (> 1: exploration; < 1: local search)
 	double  cognition; ///< cognition weight (particle memory)
 	double  coherence; ///< social weight (follow the leader)
-	int     leader;    ///< index of momentarily best particle
-	int     hood_sz;   ///< number of hops for which adjacent particles are considered part of the neighbourhood of the centre particle (in a ring topology)
+	size_t  leader;    ///< index of momentarily best particle
+	size_t  hood_sz;   ///< number of hops for which adjacent particles are considered part of the neighbourhood of the centre particle (in a ring topology)
 	Ranq1 * random;    ///< random number generator
 	vector<Particle> swarm; ///< particle population
 

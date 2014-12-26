@@ -75,7 +75,7 @@ int opti::Shot_Gun_Optimizer::generate_requests( vector<Request> & work )
 		{
 			in_flight[i].id = next_id++;
 			// draw random point
-			for ( int d = 0; d < dim; d++ ) {
+			for ( size_t d = 0; d < dim; d++ ) {
 				in_flight[i].x_new[d] = random->doub() * ( upper_bounds[d] - lower_bounds[d] ) + lower_bounds[d];
 			}
 			work.push_back( in_flight[i] );
@@ -122,7 +122,7 @@ int opti::Particle_Swarm_Optimizer::initialise( const vector<double> & lower, co
 	swarm.resize( swarm_sz );
 	global_min_pos.resize( dim );
 
-	for ( int i = 0; i < swarm_sz; i++ ) {
+	for ( size_t i = 0; i < swarm_sz; i++ ) {
 		swarm[i].id = -1;
 		swarm[i].flag = -1;
 		swarm[i].x.resize( dim );
@@ -131,14 +131,14 @@ int opti::Particle_Swarm_Optimizer::initialise( const vector<double> & lower, co
 		swarm[i].x_min.resize( dim );
 		swarm[i].min_value = 6.66e300;
 
-		for ( int d = 0; d < dim; d++ ) {
+		for ( size_t d = 0; d < dim; d++ ) {
 			swarm[i].x[d] = lower_bounds[d] + random->doub() * ( upper_bounds[d] - lower_bounds[d] );
 			swarm[i].v[d] = 0.01 * random->doub() * ( upper_bounds[d] - lower_bounds[d] );
 			swarm[i].x_min[d] = swarm[i].x[d];
 		}
 	}
 
-	for ( int d = 0; d < dim; d++ ) {
+	for ( size_t d = 0; d < dim; d++ ) {
 		global_min_pos[d] = 0.0;
 	}
 	return 0;
@@ -152,15 +152,15 @@ int opti::Particle_Swarm_Optimizer::generate_requests( vector<Request> & work )
 	if ( evaluations >= max_eval ) return 1;  // give up end condition
 	if ( histo_var <= tolerance ) return 0;  // success end condition
 
-	for ( int i = 0; i < swarm_sz; i++ )
+	for ( size_t i = 0; i < swarm_sz; i++ )
 	{
 		if ( swarm[i].id == -1 )  // free slot?
 		{
 			// find the hood's leader
-			int j_best = (i + hood_sz) % swarm_sz;  // default is the last of the neighbourhood, which isn't touched in the for-loop
-			for ( int j = i - hood_sz; j < i + hood_sz; j++ )
+			size_t j_best = (i + hood_sz) % swarm_sz;  // default is the last of the neighbourhood, which isn't touched in the for-loop
+			for ( size_t j = i + swarm_sz - hood_sz; j < i + swarm_sz + hood_sz; j++ )
 			{
-				int j_ = ( j + swarm_sz ) % swarm_sz;  // add swarm size to make sure dividend is positive
+				size_t j_ = j % swarm_sz;
 				if ( swarm[j_].min_value < swarm[j_best].min_value ) {
 					j_best = j_;
 				}
@@ -168,7 +168,7 @@ int opti::Particle_Swarm_Optimizer::generate_requests( vector<Request> & work )
 
 			// adapt particle's velocity
 			double v = 0;
-			for ( int d = 0; d < dim; d++ )
+			for ( size_t d = 0; d < dim; d++ )
 			{
 				swarm[i].v[d] = inertia * swarm[i].v[d]
 					+ cognition * random->doub() * ( swarm[  i   ].x_min[d] - swarm[i].x[d] )
@@ -179,12 +179,12 @@ int opti::Particle_Swarm_Optimizer::generate_requests( vector<Request> & work )
 			if ( abs( v ) >  MAX_V )
 			{
 				double scale = abs( MAX_V / v );
-				for ( int d = 0; d < dim; d++ ) {
+				for ( size_t d = 0; d < dim; d++ ) {
 					swarm[i].v[d] *= scale;
 				}
 			}
 			// change particle's (new) position
-			for ( int d = 0; d < dim; d++ ) {
+			for ( size_t d = 0; d < dim; d++ ) {
 				swarm[i].x_new[d] = swarm[i].x[d] + swarm[i].v[d];
 				//TODO test bounds
 			}
@@ -201,7 +201,7 @@ int opti::Particle_Swarm_Optimizer::assimilate_results( const vector<Request> & 
 {
 	//process results
 	for ( size_t r = 0; r < result.size(); r++ ) {
-		for ( int i = 0; i < swarm_sz; i++ ) {
+		for ( size_t i = 0; i < swarm_sz; i++ ) {
 			if ( swarm[i].id == result[r].id )
 			{
 				swarm[i].id = -1;  // in any case: make available for next round
@@ -229,7 +229,7 @@ int opti::Particle_Swarm_Optimizer::assimilate_results( const vector<Request> & 
 	}
 	//elect new leader
 	leader = 0;
-	for ( int i = 1; i < swarm_sz; i++ ) {
+	for ( size_t i = 1; i < swarm_sz; i++ ) {
 		if ( swarm[i].y < swarm[leader].y ) {
 			leader = i;
 		}
@@ -256,12 +256,12 @@ int opti::Rasterizer::initialise( const vector<double> & lower, const vector<dou
 	dim = lower.size();
 	lower_bounds = lower;
 	upper_bounds = upper;
-	if ( ((int)logscale.size()) != dim ) {
+	if ( (logscale.size()) != dim ) {
 		logscale.resize( dim );
-		for ( int d = 0; d < dim; d++ ) { logscale[d] = false; }
+		for ( size_t d = 0; d < dim; d++ ) { logscale[d] = false; }
 	}
 	discharged = false;
-	if ( ((int)num_samples.size()) != dim ) {  // apply uniform N to all dimensions
+	if ( (num_samples.size()) != dim ) {  // apply uniform N to all dimensions
 		int N = num_samples[0];
 		num_samples.resize( dim );
 		for ( size_t i = 0; i < num_samples.size(); i++ ) {
